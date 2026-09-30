@@ -414,3 +414,245 @@ code {
     font-size: 26px;
   }
 }
+
+.promo-banner {
+  margin: 20px 70px 60px;
+  padding: 40px 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-radius: 12px;
+  background-color: #1f7a3f;
+  color: white;
+}
+
+.promo-content {
+  max-width: 600px;
+}
+
+.promo-label {
+  margin: 0 0 8px;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.promo-content h2 {
+  margin: 0 0 10px;
+
+  font-size: 32px;
+}
+
+.promo-content p {
+  margin: 0 0 20px;
+
+  font-size: 15px;
+}
+
+.promo-content button {
+  padding: 11px 22px;
+
+  border: none;
+  border-radius: 5px;
+
+  background-color: white;
+  color: #1f7a3f;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.promo-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 20px 35px;
+
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+}
+
+.promo-highlight span {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.promo-highlight strong {
+  font-size: 32px;
+}
+
+.promo-highlight small {
+  margin-top: 5px;
+}
+
+.featured-section {
+  padding: 60px 70px;
+  background-color: #f9faf7;
+}
+
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.product-card {
+  background-color: white;
+  border: 1px solid #eeeeee;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  border-color: #1f7a3f;
+}
+
+.product-image {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-info {
+  padding: 18px;
+}
+
+.product-info h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #222;
+}
+
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.selling-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f7a3f;
+}
+
+.mrp {
+  font-size: 13px;
+  color: #888;
+  text-decoration: line-through;
+}
+
+.discount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1f7a3f;
+}
+
+.product-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.product-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #1f7a3f;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.product-actions .wishlist-btn {
+  flex: 0 0 42px;
+  background-color: #f3f8ed;
+  color: #1f7a3f;
+}
+
+.deal-section {
+  padding: 60px 70px;
+  background-color: white;
+}
+
+.deal-content {
+  padding: 45px 50px;
+  border-radius: 12px;
+  background-color: #f3f8ed;
+
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.deal-text {
+  max-width: 700px;
+}
+
+.deal-text h3 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  color: #172018;
+}
+
+.deal-text p {
+  margin: 0 auto 25px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.deal-timer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.deal-timer div {
+  min-width: 80px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: white;
+  border: 1px solid #e2e8dc;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.deal-timer strong {
+  font-size: 24px;
+  color: #1f7a3f;
+}
+
+.deal-timer span {
+  font-size: 11px;
+  color: #777;
+}
+
+.deal-text button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  background-color: #1f7a3f;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deal-text button:hover {
+  background-color: #176331;
+}
