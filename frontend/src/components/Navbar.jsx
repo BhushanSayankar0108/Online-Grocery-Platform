@@ -1,9 +1,10 @@
-function Navbar() {
+import { Link } from "react-router-dom";
+function Navbar({ cartCount }) {
   return (
     <nav className="navbar">
-      <div className="navbar-logo">
+      <Link to="/" className="navbar-logo">
         Online Grocery E-Commerce Platform
-      </div>
+      </Link>
 
       <div className="navbar-search">
         <input
@@ -18,7 +19,9 @@ function Navbar() {
         <span>Login</span>
         <span>Sign Up</span>
         <span>♡ Wishlist</span>
-        <span>🛒 Cart</span>
+<Link to="/cart" className="navbar-cart">
+  🛒 Cart ({cartCount})
+</Link>
       </div>
     </nav>
   );

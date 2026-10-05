@@ -1,4 +1,5 @@
 import heroImage from "../assets/hero.png";
+import { Link } from "react-router-dom";
 function Hero() {
   return (
     <section className="hero">
@@ -17,13 +18,13 @@ function Hero() {
         </p>
 
         <div className="hero-buttons">
-          <button className="hero-btn primary-btn">
+          <Link to="/shop" className="hero-btn primary-btn">
             Shop Now
-          </button>
+          </Link>
 
-          <button className="hero-btn secondary-btn">
+          <Link to="/shop" className="hero-btn secondary-btn">
             Explore Categories
-          </button>
+          </Link>
         </div>
       </div>
 
