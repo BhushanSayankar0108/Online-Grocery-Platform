@@ -67,12 +67,20 @@ function HomeSearch() {
 }
 
 
-function Home({ cartCount, setCart }) {
+function Home({
+  cartCount,
+  wishlistCount,
+  setCart,
+  wishlist,
+  setWishlist,
+}) {
   return (
     <>
       <TopBar />
-
-      <Navbar cartCount={cartCount} />
+      <Navbar
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
+      />
 
       <HomeSearch />
 
@@ -82,7 +90,11 @@ function Home({ cartCount, setCart }) {
 
       <PromoBanner />
 
-      <FeaturedProducts setCart={setCart} />
+  <FeaturedProducts
+  setCart={setCart}
+  wishlist={wishlist}
+  setWishlist={setWishlist}
+/>
 
       <DealOfTheDay />
 
@@ -107,20 +119,25 @@ function App() {
     0
   );
 
+const wishlistCount = wishlist.length;
+
   return (
     <BrowserRouter>
       <Routes>
 
         {/* HOME */}
         <Route
-          path="/"
-          element={
-            <Home
-              cartCount={cartCount}
-              setCart={setCart}
-            />
-          }
-        />
+  path="/"
+  element={
+    <Home
+      cartCount={cartCount}
+      wishlistCount={wishlistCount}
+      setCart={setCart}
+      wishlist={wishlist}
+      setWishlist={setWishlist}
+    />
+  }
+/>
 
 
         {/* SHOP */}
@@ -129,8 +146,16 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
-              <Shop cart={cart} setCart={setCart} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
+<Shop
+  cart={cart}
+  setCart={setCart}
+  wishlist={wishlist}
+  setWishlist={setWishlist}
+/>
             </>
           }
         />
@@ -142,7 +167,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Cart cart={cart} setCart={setCart} />
             </>
           }
@@ -155,7 +183,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Checkout cart={cart} setCart={setCart} />
             </>
           }
@@ -168,7 +199,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <OrderConfirmation />
             </>
           }
@@ -181,7 +215,7 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
               <Login />
             </>
           }
@@ -194,7 +228,7 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
               <Signup />
             </>
           }
@@ -207,7 +241,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <ForgotPassword />
             </>
           }
@@ -220,7 +257,7 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
               <ProductDetails setCart={setCart} />
             </>
           }
@@ -233,7 +270,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Wishlist
                 wishlist={wishlist}
                 setWishlist={setWishlist}
@@ -250,7 +290,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Offers />
             </>
           }
@@ -263,7 +306,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Account />
             </>
           }
@@ -276,7 +322,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Orders />
             </>
           }
@@ -289,7 +338,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <OrderTracking />
             </>
           }
@@ -302,7 +354,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Addresses />
             </>
           }
@@ -315,7 +370,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Notifications />
             </>
           }
@@ -328,7 +386,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Support />
             </>
           }
@@ -341,7 +402,10 @@ function App() {
           element={
             <>
               <TopBar />
-              <Navbar cartCount={cartCount} />
+<Navbar
+  cartCount={cartCount}
+  wishlistCount={wishlistCount}
+/>
               <Categories />
             </>
           }

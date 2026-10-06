@@ -1,7 +1,7 @@
 import ProductCard from "./ProductCard";
 import { Link } from "react-router-dom";
 
-function FeaturedProducts({ setCart }) {
+function FeaturedProducts({ setCart, wishlist, setWishlist }) {
   const addToCart = (product) => {
     setCart((currentCart) => {
       const existingProduct = currentCart.find(
@@ -24,6 +24,26 @@ function FeaturedProducts({ setCart }) {
         },
       ];
     });
+  };
+
+  const toggleWishlist = (product) => {
+    setWishlist((currentWishlist) => {
+      const alreadyWishlisted = currentWishlist.some(
+        (item) => item.name === product.name
+      );
+
+      if (alreadyWishlisted) {
+        return currentWishlist.filter(
+          (item) => item.name !== product.name
+        );
+      }
+
+      return [...currentWishlist, product];
+    });
+  };
+
+  const isWishlisted = (product) => {
+    return wishlist.some((item) => item.name === product.name);
   };
 
   const products = [
@@ -87,6 +107,8 @@ function FeaturedProducts({ setCart }) {
                   discount={product.discount}
                   image={product.image}
                   onAddToCart={() => addToCart(product)}
+                  onToggleWishlist={() => toggleWishlist(product)}
+                  isWishlisted={isWishlisted(product)}
                 />
               </div>
             </Link>

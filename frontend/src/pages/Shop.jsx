@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 const products = [
   {
+    id: 1,
     name: "Fresh Apples",
     price: 120,
     mrp: 150,
@@ -10,6 +11,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6",
   },
   {
+    id: 2,
     name: "Fresh Tomatoes",
     price: 60,
     mrp: 80,
@@ -17,6 +19,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
   },
   {
+    id: 3,
     name: "Fresh Milk",
     price: 55,
     mrp: 65,
@@ -24,6 +27,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1563636619-e9143da7973b",
   },
   {
+    id: 4,
     name: "Whole Wheat Bread",
     price: 45,
     mrp: 55,
@@ -31,6 +35,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1509440159596-0249088772ff",
   },
   {
+    id: 5,
     name: "Fresh Bananas",
     price: 50,
     mrp: 60,
@@ -38,6 +43,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e",
   },
   {
+    id: 6,
     name: "Basmati Rice",
     price: 180,
     mrp: 220,
@@ -45,6 +51,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
   },
   {
+    id: 7,
     name: "Potato Chips",
     price: 40,
     mrp: 50,
@@ -52,6 +59,7 @@ const products = [
     image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b",
   },
   {
+    id: 8,
     name: "Orange Juice",
     price: 110,
     mrp: 130,
@@ -60,7 +68,7 @@ const products = [
   },
 ];
 
-function Shop({ cart, setCart }) {
+function Shop({ cart, setCart, wishlist, setWishlist }) {
   const [searchParams] = useSearchParams();
 
   const categoryFromUrl = searchParams.get("category");
@@ -89,6 +97,26 @@ function Shop({ cart, setCart }) {
 
       return [...currentCart, { ...product, quantity: 1 }];
     });
+  };
+
+  const toggleWishlist = (product) => {
+    setWishlist((currentWishlist) => {
+      const alreadyWishlisted = currentWishlist.some(
+        (item) => item.name === product.name
+      );
+
+      if (alreadyWishlisted) {
+        return currentWishlist.filter(
+          (item) => item.name !== product.name
+        );
+      }
+
+      return [...currentWishlist, product];
+    });
+  };
+
+  const isWishlisted = (product) => {
+    return wishlist.some((item) => item.name === product.name);
   };
 
   const handleCategoryChange = (category) => {
@@ -263,10 +291,10 @@ function Shop({ cart, setCart }) {
             {sortedProducts.map((product) => (
               <div
                 className="shop-product-card"
-                key={product.name}
+                key={product.id}
               >
                 <Link
-                  to={`/product/${products.indexOf(product) + 1}`}
+                  to={`/product/${product.id}`}
                   className="product-link"
                 >
                   <div className="shop-product-image">
@@ -296,9 +324,29 @@ function Shop({ cart, setCart }) {
                   </div>
                 </Link>
 
-                <button onClick={() => addToCart(product)}>
-                  Add to Cart
-                </button>
+                <div className="shop-product-actions">
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="shop-add-cart"
+                  >
+                    Add to Cart
+                  </button>
+
+                  <button
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      toggleWishlist(product);
+                    }}
+                    className={`shop-wishlist ${
+                      isWishlisted(product) ? "wishlisted" : ""
+                    }`}
+                  >
+                    {isWishlisted(product)
+                      ? "♥ Wishlisted"
+                      : "♡ Wishlist"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

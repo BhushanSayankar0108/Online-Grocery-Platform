@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function Navbar({ cartCount }) {
+function Navbar({ cartCount, wishlistCount }) {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-logo">
@@ -12,7 +12,10 @@ function Navbar({ cartCount }) {
         <Link to="/login">Login</Link>
         <Link to="/signup">Sign Up</Link>
         <Link to="/account">Account</Link>
-        <Link to="/wishlist">♡ Wishlist</Link>
+
+        <Link to="/wishlist">
+          ♡ Wishlist ({wishlistCount})
+        </Link>
 
         <Link to="/cart" className="navbar-cart">
           🛒 Cart ({cartCount})

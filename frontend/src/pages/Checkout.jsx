@@ -7,6 +7,15 @@ function Checkout({ cart, setCart }) {
   const [selectedSlot, setSelectedSlot] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("");
 
+  const [paymentDetails, setPaymentDetails] = useState({
+    upiId: "",
+    cardName: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    bank: "",
+  });
+
   const [address, setAddress] = useState({
     fullName: "",
     mobile: "",
@@ -24,6 +33,16 @@ function Checkout({ cart, setCart }) {
     "6:00 PM - 9:00 PM",
   ];
 
+  const cartSubtotal = cart.reduce(
+    (total, product) =>
+      total + product.price * product.quantity,
+    0
+  );
+
+  const deliveryCharge = cartSubtotal >= 500 ? 0 : 40;
+
+  const cartTotal = cartSubtotal + deliveryCharge;
+
   const handleAddressChange = (event) => {
     const { name, value } = event.target;
 
@@ -33,7 +52,65 @@ function Checkout({ cart, setCart }) {
     }));
   };
 
+  const handlePaymentChange = (event) => {
+    const { name, value } = event.target;
+
+    setPaymentDetails((currentDetails) => ({
+      ...currentDetails,
+      [name]: value,
+    }));
+  };
+
+  const handlePaymentSelection = (method) => {
+    setSelectedPayment(method);
+
+    setPaymentDetails({
+      upiId: "",
+      cardName: "",
+      cardNumber: "",
+      expiry: "",
+      cvv: "",
+      bank: "",
+    });
+  };
+
+  const validatePaymentDetails = () => {
+    if (selectedPayment === "UPI") {
+      if (!paymentDetails.upiId.trim()) {
+        alert("Please enter your UPI ID.");
+        return false;
+      }
+    }
+
+    if (selectedPayment === "Credit / Debit Card") {
+      if (
+        !paymentDetails.cardName.trim() ||
+        !paymentDetails.cardNumber.trim() ||
+        !paymentDetails.expiry.trim() ||
+        !paymentDetails.cvv.trim()
+      ) {
+        alert("Please enter all card details.");
+        return false;
+      }
+    }
+
+    if (selectedPayment === "Net Banking") {
+      if (!paymentDetails.bank) {
+        alert("Please select your bank.");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handlePlaceOrder = () => {
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      navigate("/shop");
+      return;
+    }
+
     const requiredAddressFields = [
       address.fullName,
       address.mobile,
@@ -63,6 +140,10 @@ function Checkout({ cart, setCart }) {
       return;
     }
 
+    if (!validatePaymentDetails()) {
+      return;
+    }
+
     setCart([]);
     navigate("/order-confirmation");
   };
@@ -71,7 +152,10 @@ function Checkout({ cart, setCart }) {
     <main className="checkout-page">
       <div className="checkout-header">
         <h1>Checkout</h1>
-        <p>Complete your order by providing your delivery details.</p>
+
+        <p>
+          Complete your order by providing your delivery details.
+        </p>
       </div>
 
       <div className="checkout-content">
@@ -181,12 +265,111 @@ function Checkout({ cart, setCart }) {
                 className={`payment-method ${
                   selectedPayment === method ? "selected" : ""
                 }`}
-                onClick={() => setSelectedPayment(method)}
+                onClick={() => handlePaymentSelection(method)}
               >
                 {method}
               </button>
             ))}
           </div>
+
+          {/* UPI Form */}
+          {selectedPayment === "UPI" && (
+            <div className="payment-details">
+              <h3>UPI Payment</h3>
+
+              <input
+                type="text"
+                name="upiId"
+                placeholder="Enter UPI ID"
+                value={paymentDetails.upiId}
+                onChange={handlePaymentChange}
+              />
+
+              <small>
+                Example: yourname@upi
+              </small>
+            </div>
+          )}
+
+          {/* Card Form */}
+          {selectedPayment === "Credit / Debit Card" && (
+            <div className="payment-details">
+              <h3>Card Details</h3>
+
+              <input
+                type="text"
+                name="cardName"
+                placeholder="Cardholder Name"
+                value={paymentDetails.cardName}
+                onChange={handlePaymentChange}
+              />
+
+              <input
+                type="text"
+                name="cardNumber"
+                placeholder="Card Number"
+                maxLength="19"
+                value={paymentDetails.cardNumber}
+                onChange={handlePaymentChange}
+              />
+
+              <div className="payment-card-row">
+                <input
+                  type="text"
+                  name="expiry"
+                  placeholder="MM / YY"
+                  maxLength="5"
+                  value={paymentDetails.expiry}
+                  onChange={handlePaymentChange}
+                />
+
+                <input
+                  type="password"
+                  name="cvv"
+                  placeholder="CVV"
+                  maxLength="4"
+                  value={paymentDetails.cvv}
+                  onChange={handlePaymentChange}
+                />
+              </div>
+
+              <small>
+                Demo payment form — do not enter real card details.
+              </small>
+            </div>
+          )}
+
+          {/* Net Banking Form */}
+          {selectedPayment === "Net Banking" && (
+            <div className="payment-details">
+              <h3>Select Your Bank</h3>
+
+              <select
+                name="bank"
+                value={paymentDetails.bank}
+                onChange={handlePaymentChange}
+              >
+                <option value="">Select Bank</option>
+                <option value="SBI">State Bank of India</option>
+                <option value="HDFC">HDFC Bank</option>
+                <option value="ICICI">ICICI Bank</option>
+                <option value="Axis">Axis Bank</option>
+                <option value="Kotak">Kotak Mahindra Bank</option>
+              </select>
+            </div>
+          )}
+
+          {/* COD */}
+          {selectedPayment === "Cash on Delivery" && (
+            <div className="payment-details">
+              <h3>Cash on Delivery</h3>
+
+              <p>
+                Pay in cash when your order is delivered to your
+                doorstep.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Order Summary */}
@@ -194,7 +377,17 @@ function Checkout({ cart, setCart }) {
           <h2>Order Summary</h2>
 
           {cart.length === 0 ? (
-            <p>Your cart is empty.</p>
+            <div>
+              <p>Your cart is empty.</p>
+
+              <button
+                type="button"
+                className="place-order-button"
+                onClick={() => navigate("/shop")}
+              >
+                Browse Products
+              </button>
+            </div>
           ) : (
             <>
               {cart.map((product, index) => (
@@ -212,40 +405,49 @@ function Checkout({ cart, setCart }) {
                 </div>
               ))}
 
+              <div className="checkout-item">
+                <span>Subtotal</span>
+                <strong>₹{cartSubtotal}</strong>
+              </div>
+
+              <div className="checkout-item">
+                <span>Delivery</span>
+
+                <strong>
+                  {deliveryCharge === 0
+                    ? "FREE"
+                    : `₹${deliveryCharge}`}
+                </strong>
+              </div>
+
               <div className="checkout-total">
                 <span>Total</span>
 
-                <strong>
-                  ₹
-                  {cart.reduce(
-                    (total, product) =>
-                      total + product.price * product.quantity,
-                    0
-                  )}
-                </strong>
+                <strong>₹{cartTotal}</strong>
               </div>
             </>
           )}
         </div>
 
         {/* Place Order */}
-        <div className="checkout-section checkout-final">
-          <h2>Complete Order</h2>
+        {cart.length > 0 && (
+          <div className="checkout-section checkout-final">
+            <h2>Complete Order</h2>
 
-          <p>
-            Please review your delivery details, delivery slot, and payment
-            method before placing your order.
-          </p>
+            <p>
+              Please review your delivery details, delivery slot,
+              and payment method before placing your order.
+            </p>
 
-          <button
-            type="button"
-            className="place-order-button"
-            onClick={handlePlaceOrder}
-          >
-            Place Order
-          </button>
-        </div>
-
+            <button
+              type="button"
+              className="place-order-button"
+              onClick={handlePlaceOrder}
+            >
+              Place Order
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

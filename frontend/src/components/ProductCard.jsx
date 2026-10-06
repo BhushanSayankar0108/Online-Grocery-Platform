@@ -1,4 +1,13 @@
-function ProductCard({ name, price, mrp, discount, image, onAddToCart }) {
+function ProductCard({
+  name,
+  price,
+  mrp,
+  discount,
+  image,
+  onAddToCart,
+  onToggleWishlist,
+  isWishlisted,
+}) {
   return (
     <div className="product-card">
       <div className="product-image">
@@ -15,16 +24,26 @@ function ProductCard({ name, price, mrp, discount, image, onAddToCart }) {
         </div>
 
         <div className="product-actions">
-<button
-  onClick={(event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    onAddToCart();
-  }}
->
-  Add to Cart
-</button>
-          <button className="wishlist-btn">♡</button>
+          <button
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onAddToCart();
+            }}
+          >
+            Add to Cart
+          </button>
+
+          <button
+            className={`wishlist-btn ${isWishlisted ? "wishlisted" : ""}`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onToggleWishlist();
+            }}
+          >
+            {isWishlisted ? "♥" : "♡"}
+          </button>
         </div>
       </div>
     </div>
