@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import TopBar from "./components/TopBar";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
@@ -30,42 +29,19 @@ import Addresses from "./pages/Addresses";
 import Notifications from "./pages/Notifications";
 import Support from "./pages/Support";
 import Categories from "./pages/Categories";
+import Returns from "./pages/Returns";
 
-
-function HomeSearch() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
-
-  const handleSearch = (event) => {
-    event.preventDefault();
-
-    const query = searchTerm.trim();
-
-    if (!query) {
-      return;
-    }
-
-    navigate(`/shop?search=${encodeURIComponent(query)}`);
-  };
-
+function PageLayout({ children, cartCount, wishlistCount }) {
   return (
-    <div className="homepage-search">
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          placeholder="Search groceries..."
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-
-        <button type="submit">
-          Search
-        </button>
-      </form>
-    </div>
+    <>
+      <Navbar
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
+      />
+      {children}
+    </>
   );
 }
-
 
 function Home({
   cartCount,
@@ -76,13 +52,10 @@ function Home({
 }) {
   return (
     <>
-      <TopBar />
       <Navbar
         cartCount={cartCount}
         wishlistCount={wishlistCount}
       />
-
-      <HomeSearch />
 
       <Hero />
 
@@ -90,11 +63,11 @@ function Home({
 
       <PromoBanner />
 
-  <FeaturedProducts
-  setCart={setCart}
-  wishlist={wishlist}
-  setWishlist={setWishlist}
-/>
+      <FeaturedProducts
+        setCart={setCart}
+        wishlist={wishlist}
+        setWishlist={setWishlist}
+      />
 
       <DealOfTheDay />
 
@@ -109,7 +82,6 @@ function Home({
   );
 }
 
-
 function App() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -119,7 +91,12 @@ function App() {
     0
   );
 
-const wishlistCount = wishlist.length;
+  const wishlistCount = wishlist.length;
+
+  const layoutProps = {
+    cartCount,
+    wishlistCount,
+  };
 
   return (
     <BrowserRouter>
@@ -127,287 +104,207 @@ const wishlistCount = wishlist.length;
 
         {/* HOME */}
         <Route
-  path="/"
-  element={
-    <Home
-      cartCount={cartCount}
-      wishlistCount={wishlistCount}
-      setCart={setCart}
-      wishlist={wishlist}
-      setWishlist={setWishlist}
-    />
-  }
-/>
-
+          path="/"
+          element={
+            <Home
+              cartCount={cartCount}
+              wishlistCount={wishlistCount}
+              setCart={setCart}
+              wishlist={wishlist}
+              setWishlist={setWishlist}
+            />
+          }
+        />
 
         {/* SHOP */}
         <Route
           path="/shop"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
-<Shop
-  cart={cart}
-  setCart={setCart}
-  wishlist={wishlist}
-  setWishlist={setWishlist}
-/>
-            </>
+            <PageLayout {...layoutProps}>
+              <Shop
+                cart={cart}
+                setCart={setCart}
+                wishlist={wishlist}
+                setWishlist={setWishlist}
+              />
+            </PageLayout>
           }
         />
-
 
         {/* CART */}
         <Route
           path="/cart"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Cart cart={cart} setCart={setCart} />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* CHECKOUT */}
         <Route
           path="/checkout"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Checkout cart={cart} setCart={setCart} />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* ORDER CONFIRMATION */}
         <Route
           path="/order-confirmation"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <OrderConfirmation />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* LOGIN */}
         <Route
           path="/login"
           element={
-            <>
-              <TopBar />
-              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
+            <PageLayout {...layoutProps}>
               <Login />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* SIGN UP */}
         <Route
           path="/signup"
           element={
-            <>
-              <TopBar />
-              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
+            <PageLayout {...layoutProps}>
               <Signup />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* FORGOT PASSWORD */}
         <Route
           path="/forgot-password"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <ForgotPassword />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* PRODUCT DETAILS */}
         <Route
           path="/product/:id"
           element={
-            <>
-              <TopBar />
-              <Navbar cartCount={cartCount} wishlistCount={wishlistCount} />
-              <ProductDetails setCart={setCart} />
-            </>
+            <PageLayout {...layoutProps}>
+              <ProductDetails
+                setCart={setCart}
+                wishlist={wishlist}
+                setWishlist={setWishlist}
+              />
+            </PageLayout>
           }
         />
-
 
         {/* WISHLIST */}
         <Route
           path="/wishlist"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Wishlist
                 wishlist={wishlist}
                 setWishlist={setWishlist}
                 setCart={setCart}
               />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* OFFERS */}
         <Route
           path="/offers"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Offers />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* ACCOUNT */}
         <Route
           path="/account"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Account />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* ORDERS */}
         <Route
           path="/orders"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Orders />
-            </>
+            </PageLayout>
           }
         />
-
+        {/* RETURNS & REFUNDS */}
+<Route
+  path="/returns"
+  element={
+    <PageLayout {...layoutProps}>
+      <Returns />
+    </PageLayout>
+  }
+/>
 
         {/* ORDER TRACKING */}
         <Route
           path="/order-tracking/:orderId"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <OrderTracking />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* ADDRESSES */}
         <Route
           path="/addresses"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Addresses />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* NOTIFICATIONS */}
         <Route
           path="/notifications"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Notifications />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* SUPPORT */}
         <Route
           path="/support"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Support />
-            </>
+            </PageLayout>
           }
         />
-
 
         {/* CATEGORIES */}
         <Route
           path="/categories"
           element={
-            <>
-              <TopBar />
-<Navbar
-  cartCount={cartCount}
-  wishlistCount={wishlistCount}
-/>
+            <PageLayout {...layoutProps}>
               <Categories />
-            </>
+            </PageLayout>
           }
         />
 

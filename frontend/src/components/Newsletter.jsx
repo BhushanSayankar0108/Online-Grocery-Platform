@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowRight, Mail } from "lucide-react";
 
 function Newsletter() {
   const [email, setEmail] = useState("");
@@ -16,32 +17,61 @@ function Newsletter() {
   return (
     <section className="newsletter-section">
       <div className="newsletter-content">
-        <p className="newsletter-label">STAY UPDATED</p>
 
-        <h2>Get Fresh Deals in Your Inbox</h2>
+        <div className="newsletter-copy">
+          <div className="newsletter-label">
+            <Mail size={15} />
+            <span>STAY IN THE LOOP</span>
+          </div>
 
-        <p>
-          Subscribe to receive the latest offers, new products,
-          and grocery deals.
-        </p>
+          <h2>
+            Fresh deals,
+            <br />
+            straight to your inbox.
+          </h2>
 
-        <form className="newsletter-form" onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Enter your email address"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-
-          <button type="submit">Subscribe</button>
-        </form>
-
-        {subscribed && (
-          <p className="newsletter-success">
-            Thanks for subscribing!
+          <p>
+            Get updates about new products, useful offers,
+            and grocery deals worth checking out.
           </p>
-        )}
+        </div>
+
+        <div className="newsletter-action">
+          {!subscribed ? (
+            <form
+              className="newsletter-form"
+              onSubmit={handleSubmit}
+            >
+              <input
+                type="email"
+                placeholder="Your email address"
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                aria-label="Email address"
+                required
+              />
+
+              <button type="submit">
+                Subscribe
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          ) : (
+            <div className="newsletter-success">
+              <strong>You're subscribed.</strong>
+              <span>
+                We'll keep you updated with our latest offers.
+              </span>
+            </div>
+          )}
+
+          <span className="newsletter-note">
+            No spam. Only useful grocery updates.
+          </span>
+        </div>
+
       </div>
     </section>
   );

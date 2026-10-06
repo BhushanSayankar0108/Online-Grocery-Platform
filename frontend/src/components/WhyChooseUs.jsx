@@ -9,37 +9,39 @@ import {
 function WhyChooseUs() {
   const features = [
     {
-      title: "Fast Delivery",
-      description: "Get your groceries delivered quickly to your doorstep.",
+      title: "Reliable Delivery",
+      description: "Get your everyday groceries delivered to your doorstep.",
       icon: Truck,
     },
     {
       title: "Fresh Products",
-      description: "Quality and freshness in every order.",
+      description: "Carefully selected products with freshness in mind.",
       icon: Leaf,
     },
     {
       title: "Secure Payments",
-      description: "Safe and reliable payment options.",
+      description: "Safe and convenient payment options at checkout.",
       icon: ShieldCheck,
     },
     {
-      title: "Reasonable Prices",
-      description: "Great products at prices you'll love.",
+      title: "Fair Prices",
+      description: "Everyday essentials at prices that make sense.",
       icon: BadgeIndianRupee,
     },
     {
-      title: "Great Offers",
-      description: "Save more with our latest deals and offers.",
+      title: "Better Offers",
+      description: "Enjoy useful deals and savings on your regular shopping.",
       icon: Gift,
     },
   ];
 
   return (
     <section className="why-section">
-      <div className="section-heading">
-        <p>WHY SHOP WITH US</p>
-        <h2>Why Choose Us</h2>
+      <div className="section-heading why-heading">
+        <div>
+          <p>BUILT FOR BETTER SHOPPING</p>
+          <h2>Everything you need, made simple.</h2>
+        </div>
       </div>
 
       <div className="why-list">
@@ -49,11 +51,13 @@ function WhyChooseUs() {
           return (
             <div className="why-card" key={feature.title}>
               <div className="why-icon">
-                <Icon size={30} strokeWidth={1.8} />
+                <Icon size={22} strokeWidth={1.8} />
               </div>
 
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
+              <div className="why-card-content">
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </div>
             </div>
           );
         })}

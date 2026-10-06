@@ -34,7 +34,9 @@ function Orders() {
         </Link>
 
         <p>Home / My Orders</p>
+
         <h1>My Orders</h1>
+
         <p>View and manage your grocery orders.</p>
       </div>
 
@@ -42,8 +44,12 @@ function Orders() {
         {orders.length === 0 ? (
           <div className="orders-empty">
             <div className="orders-empty-icon">📦</div>
+
             <h2>No Orders Yet</h2>
-            <p>Your orders will appear here after you place an order.</p>
+
+            <p>
+              Your orders will appear here after you place an order.
+            </p>
 
             <Link to="/shop" className="orders-shop-button">
               Start Shopping
@@ -53,15 +59,18 @@ function Orders() {
           <div className="orders-list">
             {orders.map((order) => (
               <div className="order-card" key={order.id}>
+
                 <div className="order-card-header">
                   <div>
                     <span>Order ID</span>
                     <h2>#{order.id}</h2>
                   </div>
 
-                  <div className={`order-status ${order.status
-                    .toLowerCase()
-                    .replaceAll(" ", "-")}`}>
+                  <div
+                    className={`order-status ${order.status
+                      .toLowerCase()
+                      .replaceAll(" ", "-")}`}
+                  >
                     {order.status}
                   </div>
                 </div>
@@ -79,7 +88,9 @@ function Orders() {
 
                   <div>
                     <span>Items</span>
-                    <strong>{order.items.length} products</strong>
+                    <strong>
+                      {order.items.length} products
+                    </strong>
                   </div>
                 </div>
 
@@ -87,7 +98,10 @@ function Orders() {
                   <h3>Order Items</h3>
 
                   {order.items.map((item) => (
-                    <div className="order-item" key={item.name}>
+                    <div
+                      className="order-item"
+                      key={item.name}
+                    >
                       <span>{item.name}</span>
                       <span>Qty: {item.quantity}</span>
                     </div>
@@ -102,10 +116,23 @@ function Orders() {
                     Track Order
                   </Link>
 
-                  <button className="order-reorder-button">
+                  <button
+                    type="button"
+                    className="order-reorder-button"
+                  >
                     Reorder
                   </button>
+
+                  {order.status === "Delivered" && (
+                    <Link
+                      to="/returns"
+                      className="order-return-button"
+                    >
+                      Return / Refund
+                    </Link>
+                  )}
                 </div>
+
               </div>
             ))}
           </div>
