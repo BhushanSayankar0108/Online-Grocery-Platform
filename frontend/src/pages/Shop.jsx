@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+
 const products = [
   {
     name: "Fresh Apples",
@@ -30,89 +31,105 @@ const products = [
     image: "https://images.unsplash.com/photo-1509440159596-0249088772ff",
   },
   {
-  name: "Fresh Bananas",
-  price: 50,
-  mrp: 60,
-  category: "Fruits & Vegetables",
-  image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e",
-},
-{
-  name: "Basmati Rice",
-  price: 180,
-  mrp: 220,
-  category: "Staples",
-  image: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
-},
-{
-  name: "Potato Chips",
-  price: 40,
-  mrp: 50,
-  category: "Snacks",
-  image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b",
-},
-{
-  name: "Orange Juice",
-  price: 110,
-  mrp: 130,
-  category: "Beverages",
-  image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba",
-},
+    name: "Fresh Bananas",
+    price: 50,
+    mrp: 60,
+    category: "Fruits & Vegetables",
+    image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e",
+  },
+  {
+    name: "Basmati Rice",
+    price: 180,
+    mrp: 220,
+    category: "Staples",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c",
+  },
+  {
+    name: "Potato Chips",
+    price: 40,
+    mrp: 50,
+    category: "Snacks",
+    image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b",
+  },
+  {
+    name: "Orange Juice",
+    price: 110,
+    mrp: 130,
+    category: "Beverages",
+    image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba",
+  },
 ];
-function Shop({ cart, setCart }) {
-    const [selectedCategories, setSelectedCategories] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [sortBy, setSortBy] = useState("Popularity");
-const addToCart = (product) => {
-  setCart((currentCart) => {
-    const existingProduct = currentCart.find(
-      (item) => item.name === product.name
-    );
 
-    if (existingProduct) {
-      return currentCart.map((item) =>
-        item.name === product.name
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
+function Shop({ cart, setCart }) {
+  const [searchParams] = useSearchParams();
+
+  const categoryFromUrl = searchParams.get("category");
+  const searchFromUrl = searchParams.get("search");
+
+  const [selectedCategories, setSelectedCategories] = useState(
+    categoryFromUrl ? [categoryFromUrl] : []
+  );
+
+  const [searchTerm, setSearchTerm] = useState(searchFromUrl || "");
+  const [sortBy, setSortBy] = useState("Popularity");
+
+  const addToCart = (product) => {
+    setCart((currentCart) => {
+      const existingProduct = currentCart.find(
+        (item) => item.name === product.name
       );
+
+      if (existingProduct) {
+        return currentCart.map((item) =>
+          item.name === product.name
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [...currentCart, { ...product, quantity: 1 }];
+    });
+  };
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategories((current) =>
+      current.includes(category)
+        ? current.filter((item) => item !== category)
+        : [...current, category]
+    );
+  };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      selectedCategories.length === 0 ||
+      selectedCategories.includes(product.category);
+
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === "Price: Low to High") {
+      return a.price - b.price;
     }
 
-    return [...currentCart, { ...product, quantity: 1 }];
+    if (sortBy === "Price: High to Low") {
+      return b.price - a.price;
+    }
+
+    return 0;
   });
-};
-    const handleCategoryChange = (category) => {
-  setSelectedCategories((current) =>
-    current.includes(category)
-      ? current.filter((item) => item !== category)
-      : [...current, category]
-  );
-};
-const filteredProducts = products.filter((product) => {
-  const matchesCategory =
-    selectedCategories.length === 0 ||
-    selectedCategories.includes(product.category);
 
-  const matchesSearch =
-    product.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-  return matchesCategory && matchesSearch;
-});
-const sortedProducts = [...filteredProducts].sort((a, b) => {
-  if (sortBy === "Price: Low to High") {
-    return a.price - b.price;
-  }
-
-  if (sortBy === "Price: High to Low") {
-    return b.price - a.price;
-  }
-
-  return 0;
-});
   return (
     <main className="shop-page">
       <div className="shop-header">
         <Link to="/" className="shop-home-link">
-            ← Back to Home
+          ← Back to Home
         </Link>
+
         <p className="shop-breadcrumb">Home / Shop</p>
 
         <h1>Shop Products</h1>
@@ -130,7 +147,8 @@ const sortedProducts = [...filteredProducts].sort((a, b) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button>Search</button>
+
+          <button type="button">Search</button>
         </div>
 
         <div className="shop-sort">
@@ -150,8 +168,6 @@ const sortedProducts = [...filteredProducts].sort((a, b) => {
       </div>
 
       <div className="shop-content">
-
-        {/* FILTER SIDEBAR */}
         <aside className="filter-sidebar">
           <h2>Filters</h2>
 
@@ -162,7 +178,9 @@ const sortedProducts = [...filteredProducts].sort((a, b) => {
               <input
                 type="checkbox"
                 checked={selectedCategories.includes("Fruits & Vegetables")}
-                onChange={() => handleCategoryChange("Fruits & Vegetables")}
+                onChange={() =>
+                  handleCategoryChange("Fruits & Vegetables")
+                }
               />
               Fruits & Vegetables
             </label>
@@ -171,7 +189,9 @@ const sortedProducts = [...filteredProducts].sort((a, b) => {
               <input
                 type="checkbox"
                 checked={selectedCategories.includes("Dairy & Bakery")}
-                onChange={() => handleCategoryChange("Dairy & Bakery")}
+                onChange={() =>
+                  handleCategoryChange("Dairy & Bakery")
+                }
               />
               Dairy & Bakery
             </label>
@@ -223,50 +243,75 @@ const sortedProducts = [...filteredProducts].sort((a, b) => {
           </div>
         </aside>
 
-        {/* PRODUCTS */}
-<div className="shop-products">
-  <div className="shop-products-header">
-    <h2>All Products</h2>
+        <div className="shop-products">
+          <div className="shop-products-header">
+            <h2>
+              {searchTerm
+                ? `Search Results for "${searchTerm}"`
+                : categoryFromUrl
+                ? categoryFromUrl
+                : "All Products"}
+            </h2>
 
-    <div>
-      <span>{filteredProducts.length} products</span>
-      <span> 🛒 {cart.length} in cart</span>
-    </div>
-  </div>
-
-  <div className="shop-product-grid">
-    {sortedProducts.map((product) => (
-  <div className="shop-product-card" key={product.name}>
-    <div className="shop-product-image">
-      <img
-        src={product.image}
-        alt={product.name}
-      />
-    </div>
-
-    <div className="shop-product-info">
-      <h3>{product.name}</h3>
-
-<p>
-  ₹{product.price}
-  <span>₹{product.mrp}</span>
-  <strong>
-    {Math.round(
-      ((product.mrp - product.price) / product.mrp) * 100
-    )}% OFF
-  </strong>
-</p>
-
-<button onClick={() => addToCart(product)}>
-  Add to Cart
-</button>
-    </div>
-  </div>
-))}
-
+            <div>
+              <span>{filteredProducts.length} products</span>
+              <span> 🛒 {cart.length} in cart</span>
+            </div>
           </div>
-        </div>
 
+          <div className="shop-product-grid">
+            {sortedProducts.map((product) => (
+              <div
+                className="shop-product-card"
+                key={product.name}
+              >
+                <Link
+                  to={`/product/${products.indexOf(product) + 1}`}
+                  className="product-link"
+                >
+                  <div className="shop-product-image">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                    />
+                  </div>
+
+                  <div className="shop-product-info">
+                    <h3>{product.name}</h3>
+
+                    <p>
+                      ₹{product.price}
+
+                      <span>₹{product.mrp}</span>
+
+                      <strong>
+                        {Math.round(
+                          ((product.mrp - product.price) /
+                            product.mrp) *
+                            100
+                        )}
+                        % OFF
+                      </strong>
+                    </p>
+                  </div>
+                </Link>
+
+                <button onClick={() => addToCart(product)}>
+                  Add to Cart
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {sortedProducts.length === 0 && (
+            <div className="no-products">
+              <h3>No products found</h3>
+              <p>
+                Try searching for another product or changing your filters.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

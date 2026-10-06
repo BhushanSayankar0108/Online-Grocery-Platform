@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   Apple,
   Milk,
@@ -8,38 +9,59 @@ import {
   HeartPulse,
 } from "lucide-react";
 
-function CategorySection() {
-  const categories = [
-    { name: "Fruits & Vegetables", icon: Apple },
-    { name: "Dairy & Bakery", icon: Milk },
-    { name: "Staples", icon: Wheat },
-    { name: "Snacks", icon: Cookie },
-    { name: "Beverages", icon: Coffee },
-    { name: "Household", icon: SprayCan },
-    { name: "Personal Care", icon: HeartPulse },
-  ];
+const categories = [
+  {
+    name: "Fruits & Vegetables",
+    icon: <Apple size={32} />,
+  },
+  {
+    name: "Dairy & Bakery",
+    icon: <Milk size={32} />,
+  },
+  {
+    name: "Staples",
+    icon: <Wheat size={32} />,
+  },
+  {
+    name: "Snacks",
+    icon: <Cookie size={32} />,
+  },
+  {
+    name: "Beverages",
+    icon: <Coffee size={32} />,
+  },
+  {
+    name: "Household",
+    icon: <SprayCan size={32} />,
+  },
+  {
+    name: "Personal Care",
+    icon: <HeartPulse size={32} />,
+  },
+];
 
+function CategorySection() {
   return (
     <section className="category-section">
       <div className="section-heading">
-        <p>EXPLORE OUR PRODUCTS</p>
-        <h2>Shop by Categories</h2>
+        <p>SHOP BY CATEGORY</p>
+        <h2>Everything You Need</h2>
       </div>
 
-      <div className="category-list">
-        {categories.map((category) => {
-          const Icon = category.icon;
+      <div className="category-grid">
+        {categories.map((category) => (
+          <Link
+            to={`/shop?category=${encodeURIComponent(category.name)}`}
+            className="category-card"
+            key={category.name}
+          >
+            <div className="category-icon">{category.icon}</div>
 
-          return (
-            <div className="category-card" key={category.name}>
-              <div className="category-image">
-                <Icon size={32} strokeWidth={1.8} />
-              </div>
+            <h3>{category.name}</h3>
 
-              <h3>{category.name}</h3>
-            </div>
-          );
-        })}
+            <span>Shop Now →</span>
+          </Link>
+        ))}
       </div>
     </section>
   );

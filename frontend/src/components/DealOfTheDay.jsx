@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function DealOfTheDay() {
   return (
     <section className="deal-section">
@@ -32,7 +34,9 @@ function DealOfTheDay() {
             </div>
           </div>
 
-          <button>Shop Deals</button>
+          <Link to="/shop" className="deal-button">
+            Shop Deals
+          </Link>
         </div>
       </div>
     </section>
