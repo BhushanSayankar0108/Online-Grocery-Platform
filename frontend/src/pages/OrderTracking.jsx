@@ -75,6 +75,8 @@ function OrderTracking() {
               ? 1
               : 0;
 
+  const statusClass = order.status.toLowerCase().replace(/ /g, "-");
+
   return (
     <main className="tracking-page">
       <div className="tracking-container">
@@ -102,11 +104,7 @@ function OrderTracking() {
               <h2>#{orderId}</h2>
             </div>
 
-            <div
-              className={`tracking-status tracking-status-${order.status
-                .toLowerCase()
-                .replaceAll(" ", "-")}`}
-            >
+            <div className={`tracking-status tracking-status-${statusClass}`}>
               {order.status}
             </div>
           </div>
@@ -203,8 +201,8 @@ function OrderTracking() {
               <span>DELIVERY INFORMATION</span>
               <strong>{order.address}</strong>
               <p>
-                Your delivery details will be available once an
-                address is selected.
+                Your delivery details will be available once an address
+                is selected.
               </p>
             </div>
           </div>
