@@ -30,6 +30,12 @@ import Notifications from "./pages/Notifications";
 import Support from "./pages/Support";
 import Categories from "./pages/Categories";
 import Returns from "./pages/Returns";
+import About from "./pages/About";
+import FAQ from "./pages/FAQ";
+import ShippingPolicy from "./pages/ShippingPolicy";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
+import ReturnPolicy from "./pages/ReturnPolicy";
 
 function PageLayout({ children, cartCount, wishlistCount }) {
   return (
@@ -39,6 +45,7 @@ function PageLayout({ children, cartCount, wishlistCount }) {
         wishlistCount={wishlistCount}
       />
       {children}
+      <Footer />
     </>
   );
 }
@@ -131,66 +138,6 @@ function App() {
           }
         />
 
-        {/* CART */}
-        <Route
-          path="/cart"
-          element={
-            <PageLayout {...layoutProps}>
-              <Cart cart={cart} setCart={setCart} />
-            </PageLayout>
-          }
-        />
-
-        {/* CHECKOUT */}
-        <Route
-          path="/checkout"
-          element={
-            <PageLayout {...layoutProps}>
-              <Checkout cart={cart} setCart={setCart} />
-            </PageLayout>
-          }
-        />
-
-        {/* ORDER CONFIRMATION */}
-        <Route
-          path="/order-confirmation"
-          element={
-            <PageLayout {...layoutProps}>
-              <OrderConfirmation />
-            </PageLayout>
-          }
-        />
-
-        {/* LOGIN */}
-        <Route
-          path="/login"
-          element={
-            <PageLayout {...layoutProps}>
-              <Login />
-            </PageLayout>
-          }
-        />
-
-        {/* SIGN UP */}
-        <Route
-          path="/signup"
-          element={
-            <PageLayout {...layoutProps}>
-              <Signup />
-            </PageLayout>
-          }
-        />
-
-        {/* FORGOT PASSWORD */}
-        <Route
-          path="/forgot-password"
-          element={
-            <PageLayout {...layoutProps}>
-              <ForgotPassword />
-            </PageLayout>
-          }
-        />
-
         {/* PRODUCT DETAILS */}
         <Route
           path="/product/:id"
@@ -200,6 +147,39 @@ function App() {
                 setCart={setCart}
                 wishlist={wishlist}
                 setWishlist={setWishlist}
+              />
+            </PageLayout>
+          }
+        />
+
+        {/* CATEGORIES */}
+        <Route
+          path="/categories"
+          element={
+            <PageLayout {...layoutProps}>
+              <Categories />
+            </PageLayout>
+          }
+        />
+
+        {/* OFFERS */}
+        <Route
+          path="/offers"
+          element={
+            <PageLayout {...layoutProps}>
+              <Offers />
+            </PageLayout>
+          }
+        />
+
+        {/* CART */}
+        <Route
+          path="/cart"
+          element={
+            <PageLayout {...layoutProps}>
+              <Cart
+                cart={cart}
+                setCart={setCart}
               />
             </PageLayout>
           }
@@ -219,12 +199,58 @@ function App() {
           }
         />
 
-        {/* OFFERS */}
+        {/* CHECKOUT */}
         <Route
-          path="/offers"
+          path="/checkout"
           element={
             <PageLayout {...layoutProps}>
-              <Offers />
+              <Checkout
+                cart={cart}
+                setCart={setCart}
+              />
+            </PageLayout>
+          }
+        />
+
+        {/* ORDER CONFIRMATION */}
+        <Route
+          path="/order-confirmation"
+          element={
+            <PageLayout {...layoutProps}>
+              <OrderConfirmation />
+            </PageLayout>
+          }
+        />
+
+{/* ORDERS */}
+<Route
+  path="/orders"
+  element={
+    <PageLayout {...layoutProps}>
+      <Orders
+        cart={cart}
+        setCart={setCart}
+      />
+    </PageLayout>
+  }
+/>
+
+        {/* RETURNS & REFUNDS */}
+        <Route
+          path="/returns"
+          element={
+            <PageLayout {...layoutProps}>
+              <Returns />
+            </PageLayout>
+          }
+        />
+
+        {/* ORDER TRACKING */}
+        <Route
+          path="/order-tracking/:orderId"
+          element={
+            <PageLayout {...layoutProps}>
+              <OrderTracking />
             </PageLayout>
           }
         />
@@ -235,35 +261,6 @@ function App() {
           element={
             <PageLayout {...layoutProps}>
               <Account />
-            </PageLayout>
-          }
-        />
-
-        {/* ORDERS */}
-        <Route
-          path="/orders"
-          element={
-            <PageLayout {...layoutProps}>
-              <Orders />
-            </PageLayout>
-          }
-        />
-        {/* RETURNS & REFUNDS */}
-<Route
-  path="/returns"
-  element={
-    <PageLayout {...layoutProps}>
-      <Returns />
-    </PageLayout>
-  }
-/>
-
-        {/* ORDER TRACKING */}
-        <Route
-          path="/order-tracking/:orderId"
-          element={
-            <PageLayout {...layoutProps}>
-              <OrderTracking />
             </PageLayout>
           }
         />
@@ -298,16 +295,91 @@ function App() {
           }
         />
 
-        {/* CATEGORIES */}
+        {/* ABOUT */}
         <Route
-          path="/categories"
+          path="/about"
           element={
             <PageLayout {...layoutProps}>
-              <Categories />
+              <About />
             </PageLayout>
           }
         />
 
+        {/* FAQ */}
+        <Route
+          path="/faq"
+          element={
+            <PageLayout {...layoutProps}>
+              <FAQ />
+            </PageLayout>
+          }
+        />
+
+        {/* SHIPPING POLICY */}
+        <Route
+          path="/shipping-policy"
+          element={
+            <PageLayout {...layoutProps}>
+              <ShippingPolicy />
+            </PageLayout>
+          }
+        />
+
+        {/* LOGIN */}
+        <Route
+          path="/login"
+          element={
+            <PageLayout {...layoutProps}>
+              <Login />
+            </PageLayout>
+          }
+        />
+
+        {/* SIGN UP */}
+        <Route
+          path="/signup"
+          element={
+            <PageLayout {...layoutProps}>
+              <Signup />
+            </PageLayout>
+          }
+        />
+
+        {/* FORGOT PASSWORD */}
+        <Route
+          path="/forgot-password"
+          element={
+            <PageLayout {...layoutProps}>
+              <ForgotPassword />
+            </PageLayout>
+          }
+        />
+<Route
+  path="/privacy-policy"
+  element={
+    <PageLayout {...layoutProps}>
+      <PrivacyPolicy />
+    </PageLayout>
+  }
+/>
+
+<Route
+  path="/terms"
+  element={
+    <PageLayout {...layoutProps}>
+      <Terms />
+    </PageLayout>
+  }
+/>
+
+<Route
+  path="/return-policy"
+  element={
+    <PageLayout {...layoutProps}>
+      <ReturnPolicy />
+    </PageLayout>
+  }
+/>
       </Routes>
     </BrowserRouter>
   );

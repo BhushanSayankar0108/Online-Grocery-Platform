@@ -1,5 +1,26 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  MapPin,
+  Home,
+  Briefcase,
+  MapPinned,
+  Plus,
+  Trash2,
+  Check,
+  X,
+  ArrowRight,
+} from "lucide-react";
+
+const emptyForm = {
+  type: "Home",
+  name: "",
+  mobile: "",
+  address: "",
+  city: "",
+  state: "",
+  pinCode: "",
+};
 
 function Addresses() {
   const [addresses, setAddresses] = useState([
@@ -17,26 +38,19 @@ function Addresses() {
   ]);
 
   const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
-  const [form, setForm] = useState({
-    type: "Home",
-    name: "",
-    mobile: "",
-    address: "",
-    city: "",
-    state: "",
-    pinCode: "",
-  });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
   };
 
-  const handleAddAddress = (e) => {
-    e.preventDefault();
+  const handleAddAddress = (event) => {
+    event.preventDefault();
 
     const newAddress = {
       id: Date.now(),
@@ -44,214 +58,316 @@ function Addresses() {
       isDefault: addresses.length === 0,
     };
 
-    setAddresses([...addresses, newAddress]);
+    setAddresses((currentAddresses) => [
+      ...currentAddresses,
+      newAddress,
+    ]);
 
-    setForm({
-      type: "Home",
-      name: "",
-      mobile: "",
-      address: "",
-      city: "",
-      state: "",
-      pinCode: "",
-    });
-
+    setForm(emptyForm);
     setShowForm(false);
   };
 
   const handleDelete = (id) => {
-    setAddresses(addresses.filter((address) => address.id !== id));
+    setAddresses((currentAddresses) =>
+      currentAddresses.filter((address) => address.id !== id)
+    );
   };
 
   const handleSetDefault = (id) => {
-    setAddresses(
-      addresses.map((address) => ({
+    setAddresses((currentAddresses) =>
+      currentAddresses.map((address) => ({
         ...address,
         isDefault: address.id === id,
       }))
     );
   };
 
+  const getAddressIcon = (type) => {
+    if (type === "Work") {
+      return <Briefcase size={18} strokeWidth={1.8} />;
+    }
+
+    if (type === "Other") {
+      return <MapPinned size={18} strokeWidth={1.8} />;
+    }
+
+    return <Home size={18} strokeWidth={1.8} />;
+  };
+
   return (
     <main className="addresses-page">
-      <div className="addresses-header">
-        <Link to="/account" className="shop-home-link">
-          ← Back to Account
-        </Link>
+      <div className="addresses-container">
+        <header className="addresses-header">
+          <Link to="/account" className="shop-home-link">
+            ← Back to Account
+          </Link>
 
-        <p>Home / Account / Addresses</p>
+          <p className="addresses-breadcrumb">
+            Home / Account / Addresses
+          </p>
 
-        <h1>Saved Addresses</h1>
+          <span className="addresses-eyebrow">
+            DELIVERY DETAILS
+          </span>
 
-        <p>Manage your delivery addresses.</p>
-      </div>
+          <h1>Your saved addresses.</h1>
 
-      <div className="addresses-content">
-        <div className="addresses-top">
-          <h2>Your Addresses</h2>
+          <p className="addresses-intro">
+            Manage your delivery locations and choose where you want
+            your groceries delivered.
+          </p>
+        </header>
 
-          <button
-            className="add-address-button"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm ? "Cancel" : "+ Add New Address"}
-          </button>
-        </div>
-
-        {showForm && (
-          <form className="address-form" onSubmit={handleAddAddress}>
-            <h2>Add New Address</h2>
-
-            <div className="address-type">
-              <label>
-                <input
-                  type="radio"
-                  name="type"
-                  value="Home"
-                  checked={form.type === "Home"}
-                  onChange={handleChange}
-                />
-                Home
-              </label>
-
-              <label>
-                <input
-                  type="radio"
-                  name="type"
-                  value="Work"
-                  checked={form.type === "Work"}
-                  onChange={handleChange}
-                />
-                Work
-              </label>
-
-              <label>
-                <input
-                  type="radio"
-                  name="type"
-                  value="Other"
-                  checked={form.type === "Other"}
-                  onChange={handleChange}
-                />
-                Other
-              </label>
+        <div className="addresses-content">
+          <div className="addresses-top">
+            <div>
+              <span>SAVED LOCATIONS</span>
+              <h2>Your Addresses</h2>
             </div>
 
-            <div className="address-form-grid">
-              <label>
-                Full Name
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                Mobile Number
-                <input
-                  name="mobile"
-                  value={form.mobile}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label className="address-full-width">
-                Address
-                <textarea
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                City
-                <input
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                State
-                <input
-                  name="state"
-                  value={form.state}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-
-              <label>
-                PIN Code
-                <input
-                  name="pinCode"
-                  value={form.pinCode}
-                  onChange={handleChange}
-                  required
-                />
-              </label>
-            </div>
-
-            <button type="submit" className="save-address-button">
-              Save Address
+            <button
+              type="button"
+              className="add-address-button"
+              onClick={() => setShowForm((current) => !current)}
+            >
+              {showForm ? (
+                <>
+                  <X size={17} />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <Plus size={17} />
+                  Add New Address
+                </>
+              )}
             </button>
-          </form>
-        )}
+          </div>
 
-        <div className="addresses-list">
-          {addresses.length === 0 ? (
-            <div className="addresses-empty">
-              <div>📍</div>
-              <h2>No Saved Addresses</h2>
-              <p>Add an address to make checkout faster.</p>
-            </div>
-          ) : (
-            addresses.map((address) => (
-              <div className="address-card" key={address.id}>
-                <div className="address-card-top">
-                  <div>
-                    <span className="address-type-badge">
-                      {address.type}
-                    </span>
-
-                    {address.isDefault && (
-                      <span className="default-badge">Default</span>
-                    )}
-                  </div>
+          {showForm && (
+            <form
+              className="address-form"
+              onSubmit={handleAddAddress}
+            >
+              <div className="address-form-header">
+                <div>
+                  <span>NEW ADDRESS</span>
+                  <h2>Add delivery address</h2>
                 </div>
 
-                <h3>{address.name}</h3>
+                <MapPin size={22} />
+              </div>
 
-                <p>{address.mobile}</p>
+              <div className="address-type">
+                <span className="address-field-title">
+                  Address type
+                </span>
 
-                <p>{address.address}</p>
-
-                <p>
-                  {address.city}, {address.state} - {address.pinCode}
-                </p>
-
-                <div className="address-actions">
-                  {!address.isDefault && (
-                    <button
-                      onClick={() => handleSetDefault(address.id)}
+                <div className="address-type-options">
+                  {["Home", "Work", "Other"].map((type) => (
+                    <label
+                      className={`address-type-option ${
+                        form.type === type ? "active" : ""
+                      }`}
+                      key={type}
                     >
-                      Set as Default
-                    </button>
-                  )}
+                      <input
+                        type="radio"
+                        name="type"
+                        value={type}
+                        checked={form.type === type}
+                        onChange={handleChange}
+                      />
 
-                  <button onClick={() => handleDelete(address.id)}>
-                    Delete
-                  </button>
+                      {getAddressIcon(type)}
+                      <span>{type}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
-            ))
+
+              <div className="address-form-grid">
+                <label>
+                  <span>Full Name</span>
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Mobile Number</span>
+                  <input
+                    name="mobile"
+                    value={form.mobile}
+                    onChange={handleChange}
+                    placeholder="Enter mobile number"
+                    type="tel"
+                    required
+                  />
+                </label>
+
+                <label className="address-full-width">
+                  <span>Full Address</span>
+                  <textarea
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    placeholder="House / flat, building, street and area"
+                    rows="3"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>City</span>
+                  <input
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    placeholder="Enter city"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>State</span>
+                  <input
+                    name="state"
+                    value={form.state}
+                    onChange={handleChange}
+                    placeholder="Enter state"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>PIN Code</span>
+                  <input
+                    name="pinCode"
+                    value={form.pinCode}
+                    onChange={handleChange}
+                    placeholder="6-digit PIN"
+                    inputMode="numeric"
+                    maxLength="6"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="address-form-footer">
+                <p>
+                  <MapPin size={15} />
+                  Your PIN code will be used to check delivery
+                  availability.
+                </p>
+
+                <button
+                  type="submit"
+                  className="save-address-button"
+                >
+                  Save Address
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            </form>
+          )}
+
+          {addresses.length === 0 ? (
+            <div className="addresses-empty">
+              <div className="addresses-empty-icon">
+                <MapPin size={30} />
+              </div>
+
+              <span>NO SAVED ADDRESSES</span>
+
+              <h2>Add your first delivery address</h2>
+
+              <p>
+                Save an address to make your next grocery order
+                faster and easier.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="add-address-button"
+              >
+                <Plus size={17} />
+                Add Address
+              </button>
+            </div>
+          ) : (
+            <div className="addresses-list">
+              {addresses.map((address) => (
+                <article
+                  className={`address-card ${
+                    address.isDefault ? "default" : ""
+                  }`}
+                  key={address.id}
+                >
+                  <div className="address-card-top">
+                    <div className="address-card-type">
+                      <div className="address-type-icon">
+                        {getAddressIcon(address.type)}
+                      </div>
+
+                      <div>
+                        <strong>{address.type}</strong>
+
+                        {address.isDefault && (
+                          <span className="default-badge">
+                            <Check size={13} />
+                            Default
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="address-card-details">
+                    <h3>{address.name}</h3>
+
+                    <p className="address-mobile">
+                      {address.mobile}
+                    </p>
+
+                    <p>{address.address}</p>
+
+                    <p>
+                      {address.city}, {address.state} -{" "}
+                      {address.pinCode}
+                    </p>
+                  </div>
+
+                  <div className="address-actions">
+                    {!address.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSetDefault(address.id)
+                        }
+                      >
+                        <Check size={15} />
+                        Set as Default
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="delete-address"
+                      onClick={() => handleDelete(address.id)}
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
         </div>
       </div>

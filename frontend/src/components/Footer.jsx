@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mail, Phone, Clock3 } from "lucide-react";
+import { Mail, Phone, Clock3, ArrowUpRight } from "lucide-react";
 import {
   FaInstagram,
   FaFacebookF,
@@ -10,25 +10,27 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-content">
-
-        {/* BRAND */}
         <div className="footer-about">
           <Link to="/" className="footer-logo">
             <span className="footer-logo-mark">OG</span>
 
-            <span>
+            <span className="footer-logo-text">
               Online Grocery
               <small>Freshness Delivered</small>
             </span>
           </Link>
 
-          <p>
-            Fresh groceries and everyday essentials,
-            delivered conveniently to your doorstep.
+          <p className="footer-about-text">
+            Fresh groceries and everyday essentials, delivered
+            conveniently to your doorstep.
           </p>
+
+          <Link to="/shop" className="footer-shop-link">
+            Start Shopping
+            <ArrowUpRight size={15} />
+          </Link>
         </div>
 
-        {/* QUICK LINKS */}
         <div className="footer-column">
           <h3>Explore</h3>
 
@@ -38,7 +40,6 @@ function Footer() {
           <Link to="/about">About Us</Link>
         </div>
 
-        {/* CUSTOMER SERVICE */}
         <div className="footer-column">
           <h3>Customer Service</h3>
 
@@ -48,7 +49,6 @@ function Footer() {
           <Link to="/support">Help & Support</Link>
         </div>
 
-        {/* POLICIES */}
         <div className="footer-column">
           <h3>Policies</h3>
 
@@ -58,46 +58,55 @@ function Footer() {
           <Link to="/shipping-policy">Shipping Policy</Link>
         </div>
 
-        {/* CONTACT */}
         <div className="footer-column footer-contact">
           <h3>Get in Touch</h3>
 
-          <span>
+          <div className="footer-contact-item">
             <Mail size={15} />
-            support@example.com
-          </span>
+            <span>support@example.com</span>
+          </div>
 
-          <span>
+          <div className="footer-contact-item">
             <Phone size={15} />
-            +91 98765 43210
-          </span>
+            <span>+91 98765 43210</span>
+          </div>
 
-          <span>
+          <div className="footer-contact-item">
             <Clock3 size={15} />
-            Mon - Sun, 9 AM - 9 PM
-          </span>
+            <span>Mon - Sun, 9 AM - 9 PM</span>
+          </div>
         </div>
-
       </div>
 
-      {/* BOTTOM */}
       <div className="footer-bottom">
         <p>
           © 2026 Online Grocery. All rights reserved.
         </p>
 
         <div className="footer-social">
-          <span aria-label="Instagram">
+          <a
+            href="#"
+            aria-label="Instagram"
+            onClick={(event) => event.preventDefault()}
+          >
             <FaInstagram size={15} />
-          </span>
+          </a>
 
-          <span aria-label="Facebook">
+          <a
+            href="#"
+            aria-label="Facebook"
+            onClick={(event) => event.preventDefault()}
+          >
             <FaFacebookF size={14} />
-          </span>
+          </a>
 
-          <span aria-label="X">
+          <a
+            href="#"
+            aria-label="X"
+            onClick={(event) => event.preventDefault()}
+          >
             <FaXTwitter size={14} />
-          </span>
+          </a>
         </div>
       </div>
     </footer>

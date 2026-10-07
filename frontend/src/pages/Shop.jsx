@@ -7,88 +7,7 @@ import {
   X,
 } from "lucide-react";
 
-const products = [
-  {
-    id: 1,
-    name: "Fresh Apples",
-    quantity: "1 kg",
-    price: 120,
-    mrp: 150,
-    category: "Fruits & Vegetables",
-    image:
-      "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6",
-  },
-  {
-    id: 2,
-    name: "Fresh Tomatoes",
-    quantity: "1 kg",
-    price: 60,
-    mrp: 80,
-    category: "Fruits & Vegetables",
-    image:
-      "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
-  },
-  {
-    id: 3,
-    name: "Fresh Milk",
-    quantity: "1 litre",
-    price: 55,
-    mrp: 65,
-    category: "Dairy & Bakery",
-    image:
-      "https://images.unsplash.com/photo-1563636619-e9143da7973b",
-  },
-  {
-    id: 4,
-    name: "Whole Wheat Bread",
-    quantity: "400 g",
-    price: 45,
-    mrp: 55,
-    category: "Dairy & Bakery",
-    image:
-      "https://images.unsplash.com/photo-1509440159596-0249088772ff",
-  },
-  {
-    id: 5,
-    name: "Fresh Bananas",
-    quantity: "1 dozen",
-    price: 50,
-    mrp: 60,
-    category: "Fruits & Vegetables",
-    image:
-      "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e",
-  },
-  {
-    id: 6,
-    name: "Basmati Rice",
-    quantity: "5 kg",
-    price: 180,
-    mrp: 220,
-    category: "Staples",
-    image:
-      "https://images.unsplash.com/photo-1586201375761-83865001e31c",
-  },
-  {
-    id: 7,
-    name: "Potato Chips",
-    quantity: "100 g",
-    price: 40,
-    mrp: 50,
-    category: "Snacks",
-    image:
-      "https://images.unsplash.com/photo-1566478989037-eec170784d0b",
-  },
-  {
-    id: 8,
-    name: "Orange Juice",
-    quantity: "1 litre",
-    price: 110,
-    mrp: 130,
-    category: "Beverages",
-    image:
-      "https://images.unsplash.com/photo-1600271886742-f049cd451bba",
-  },
-];
+import products from "../data/products";
 
 const categories = [
   "Fruits & Vegetables",
@@ -112,7 +31,7 @@ const offerFilters = [
 ];
 
 function Shop({ cart, setCart, wishlist, setWishlist }) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const categoryFromUrl = searchParams.get("category");
   const searchFromUrl = searchParams.get("search");
@@ -125,6 +44,13 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
   const [searchTerm, setSearchTerm] = useState(searchFromUrl || "");
   const [sortBy, setSortBy] = useState("Popularity");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const activeCategories = categoryFromUrl
+    ? [categoryFromUrl]
+    : selectedCategories;
+
+  const activeSearchTerm =
+    searchFromUrl !== null ? searchFromUrl : searchTerm;
 
   const addToCart = (product) => {
     setCart((currentCart) => {
@@ -176,6 +102,20 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
   };
 
   const handleCategoryChange = (category) => {
+    if (categoryFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("category");
+      setSearchParams(nextParams);
+
+      setSelectedCategories(
+        categoryFromUrl === category
+          ? []
+          : [category]
+      );
+
+      return;
+    }
+
     setSelectedCategories((current) =>
       current.includes(category)
         ? current.filter((item) => item !== category)
@@ -196,6 +136,22 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
   const clearFilters = () => {
     setSelectedCategories([]);
     setSelectedOffers([]);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("category");
+    setSearchParams(nextParams);
+  };
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+
+    setSearchTerm(value);
+
+    if (searchFromUrl !== null) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("search");
+      setSearchParams(nextParams);
+    }
   };
 
   const getDiscount = (product) => {
@@ -206,12 +162,12 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(product.category);
+      activeCategories.length === 0 ||
+      activeCategories.includes(product.category);
 
     const matchesSearch = product.name
       .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+      .includes(activeSearchTerm.toLowerCase());
 
     const productDiscount = getDiscount(product);
 
@@ -244,7 +200,7 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
   );
 
   const selectedFilterCount =
-    selectedCategories.length +
+    activeCategories.length +
     selectedOffers.length;
 
   const filterContent = (
@@ -280,14 +236,13 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
         )}
       </div>
 
-      {/* CATEGORIES */}
       <div className="filter-group">
         <div className="filter-group-heading">
           <h3>Categories</h3>
 
-          {selectedCategories.length > 0 && (
+          {activeCategories.length > 0 && (
             <span>
-              {selectedCategories.length} selected
+              {activeCategories.length} selected
             </span>
           )}
         </div>
@@ -300,7 +255,7 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
             ).length;
 
             const selected =
-              selectedCategories.includes(category);
+              activeCategories.includes(category);
 
             return (
               <label
@@ -341,7 +296,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
 
       <div className="filter-divider" />
 
-      {/* OFFERS */}
       <div className="filter-group">
         <div className="filter-group-heading">
           <h3>Offers</h3>
@@ -398,7 +352,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
 
   return (
     <main className="shop-page">
-      {/* PAGE HEADER */}
       <div className="shop-header">
         <Link
           to="/"
@@ -418,7 +371,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
         </p>
       </div>
 
-      {/* SEARCH + SORT */}
       <div className="shop-controls">
         <form
           className="shop-search"
@@ -431,10 +383,8 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
           <input
             type="text"
             placeholder="Search products..."
-            value={searchTerm}
-            onChange={(event) =>
-              setSearchTerm(event.target.value)
-            }
+            value={activeSearchTerm}
+            onChange={handleSearchChange}
             aria-label="Search products"
           />
 
@@ -443,7 +393,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
           </button>
         </form>
 
-        {/* MOBILE FILTER */}
         <button
           type="button"
           className="mobile-filter-trigger"
@@ -459,7 +408,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
           )}
         </button>
 
-        {/* SORT */}
         <div className="shop-sort">
           <label htmlFor="sort">
             Sort by:
@@ -484,19 +432,17 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
         </div>
       </div>
 
-      {/* SHOP CONTENT */}
       <div className="shop-content">
         {filterContent}
 
         <div className="shop-products">
-          {/* PRODUCTS HEADER */}
           <div className="shop-products-header">
             <div>
               <h2>
-                {searchTerm
-                  ? `Search Results for "${searchTerm}"`
-                  : categoryFromUrl
-                  ? categoryFromUrl
+                {activeSearchTerm
+                  ? `Search Results for "${activeSearchTerm}"`
+                  : activeCategories.length > 0
+                  ? activeCategories.join(", ")
                   : "All Products"}
               </h2>
             </div>
@@ -512,7 +458,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
             </div>
           </div>
 
-          {/* PRODUCT GRID */}
           <div className="shop-product-grid">
             {sortedProducts.map((product) => {
               const discount = getDiscount(product);
@@ -558,7 +503,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
                     </div>
                   </Link>
 
-                  {/* ACTIONS */}
                   <div className="shop-product-actions">
                     <button
                       type="button"
@@ -598,7 +542,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
             })}
           </div>
 
-          {/* EMPTY STATE */}
           {sortedProducts.length === 0 && (
             <div className="no-products">
               <h3>
@@ -624,7 +567,6 @@ function Shop({ cart, setCart, wishlist, setWishlist }) {
         </div>
       </div>
 
-      {/* MOBILE FILTER DRAWER */}
       {filterOpen && (
         <div
           className="shop-filter-overlay"

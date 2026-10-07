@@ -1,5 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  User,
+  Mail,
+  Phone,
+  Package,
+  MapPin,
+  Heart,
+  Bell,
+  LogOut,
+  ArrowRight,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 
 function Account() {
   const navigate = useNavigate();
@@ -9,8 +23,12 @@ function Account() {
   const [mobile, setMobile] = useState("9876543210");
   const [editing, setEditing] = useState(false);
 
-  const handleSave = (e) => {
-    e.preventDefault();
+  const handleSave = (event) => {
+    event.preventDefault();
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
     setEditing(false);
   };
 
@@ -18,127 +36,204 @@ function Account() {
     navigate("/login");
   };
 
+  const accountLinks = [
+    {
+      title: "My Orders",
+      description: "View your previous and current orders",
+      icon: <Package size={21} strokeWidth={1.8} />,
+      path: "/orders",
+    },
+    {
+      title: "Saved Addresses",
+      description: "Manage your delivery addresses",
+      icon: <MapPin size={21} strokeWidth={1.8} />,
+      path: "/addresses",
+    },
+    {
+      title: "My Wishlist",
+      description: "View products you saved",
+      icon: <Heart size={21} strokeWidth={1.8} />,
+      path: "/wishlist",
+    },
+    {
+      title: "Notifications",
+      description: "View your latest updates",
+      icon: <Bell size={21} strokeWidth={1.8} />,
+      path: "/notifications",
+    },
+  ];
+
   return (
     <main className="account-page">
-      <div className="account-header">
-        <Link to="/" className="shop-home-link">
-          ← Back to Home
-        </Link>
+      <div className="account-container">
+        <header className="account-header">
+          <Link to="/" className="shop-home-link">
+            ← Back to Home
+          </Link>
 
-        <p>Home / Account</p>
-        <h1>My Account</h1>
-        <p>Manage your profile and account settings.</p>
-      </div>
+          <p className="account-breadcrumb">Home / Account</p>
 
-      <div className="account-content">
-        <section className="account-profile-card">
-          <div className="account-card-header">
-            <div>
-              <p className="account-label">PROFILE</p>
-              <h2>Personal Information</h2>
+          <span className="account-eyebrow">ACCOUNT</span>
+
+          <h1>Welcome back, {name.split(" ")[0]}.</h1>
+
+          <p className="account-intro">
+            Manage your profile, orders and account preferences.
+          </p>
+        </header>
+
+        <div className="account-layout">
+          <section className="account-profile-card">
+            <div className="account-card-header">
+              <div className="account-profile-heading">
+                <div className="account-avatar">
+                  <User size={25} strokeWidth={1.8} />
+                </div>
+
+                <div>
+                  <span>PERSONAL INFORMATION</span>
+                  <h2>Your Profile</h2>
+                </div>
+              </div>
+
+              {!editing && (
+                <button
+                  type="button"
+                  className="account-edit-button"
+                  onClick={() => setEditing(true)}
+                >
+                  <Pencil size={15} />
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {editing ? (
+              <form onSubmit={handleSave} className="account-form">
+                <label>
+                  <span>Full Name</span>
+                  <div className="account-input-wrapper">
+                    <User size={17} />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      required
+                    />
+                  </div>
+                </label>
+
+                <label>
+                  <span>Email Address</span>
+                  <div className="account-input-wrapper">
+                    <Mail size={17} />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                    />
+                  </div>
+                </label>
+
+                <label>
+                  <span>Mobile Number</span>
+                  <div className="account-input-wrapper">
+                    <Phone size={17} />
+                    <input
+                      type="tel"
+                      value={mobile}
+                      onChange={(event) => setMobile(event.target.value)}
+                      required
+                    />
+                  </div>
+                </label>
+
+                <div className="account-form-actions">
+                  <button
+                    type="button"
+                    className="account-cancel-button"
+                    onClick={handleCancel}
+                  >
+                    <X size={16} />
+                    Cancel
+                  </button>
+
+                  <button type="submit" className="account-save-button">
+                    <Check size={16} />
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="account-details">
+                <div className="account-detail-item">
+                  <span>
+                    <User size={16} />
+                    Full Name
+                  </span>
+                  <strong>{name}</strong>
+                </div>
+
+                <div className="account-detail-item">
+                  <span>
+                    <Mail size={16} />
+                    Email Address
+                  </span>
+                  <strong>{email}</strong>
+                </div>
+
+                <div className="account-detail-item">
+                  <span>
+                    <Phone size={16} />
+                    Mobile Number
+                  </span>
+                  <strong>{mobile}</strong>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="account-menu-section">
+            <div className="account-section-heading">
+              <div>
+                <span>QUICK ACCESS</span>
+                <h2>Manage your account</h2>
+              </div>
+            </div>
+
+            <div className="account-menu">
+              {accountLinks.map((item) => (
+                <Link
+                  to={item.path}
+                  className="account-menu-item"
+                  key={item.title}
+                >
+                  <div className="account-menu-icon">{item.icon}</div>
+
+                  <div className="account-menu-content">
+                    <strong>{item.title}</strong>
+                    <span>{item.description}</span>
+                  </div>
+
+                  <ArrowRight
+                    className="account-menu-arrow"
+                    size={19}
+                  />
+                </Link>
+              ))}
             </div>
 
             <button
-              className="account-edit-button"
-              onClick={() => setEditing(!editing)}
+              type="button"
+              className="account-logout"
+              onClick={handleLogout}
             >
-              {editing ? "Cancel" : "Edit"}
+              <LogOut size={18} />
+              Logout
             </button>
-          </div>
-
-          {editing ? (
-            <form onSubmit={handleSave} className="account-form">
-              <label>
-                Full Name
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Email Address
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Mobile Number
-                <input
-                  type="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  required
-                />
-              </label>
-
-              <button type="submit" className="account-save-button">
-                Save Changes
-              </button>
-            </form>
-          ) : (
-            <div className="account-details">
-              <div>
-                <span>Full Name</span>
-                <strong>{name}</strong>
-              </div>
-
-              <div>
-                <span>Email Address</span>
-                <strong>{email}</strong>
-              </div>
-
-              <div>
-                <span>Mobile Number</span>
-                <strong>{mobile}</strong>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="account-menu">
-          <Link to="/orders" className="account-menu-item">
-            <div>
-              <strong>My Orders</strong>
-              <span>View your previous and current orders</span>
-            </div>
-            <span>→</span>
-          </Link>
-
-          <Link to="/addresses" className="account-menu-item">
-            <div>
-              <strong>Saved Addresses</strong>
-              <span>Manage your delivery addresses</span>
-            </div>
-            <span>→</span>
-          </Link>
-
-          <Link to="/wishlist" className="account-menu-item">
-            <div>
-              <strong>My Wishlist</strong>
-              <span>View products you saved</span>
-            </div>
-            <span>→</span>
-          </Link>
-
-          <Link to="/notifications" className="account-menu-item">
-            <div>
-              <strong>Notifications</strong>
-              <span>View your latest updates</span>
-            </div>
-            <span>→</span>
-          </Link>
-
-          <button className="account-logout" onClick={handleLogout}>
-            Logout
-          </button>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   );

@@ -1,11 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = (event) => {
     event.preventDefault();
@@ -21,43 +28,104 @@ function Login() {
 
   return (
     <main className="auth-page">
-      <div className="auth-card">
-        <h1>Welcome Back</h1>
-        <p>Login to your account to continue shopping.</p>
+      <div className="auth-container">
+        <Link to="/" className="auth-logo">
+          <span className="auth-logo-mark">OG</span>
 
-        <form onSubmit={handleLogin} className="auth-form">
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <span>
+            Online Grocery
+            <small>Freshness Delivered</small>
+          </span>
+        </Link>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        <div className="auth-card">
+          <div className="auth-heading">
+            <span className="auth-eyebrow">WELCOME BACK</span>
 
-          <div className="auth-options">
-            <label>
-              <input type="checkbox" />
-              Remember me
-            </label>
+            <h1>Login to your account.</h1>
 
-            <Link to="/forgot-password">Forgot Password?</Link>
+            <p>
+              Access your orders, saved addresses and grocery
+              preferences.
+            </p>
           </div>
 
-          <button type="submit" className="auth-button">
-            Login
-          </button>
-        </form>
+          <form onSubmit={handleLogin} className="auth-form">
+            <label>
+              <span>Email Address</span>
 
-        <p className="auth-footer">
-          Don't have an account?{" "}
-          <Link to="/signup">Sign Up</Link>
-        </p>
+              <div className="auth-input">
+                <Mail size={17} />
+
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Password</span>
+
+              <div className="auth-input">
+                <Lock size={17} />
+
+                <input
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  required
+                />
+              </div>
+            </label>
+
+            <div className="auth-options">
+              <label className="remember-option">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) =>
+                    setRememberMe(event.target.checked)
+                  }
+                />
+
+                <span>Remember me</span>
+              </label>
+
+              <Link to="/forgot-password">
+                Forgot Password?
+              </Link>
+            </div>
+
+            <button type="submit" className="auth-button">
+              Login
+              <ArrowRight size={17} />
+            </button>
+          </form>
+
+          <div className="auth-security">
+            <ShieldCheck size={17} />
+
+            <span>
+              Secure access to your grocery account.
+            </span>
+          </div>
+
+          <p className="auth-footer">
+            Don't have an account?{" "}
+            <Link to="/signup">Create one</Link>
+          </p>
+        </div>
+
+        <Link to="/" className="auth-back-home">
+          ← Back to Home
+        </Link>
       </div>
     </main>
   );

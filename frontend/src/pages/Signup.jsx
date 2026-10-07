@@ -1,5 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
 
 function Signup() {
   const navigate = useNavigate();
@@ -24,7 +32,13 @@ function Signup() {
   const handleSignup = (event) => {
     event.preventDefault();
 
-    const { name, email, mobile, password, confirmPassword } = formData;
+    const {
+      name,
+      email,
+      mobile,
+      password,
+      confirmPassword,
+    } = formData;
 
     if (!name || !email || !mobile || !password || !confirmPassword) {
       alert("Please fill in all fields.");
@@ -42,60 +56,131 @@ function Signup() {
 
   return (
     <main className="auth-page">
-      <div className="auth-card">
-        <h1>Create Account</h1>
-        <p>Sign up to start shopping with us.</p>
+      <div className="auth-container">
+        <Link to="/" className="auth-logo">
+          <span className="auth-logo-mark">OG</span>
 
-        <form onSubmit={handleSignup} className="auth-form">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
-          />
+          <span>
+            Online Grocery
+            <small>Freshness Delivered</small>
+          </span>
+        </Link>
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-          />
+        <div className="auth-card">
+          <div className="auth-heading">
+            <span className="auth-eyebrow">GET STARTED</span>
 
-          <input
-            type="tel"
-            name="mobile"
-            placeholder="Mobile Number"
-            value={formData.mobile}
-            onChange={handleChange}
-          />
+            <h1>Create your account.</h1>
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-          />
+            <p>
+              Sign up to shop fresh groceries and everyday essentials.
+            </p>
+          </div>
 
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
+          <form onSubmit={handleSignup} className="auth-form">
+            <label>
+              <span>Full Name</span>
 
-          <button type="submit" className="auth-button">
-            Create Account
-          </button>
-        </form>
+              <div className="auth-input">
+                <User size={17} />
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
 
-        <p className="auth-footer">
-          Already have an account?{" "}
-          <Link to="/login">Login</Link>
-        </p>
+            <label>
+              <span>Email Address</span>
+
+              <div className="auth-input">
+                <Mail size={17} />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Mobile Number</span>
+
+              <div className="auth-input">
+                <Phone size={17} />
+                <input
+                  type="tel"
+                  name="mobile"
+                  placeholder="Enter mobile number"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Password</span>
+
+              <div className="auth-input">
+                <Lock size={17} />
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
+
+            <label>
+              <span>Confirm Password</span>
+
+              <div className="auth-input">
+                <Lock size={17} />
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </label>
+
+            <button type="submit" className="auth-button">
+              Create Account
+              <ArrowRight size={17} />
+            </button>
+          </form>
+
+          <div className="auth-security">
+            <ShieldCheck size={17} />
+
+            <span>
+              Your account details are kept secure.
+            </span>
+          </div>
+
+          <p className="auth-footer">
+            Already have an account?{" "}
+            <Link to="/login">Login</Link>
+          </p>
+        </div>
+
+        <Link to="/" className="auth-back-home">
+          ← Back to Home
+        </Link>
       </div>
     </main>
   );

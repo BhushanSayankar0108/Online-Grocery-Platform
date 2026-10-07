@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import products from "../data/products";
 
 const orders = [
   {
@@ -25,7 +26,50 @@ const orders = [
   },
 ];
 
-function Orders() {
+function Orders({ setCart }) {
+  const navigate = useNavigate();
+
+  const handleReorder = (order) => {
+    setCart((currentCart) => {
+      let updatedCart = [...currentCart];
+
+      order.items.forEach((orderItem) => {
+        const product = products.find(
+          (item) => item.name === orderItem.name
+        );
+
+        if (!product) {
+          return;
+        }
+
+        const existingProduct = updatedCart.find(
+          (item) => item.name === product.name
+        );
+
+        if (existingProduct) {
+          updatedCart = updatedCart.map((item) =>
+            item.name === product.name
+              ? {
+                  ...item,
+                  quantity:
+                    item.quantity + orderItem.quantity,
+                }
+              : item
+          );
+        } else {
+          updatedCart.push({
+            ...product,
+            quantity: orderItem.quantity,
+          });
+        }
+      });
+
+      return updatedCart;
+    });
+
+    navigate("/cart");
+  };
+
   return (
     <main className="orders-page">
       <div className="orders-header">
@@ -59,7 +103,6 @@ function Orders() {
           <div className="orders-list">
             {orders.map((order) => (
               <div className="order-card" key={order.id}>
-
                 <div className="order-card-header">
                   <div>
                     <span>Order ID</span>
@@ -119,6 +162,7 @@ function Orders() {
                   <button
                     type="button"
                     className="order-reorder-button"
+                    onClick={() => handleReorder(order)}
                   >
                     Reorder
                   </button>
@@ -132,7 +176,6 @@ function Orders() {
                     </Link>
                   )}
                 </div>
-
               </div>
             ))}
           </div>

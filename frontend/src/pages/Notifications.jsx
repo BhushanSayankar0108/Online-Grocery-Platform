@@ -1,5 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Bell,
+  Package,
+  Tag,
+  Check,
+  Trash2,
+  ArrowRight,
+  CheckCheck,
+} from "lucide-react";
 
 function Notifications() {
   const [notifications, setNotifications] = useState([
@@ -58,87 +67,158 @@ function Notifications() {
     );
   };
 
+  const getNotificationIcon = (type) => {
+    if (type === "Offer") {
+      return <Tag size={21} strokeWidth={1.8} />;
+    }
+
+    return <Package size={21} strokeWidth={1.8} />;
+  };
+
   return (
     <main className="notifications-page">
-      <div className="notifications-header">
-        <Link to="/account" className="shop-home-link">
-          ← Back to Account
-        </Link>
+      <div className="notifications-container">
+        <header className="notifications-header">
+          <Link to="/account" className="shop-home-link">
+            ← Back to Account
+          </Link>
 
-        <p>Home / Account / Notifications</p>
+          <p className="notifications-breadcrumb">
+            Home / Account / Notifications
+          </p>
 
-        <div className="notifications-title-row">
-          <div>
-            <h1>Notifications</h1>
-            <p>Stay updated with your orders and offers.</p>
-          </div>
+          <span className="notifications-eyebrow">
+            ACCOUNT UPDATES
+          </span>
 
-          {unreadCount > 0 && (
-            <button
-              className="mark-all-button"
-              onClick={markAllAsRead}
-            >
-              Mark All as Read
-            </button>
-          )}
-        </div>
-      </div>
+          <div className="notifications-title-row">
+            <div>
+              <h1>Stay in the loop.</h1>
 
-      <div className="notifications-content">
-        {notifications.length === 0 ? (
-          <div className="notifications-empty">
-            <div className="notifications-empty-icon">🔔</div>
-            <h2>No Notifications</h2>
-            <p>You are all caught up.</p>
-          </div>
-        ) : (
-          <div className="notifications-list">
-            {notifications.map((notification) => (
-              <div
-                className={`notification-card ${
-                  !notification.isRead ? "unread" : ""
-                }`}
-                key={notification.id}
+              <p>
+                Keep track of your orders, offers and important
+                account updates.
+              </p>
+            </div>
+
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="mark-all-button"
+                onClick={markAllAsRead}
               >
-                <div className="notification-icon">
-                  {notification.type === "Order" ? "📦" : "🏷️"}
-                </div>
-
-                <div className="notification-details">
-                  <div className="notification-top">
-                    <h2>{notification.title}</h2>
-
-                    {!notification.isRead && (
-                      <span className="unread-dot"></span>
-                    )}
-                  </div>
-
-                  <p>{notification.message}</p>
-
-                  <span className="notification-time">
-                    {notification.time}
-                  </span>
-
-                  <div className="notification-actions">
-                    {!notification.isRead && (
-                      <button onClick={() => markAsRead(notification.id)}>
-                        Mark as Read
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() =>
-                        deleteNotification(notification.id)
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                <CheckCheck size={16} />
+                Mark All as Read
+              </button>
+            )}
           </div>
-        )}
+
+          {notifications.length > 0 && (
+            <div className="notifications-summary">
+              <Bell size={17} />
+
+              <span>
+                {unreadCount > 0
+                  ? `${unreadCount} unread notification${
+                      unreadCount > 1 ? "s" : ""
+                    }`
+                  : "You're all caught up"}
+              </span>
+            </div>
+          )}
+        </header>
+
+        <section className="notifications-content">
+          {notifications.length === 0 ? (
+            <div className="notifications-empty">
+              <div className="notifications-empty-icon">
+                <Bell size={30} strokeWidth={1.7} />
+              </div>
+
+              <span>ALL CAUGHT UP</span>
+
+              <h2>No notifications right now</h2>
+
+              <p>
+                We'll let you know when there is something important
+                to share.
+              </p>
+
+              <Link
+                to="/shop"
+                className="notifications-shop-button"
+              >
+                Continue Shopping
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+          ) : (
+            <div className="notifications-list">
+              {notifications.map((notification) => (
+                <article
+                  className={`notification-card ${
+                    !notification.isRead ? "unread" : ""
+                  }`}
+                  key={notification.id}
+                >
+                  <div className="notification-icon">
+                    {getNotificationIcon(notification.type)}
+                  </div>
+
+                  <div className="notification-details">
+                    <div className="notification-top">
+                      <div>
+                        <span className="notification-type">
+                          {notification.type}
+                        </span>
+
+                        <h2>{notification.title}</h2>
+                      </div>
+
+                      {!notification.isRead && (
+                        <span
+                          className="unread-dot"
+                          aria-label="Unread"
+                        />
+                      )}
+                    </div>
+
+                    <p>{notification.message}</p>
+
+                    <span className="notification-time">
+                      {notification.time}
+                    </span>
+
+                    <div className="notification-actions">
+                      {!notification.isRead && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            markAsRead(notification.id)
+                          }
+                        >
+                          <Check size={15} />
+                          Mark as Read
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="notification-delete"
+                        onClick={() =>
+                          deleteNotification(notification.id)
+                        }
+                      >
+                        <Trash2 size={15} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

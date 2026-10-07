@@ -1,5 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Package,
+  MapPin,
+  CreditCard,
+  Mail,
+  Phone,
+  Clock3,
+  ArrowRight,
+  Send,
+  CheckCircle2,
+  MessageCircle,
+} from "lucide-react";
 
 function Support() {
   const [form, setForm] = useState({
@@ -11,15 +23,15 @@ function Support() {
 
   const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (event) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      [event.target.name]: event.target.value,
+    }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     setSubmitted(true);
 
     setForm({
@@ -32,117 +44,227 @@ function Support() {
 
   return (
     <main className="support-page">
-      <div className="support-header">
-        <Link to="/" className="shop-home-link">
-          ← Back to Home
-        </Link>
+      <div className="support-container">
+        <header className="support-header">
+          <Link to="/" className="shop-home-link">
+            ← Back to Home
+          </Link>
 
-        <p>Home / Customer Support</p>
+          <p className="support-breadcrumb">
+            Home / Customer Support
+          </p>
 
-        <h1>How Can We Help?</h1>
+          <span className="support-eyebrow">
+            CUSTOMER SUPPORT
+          </span>
 
-        <p>
-          We're here to help with your orders, delivery, payments and more.
-        </p>
-      </div>
+          <h1>We're here to help.</h1>
 
-      <div className="support-content">
+          <p className="support-intro">
+            Get help with your orders, delivery, payments and
+            anything else you need along the way.
+          </p>
+        </header>
+
         <section className="support-options">
-          <div className="support-card">
-            <div className="support-icon">📦</div>
+          <Link to="/orders" className="support-card">
+            <div className="support-card-top">
+              <div className="support-icon">
+                <Package size={22} strokeWidth={1.8} />
+              </div>
+
+              <ArrowRight size={18} />
+            </div>
+
+            <span className="support-card-label">
+              ORDERS
+            </span>
+
             <h2>Order Support</h2>
+
             <p>
               Need help with an order, delivery or order status?
+              Check your latest orders.
             </p>
-            <Link to="/orders">View My Orders →</Link>
-          </div>
 
-          <div className="support-card">
-            <div className="support-icon">📍</div>
+            <strong>
+              View My Orders <ArrowRight size={15} />
+            </strong>
+          </Link>
+
+          <Link to="/addresses" className="support-card">
+            <div className="support-card-top">
+              <div className="support-icon">
+                <MapPin size={22} strokeWidth={1.8} />
+              </div>
+
+              <ArrowRight size={18} />
+            </div>
+
+            <span className="support-card-label">
+              DELIVERY
+            </span>
+
             <h2>Delivery Help</h2>
+
             <p>
-              Questions about delivery areas, slots or addresses?
+              Questions about delivery areas, slots or your
+              saved addresses?
             </p>
-            <Link to="/addresses">Manage Addresses →</Link>
-          </div>
+
+            <strong>
+              Manage Addresses <ArrowRight size={15} />
+            </strong>
+          </Link>
 
           <div className="support-card">
-            <div className="support-icon">💳</div>
+            <div className="support-card-top">
+              <div className="support-icon">
+                <CreditCard size={22} strokeWidth={1.8} />
+              </div>
+
+              <MessageCircle size={18} />
+            </div>
+
+            <span className="support-card-label">
+              PAYMENTS
+            </span>
+
             <h2>Payment Support</h2>
+
             <p>
-              Having trouble with payment or your transaction?
+              Having trouble with a payment or transaction?
+              Send us a message below.
             </p>
-            <span>Contact Us Below</span>
+
+            <strong>
+              Contact Support <ArrowRight size={15} />
+            </strong>
           </div>
         </section>
 
         <section className="support-contact">
           <div className="support-contact-info">
-            <p className="support-label">CONTACT US</p>
-            <h2>Send Us a Message</h2>
-            <p>
-              Fill out the form and our support team will get back to you.
+            <span className="support-label">
+              GET IN TOUCH
+            </span>
+
+            <h2>Send us a message.</h2>
+
+            <p className="support-contact-description">
+              Tell us what you need help with and our support
+              team will get back to you.
             </p>
 
-            <div className="support-contact-item">
-              <strong>📧 Email</strong>
-              <span>support@onlinegrocery.com</span>
-            </div>
+            <div className="support-contact-details">
+              <div className="support-contact-item">
+                <div className="support-contact-item-icon">
+                  <Mail size={18} />
+                </div>
 
-            <div className="support-contact-item">
-              <strong>📞 Phone</strong>
-              <span>+91 1800 123 4567</span>
-            </div>
+                <div>
+                  <span>Email</span>
+                  <strong>support@onlinegrocery.com</strong>
+                </div>
+              </div>
 
-            <div className="support-contact-item">
-              <strong>🕐 Support Hours</strong>
-              <span>Monday - Sunday, 8:00 AM - 10:00 PM</span>
+              <div className="support-contact-item">
+                <div className="support-contact-item-icon">
+                  <Phone size={18} />
+                </div>
+
+                <div>
+                  <span>Phone</span>
+                  <strong>+91 1800 123 4567</strong>
+                </div>
+              </div>
+
+              <div className="support-contact-item">
+                <div className="support-contact-item-icon">
+                  <Clock3 size={18} />
+                </div>
+
+                <div>
+                  <span>Support Hours</span>
+                  <strong>
+                    Monday - Sunday, 8:00 AM - 10:00 PM
+                  </strong>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="support-form-wrapper">
             {submitted ? (
               <div className="support-success">
-                <div>✓</div>
-                <h2>Message Sent!</h2>
+                <div className="support-success-icon">
+                  <CheckCircle2 size={38} strokeWidth={1.7} />
+                </div>
+
+                <span className="support-label">
+                  MESSAGE SENT
+                </span>
+
+                <h2>Thanks for reaching out.</h2>
+
                 <p>
-                  Thank you for contacting us. Our support team will get
-                  back to you shortly.
+                  Your message has been received. Our support
+                  team will get back to you shortly.
                 </p>
 
-                <button onClick={() => setSubmitted(false)}>
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                >
                   Send Another Message
+                  <ArrowRight size={16} />
                 </button>
               </div>
             ) : (
-              <form className="support-form" onSubmit={handleSubmit}>
-                <label>
-                  Full Name
-                  <input
-                    type="text"
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
+              <form
+                className="support-form"
+                onSubmit={handleSubmit}
+              >
+                <div className="support-form-heading">
+                  <span>CONTACT FORM</span>
+                  <h2>How can we help?</h2>
+                </div>
+
+                <div className="support-form-grid">
+                  <label>
+                    <span>Full Name</span>
+
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter your name"
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>Email Address</span>
+
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Enter your email"
+                      value={form.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </label>
+                </div>
 
                 <label>
-                  Email Address
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </label>
+                  <span>Subject</span>
 
-                <label>
-                  Subject
                   <input
                     type="text"
                     name="subject"
+                    placeholder="What do you need help with?"
                     value={form.subject}
                     onChange={handleChange}
                     required
@@ -150,18 +272,24 @@ function Support() {
                 </label>
 
                 <label>
-                  Message
+                  <span>Message</span>
+
                   <textarea
                     name="message"
+                    rows="5"
+                    placeholder="Describe your issue or question..."
                     value={form.message}
                     onChange={handleChange}
-                    placeholder="How can we help?"
                     required
                   />
                 </label>
 
-                <button type="submit">
+                <button
+                  type="submit"
+                  className="support-submit-button"
+                >
                   Send Message
+                  <Send size={16} />
                 </button>
               </form>
             )}
