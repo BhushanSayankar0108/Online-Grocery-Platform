@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+/* =========================================================
+   PUBLIC COMPONENTS
+========================================================= */
+
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
@@ -11,6 +15,10 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import CustomerReviews from "./components/CustomerReviews";
 import Newsletter from "./components/Newsletter";
 import Footer from "./components/Footer";
+
+/* =========================================================
+   PUBLIC PAGES
+========================================================= */
 
 import Shop from "./pages/Shop";
 import Cart from "./pages/Cart";
@@ -37,6 +45,32 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import ReturnPolicy from "./pages/ReturnPolicy";
 
+/* =========================================================
+   ADMIN PAGES
+========================================================= */
+
+import AdminLogin from "./admin/AdminLogin";
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminCategories from "./admin/AdminCategories";
+import AdminSubCategories from "./admin/AdminSubCategories";
+import AdminProducts from "./admin/AdminProducts";
+import AdminProductVariants from "./admin/AdminProductVariants";
+import AdminInventory from "./admin/AdminInventory";
+import AdminOrders from "./admin/AdminOrders";
+import AdminCustomers from "./admin/AdminCustomers";
+import AdminCoupons from "./admin/AdminCoupons";
+import AdminDelivery from "./admin/AdminDelivery";
+import AdminReviews from "./admin/AdminReviews";
+import AdminNotifications from "./admin/AdminNotifications";
+import AdminCMS from "./admin/AdminCMS";
+import AdminReports from "./admin/AdminReports";
+import AdminSettings from "./admin/AdminSettings";
+import AdminManagement from "./admin/AdminManagement";
+
+/* =========================================================
+   PUBLIC PAGE LAYOUT
+========================================================= */
+
 function PageLayout({ children, cartCount, wishlistCount }) {
   return (
     <>
@@ -44,11 +78,17 @@ function PageLayout({ children, cartCount, wishlistCount }) {
         cartCount={cartCount}
         wishlistCount={wishlistCount}
       />
+
       {children}
+
       <Footer />
     </>
   );
 }
+
+/* =========================================================
+   PUBLIC HOME PAGE
+========================================================= */
 
 function Home({
   cartCount,
@@ -89,7 +129,15 @@ function Home({
   );
 }
 
+/* =========================================================
+   APP
+========================================================= */
+
 function App() {
+  /* ---------------------------------------------------------
+     PUBLIC CART & WISHLIST STATE
+  --------------------------------------------------------- */
+
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
 
@@ -108,6 +156,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* =====================================================
+            PUBLIC WEBSITE
+        ====================================================== */}
 
         {/* HOME */}
         <Route
@@ -222,20 +274,20 @@ function App() {
           }
         />
 
-{/* ORDERS */}
-<Route
-  path="/orders"
-  element={
-    <PageLayout {...layoutProps}>
-      <Orders
-        cart={cart}
-        setCart={setCart}
-      />
-    </PageLayout>
-  }
-/>
+        {/* ORDERS */}
+        <Route
+          path="/orders"
+          element={
+            <PageLayout {...layoutProps}>
+              <Orders
+                cart={cart}
+                setCart={setCart}
+              />
+            </PageLayout>
+          }
+        />
 
-        {/* RETURNS & REFUNDS */}
+        {/* RETURNS */}
         <Route
           path="/returns"
           element={
@@ -335,7 +387,7 @@ function App() {
           }
         />
 
-        {/* SIGN UP */}
+        {/* SIGNUP */}
         <Route
           path="/signup"
           element={
@@ -354,32 +406,143 @@ function App() {
             </PageLayout>
           }
         />
-<Route
-  path="/privacy-policy"
-  element={
-    <PageLayout {...layoutProps}>
-      <PrivacyPolicy />
-    </PageLayout>
-  }
-/>
 
-<Route
-  path="/terms"
-  element={
-    <PageLayout {...layoutProps}>
-      <Terms />
-    </PageLayout>
-  }
-/>
+        {/* PRIVACY POLICY */}
+        <Route
+          path="/privacy-policy"
+          element={
+            <PageLayout {...layoutProps}>
+              <PrivacyPolicy />
+            </PageLayout>
+          }
+        />
 
-<Route
-  path="/return-policy"
-  element={
-    <PageLayout {...layoutProps}>
-      <ReturnPolicy />
-    </PageLayout>
-  }
-/>
+        {/* TERMS */}
+        <Route
+          path="/terms"
+          element={
+            <PageLayout {...layoutProps}>
+              <Terms />
+            </PageLayout>
+          }
+        />
+
+        {/* RETURN POLICY */}
+        <Route
+          path="/return-policy"
+          element={
+            <PageLayout {...layoutProps}>
+              <ReturnPolicy />
+            </PageLayout>
+          }
+        />
+
+        {/* =====================================================
+            ADMIN CMS
+        ====================================================== */}
+
+        {/* ADMIN LOGIN */}
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+        {/* ADMIN DASHBOARD */}
+        <Route
+          path="/admin/dashboard"
+          element={<AdminDashboard />}
+        />
+
+        {/* CATEGORIES */}
+        <Route
+          path="/admin/categories"
+          element={<AdminCategories />}
+        />
+
+        {/* SUBCATEGORIES */}
+        <Route
+          path="/admin/subcategories"
+          element={<AdminSubCategories />}
+        />
+
+        {/* PRODUCTS */}
+        <Route
+          path="/admin/products"
+          element={<AdminProducts />}
+        />
+
+        {/* PRODUCT VARIANTS */}
+        <Route
+          path="/admin/product-variants"
+          element={<AdminProductVariants />}
+        />
+
+        {/* INVENTORY */}
+        <Route
+          path="/admin/inventory"
+          element={<AdminInventory />}
+        />
+
+        {/* ORDERS */}
+        <Route
+          path="/admin/orders"
+          element={<AdminOrders />}
+        />
+
+        {/* CUSTOMERS */}
+        <Route
+          path="/admin/customers"
+          element={<AdminCustomers />}
+        />
+
+        {/* COUPONS & OFFERS */}
+        <Route
+          path="/admin/coupons"
+          element={<AdminCoupons />}
+        />
+
+        {/* DELIVERY */}
+        <Route
+          path="/admin/delivery"
+          element={<AdminDelivery />}
+        />
+
+        {/* REVIEWS */}
+        <Route
+          path="/admin/reviews"
+          element={<AdminReviews />}
+        />
+
+        {/* NOTIFICATIONS */}
+        <Route
+          path="/admin/notifications"
+          element={<AdminNotifications />}
+        />
+
+        {/* WEBSITE CMS */}
+        <Route
+          path="/admin/cms"
+          element={<AdminCMS />}
+        />
+
+        {/* REPORTS */}
+        <Route
+          path="/admin/reports"
+          element={<AdminReports />}
+        />
+
+        {/* SETTINGS */}
+        <Route
+          path="/admin/settings"
+          element={<AdminSettings />}
+        />
+
+        {/* ADMIN MANAGEMENT */}
+        <Route
+          path="/admin/admin-management"
+          element={<AdminManagement />}
+        />
+
       </Routes>
     </BrowserRouter>
   );

@@ -1,0 +1,942 @@
+/* =========================================================
+   ADMIN DELIVERY MANAGEMENT
+========================================================= */
+
+.admin-delivery-page {
+    min-height: 100vh;
+    width: 100%;
+    background: #f6f8fb;
+    color: #172033;
+    padding: 30px;
+}
+
+.admin-delivery-container {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.admin-delivery-back-wrapper {
+    margin-bottom: 22px;
+}
+
+.admin-delivery-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border: 1px solid #dfe4ec;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #4b5565;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.admin-delivery-back-button:hover {
+    background: #f1f5f9;
+    color: #172033;
+    border-color: #cbd5e1;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.admin-delivery-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.admin-delivery-eyebrow {
+    margin: 0 0 7px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-delivery-header h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 750;
+}
+
+.admin-delivery-header-text {
+    margin: 9px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.admin-delivery-add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 9px;
+    background: #111827;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.2s ease;
+}
+
+.admin-delivery-add-button:hover {
+    background: #273244;
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.admin-delivery-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.admin-delivery-stat-card {
+    min-height: 105px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid #e5e9ef;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.admin-delivery-stat-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.admin-delivery-stat-card span {
+    display: block;
+    margin-bottom: 5px;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.admin-delivery-stat-card strong {
+    display: block;
+    color: #111827;
+    font-size: 23px;
+    line-height: 1;
+    font-weight: 750;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.admin-delivery-tabs {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    margin-bottom: 18px;
+    padding: 4px;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.admin-delivery-tabs button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.admin-delivery-tabs button:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.admin-delivery-tabs button.active {
+    background: #111827;
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.admin-delivery-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.admin-delivery-search {
+    flex: 1;
+    min-width: 240px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 13px;
+    border: 1px solid #dfe4ec;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #94a3b8;
+}
+
+.admin-delivery-search input {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #172033;
+    font-size: 14px;
+}
+
+.admin-delivery-search input::placeholder {
+    color: #9aa4b2;
+}
+
+.admin-delivery-clear-search {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.admin-delivery-filter {
+    position: relative;
+    width: 180px;
+    height: 44px;
+}
+
+.admin-delivery-filter select {
+    appearance: none;
+    width: 100%;
+    height: 100%;
+    padding: 0 38px 0 13px;
+    border: 1px solid #dfe4ec;
+    border-radius: 9px;
+    outline: 0;
+    background: #ffffff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 550;
+    cursor: pointer;
+}
+
+.admin-delivery-filter svg {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #64748b;
+}
+
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.admin-delivery-table-card {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #e5e9ef;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.035);
+}
+
+.admin-delivery-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 22px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.admin-delivery-table-header h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.admin-delivery-table-header p {
+    margin: 5px 0 0;
+    color: #8a94a3;
+    font-size: 12px;
+}
+
+.admin-delivery-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-delivery-table {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+}
+
+.admin-delivery-table th {
+    height: 48px;
+    padding: 0 15px;
+    border-bottom: 1px solid #e9edf2;
+    background: #fafbfc;
+    color: #667085;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-delivery-table td {
+    height: 82px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eef1f5;
+    color: #374151;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.admin-delivery-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-delivery-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.admin-delivery-table tbody tr:hover {
+    background: #fafcff;
+}
+
+.delivery-number {
+    width: 50px;
+    color: #98a2b3 !important;
+    font-size: 12px !important;
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   ZONE / SLOT INFO
+========================================================= */
+
+.delivery-zone-info {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 170px;
+}
+
+.delivery-zone-info strong {
+    color: #1f2937;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.delivery-zone-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.delivery-area-text {
+    display: block;
+    max-width: 240px;
+    color: #667085;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.delivery-amount {
+    color: #111827;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.delivery-minimum {
+    color: #475569;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   TIME
+========================================================= */
+
+.delivery-time-cell {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.delivery-time-cell strong {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.delivery-time-cell span {
+    color: #9aa4b2;
+    font-size: 11px;
+}
+
+.delivery-orders-limit {
+    display: inline-flex;
+    min-width: 48px;
+    justify-content: center;
+    padding: 6px 9px;
+    border-radius: 7px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.delivery-status-button {
+    min-width: 76px;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.delivery-status-button.active {
+    background: #ecfdf3;
+    color: #15803d;
+}
+
+.delivery-status-button.active:hover {
+    background: #dcfce7;
+}
+
+.delivery-status-button.inactive {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.delivery-status-button.inactive:hover {
+    background: #e2e8f0;
+}
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.delivery-actions {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.delivery-edit-button,
+.delivery-delete-button {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.delivery-edit-button {
+    background: #ffffff;
+    color: #475569;
+}
+
+.delivery-edit-button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.delivery-delete-button {
+    background: #ffffff;
+    color: #dc2626;
+}
+
+.delivery-delete-button:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.delivery-empty-state {
+    height: 280px !important;
+    text-align: center !important;
+    color: #94a3b8 !important;
+}
+
+.delivery-empty-state svg {
+    margin: 0 auto;
+    color: #cbd5e1;
+}
+
+.delivery-empty-state h3 {
+    margin: 12px 0 5px;
+    color: #475569;
+    font-size: 15px;
+}
+
+.delivery-empty-state p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.admin-delivery-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.52);
+    backdrop-filter: blur(3px);
+}
+
+.admin-delivery-modal {
+    width: 100%;
+    max-width: 650px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+}
+
+.admin-delivery-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 24px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.admin-delivery-modal-header p {
+    margin: 0 0 5px;
+    color: #8a94a3;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.admin-delivery-modal-header h2 {
+    margin: 0;
+    color: #111827;
+    font-size: 20px;
+    font-weight: 750;
+}
+
+.admin-delivery-modal-close {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.admin-delivery-modal-close:hover {
+    background: #f8fafc;
+    color: #111827;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.admin-delivery-form {
+    padding: 24px;
+}
+
+.delivery-form-group {
+    margin-bottom: 18px;
+}
+
+.delivery-form-group label {
+    display: block;
+    margin-bottom: 7px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.delivery-form-group label span {
+    margin-left: 3px;
+    color: #dc2626;
+}
+
+.delivery-form-group input,
+.delivery-form-group textarea,
+.delivery-select-wrapper select {
+    width: 100%;
+    border: 1px solid #dce2ea;
+    border-radius: 8px;
+    outline: 0;
+    background: #ffffff;
+    color: #1f2937;
+    font-size: 13px;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.delivery-form-group input {
+    height: 44px;
+    padding: 0 13px;
+}
+
+.delivery-form-group textarea {
+    display: block;
+    min-height: 82px;
+    padding: 11px 13px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.delivery-form-group input:focus,
+.delivery-form-group textarea:focus,
+.delivery-select-wrapper select:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+}
+
+.delivery-form-group input::placeholder,
+.delivery-form-group textarea::placeholder {
+    color: #a1aab7;
+}
+
+
+/* =========================================================
+   TWO COLUMN FORM
+========================================================= */
+
+.delivery-form-two-column {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.delivery-input-prefix {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid #dce2ea;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.delivery-input-prefix:focus-within {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+}
+
+.delivery-input-prefix > span {
+    width: 40px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.delivery-input-prefix input {
+    flex: 1;
+    width: auto;
+    height: 100%;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+
+/* =========================================================
+   SELECT
+========================================================= */
+
+.delivery-select-wrapper {
+    position: relative;
+}
+
+.delivery-select-wrapper select {
+    appearance: none;
+    height: 44px;
+    padding: 0 38px 0 13px;
+    cursor: pointer;
+}
+
+.delivery-select-wrapper svg {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #64748b;
+}
+
+
+/* =========================================================
+   INFO BOX
+========================================================= */
+
+.delivery-info-box {
+    margin: 2px 0 22px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #f8fafc;
+}
+
+.delivery-info-box strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #334155;
+    font-size: 13px;
+}
+
+.delivery-info-box p {
+    margin: 0;
+    color: #7b8796;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+
+/* =========================================================
+   FORM ACTIONS
+========================================================= */
+
+.admin-delivery-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.delivery-cancel-button,
+.delivery-save-button {
+    min-width: 115px;
+    height: 42px;
+    padding: 0 17px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.delivery-cancel-button {
+    border: 1px solid #dce2ea;
+    background: #ffffff;
+    color: #475569;
+}
+
+.delivery-cancel-button:hover {
+    background: #f8fafc;
+}
+
+.delivery-save-button {
+    border: 0;
+    background: #111827;
+    color: #ffffff;
+}
+
+.delivery-save-button:hover {
+    background: #273244;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+    .admin-delivery-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-delivery-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .admin-delivery-search {
+        flex-basis: 100%;
+    }
+
+    .admin-delivery-filter {
+        flex: 1;
+        width: auto;
+    }
+}
+
+
+@media (max-width: 700px) {
+    .admin-delivery-page {
+        padding: 18px;
+    }
+
+    .admin-delivery-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-delivery-header h1 {
+        font-size: 25px;
+    }
+
+    .admin-delivery-add-button {
+        width: 100%;
+    }
+
+    .admin-delivery-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-delivery-tabs {
+        width: 100%;
+    }
+
+    .admin-delivery-tabs button {
+        flex: 1;
+        padding: 0 10px;
+    }
+
+    .admin-delivery-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-delivery-search,
+    .admin-delivery-filter {
+        width: 100%;
+    }
+
+    .delivery-form-two-column {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .admin-delivery-modal-overlay {
+        padding: 12px;
+    }
+
+    .admin-delivery-modal {
+        max-height: calc(100vh - 24px);
+    }
+
+    .admin-delivery-modal-header,
+    .admin-delivery-form {
+        padding: 18px;
+    }
+
+    .admin-delivery-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .delivery-cancel-button,
+    .delivery-save-button {
+        width: 100%;
+    }
+}

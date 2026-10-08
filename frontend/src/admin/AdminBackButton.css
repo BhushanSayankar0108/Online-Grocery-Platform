@@ -1,0 +1,41 @@
+.admin-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    border: 1px solid #d9dee7;
+    background: #ffffff;
+
+    color: #374151;
+
+    padding: 9px 14px;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.admin-back-button:hover {
+    background: #f8fafc;
+    border-color: #bfc7d4;
+    color: #111827;
+
+    transform: translateX(-2px);
+}
+
+.admin-back-button:active {
+    transform: translateX(0);
+}
+
+.admin-back-button svg {
+    flex-shrink: 0;
+}

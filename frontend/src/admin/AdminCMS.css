@@ -1,0 +1,895 @@
+/* =========================================================
+   ADMIN CMS PAGE
+========================================================= */
+
+.admin-cms-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 28px;
+  background: #f6f8fb;
+  color: #1f2937;
+}
+
+.cms-container {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+/* =========================================================
+   TOP ROW
+========================================================= */
+
+.cms-top-row {
+  margin-bottom: 20px;
+}
+
+.cms-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  transition: 0.2s ease;
+}
+
+.cms-back-button:hover {
+  color: #16a34a;
+  transform: translateX(-2px);
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.cms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.cms-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cms-title-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #dcfce7;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.cms-title-wrapper h1 {
+  margin: 0 0 5px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cms-title-wrapper p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.cms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.cms-primary-button,
+.cms-secondary-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cms-primary-button {
+  border: 1px solid #16a34a;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.cms-primary-button:hover {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.cms-secondary-button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.cms-secondary-button:hover {
+  background: #f8fafc;
+  border-color: #9ca3af;
+}
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.cms-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.cms-stat-card {
+  min-height: 100px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.cms-stat-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.cms-stat-card span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cms-stat-card strong {
+  display: block;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+
+.cms-tabs-card {
+  margin-bottom: 18px;
+  padding: 0 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cms-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.cms-tabs button {
+  min-height: 48px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cms-tabs button:hover {
+  color: #16a34a;
+}
+
+.cms-tabs button.active {
+  color: #16a34a;
+  border-bottom-color: #16a34a;
+}
+
+/* =========================================================
+   TOOLBAR
+========================================================= */
+
+.cms-toolbar {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cms-search {
+  width: 100%;
+  max-width: 430px;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #dbe1e8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #94a3b8;
+}
+
+.cms-search:focus-within {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+}
+
+.cms-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.cms-search input::placeholder {
+  color: #94a3b8;
+}
+
+.cms-toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.cms-table-card {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.cms-table-header {
+  min-height: 82px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.cms-table-header h2 {
+  margin: 0 0 5px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cms-table-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.cms-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.cms-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.cms-table th {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cms-table td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf0f3;
+  color: #334155;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.cms-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cms-table tbody tr:hover {
+  background: #fafdfb;
+}
+
+/* =========================================================
+   NAME CELL
+========================================================= */
+
+.cms-name-cell {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cms-name-cell strong {
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.cms-row-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.cms-description {
+  display: block;
+  max-width: 470px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.cms-content-preview {
+  display: block;
+  max-width: 500px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   BANNER THUMBNAIL
+========================================================= */
+
+.cms-banner-thumb {
+  width: 64px;
+  height: 42px;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.cms-banner-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================================================
+   BUTTON PREVIEW
+========================================================= */
+
+.cms-button-preview {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.cms-status-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cms-status-toggle svg {
+  color: #16a34a;
+}
+
+.cms-status-toggle:has(.cms-status.inactive) svg {
+  color: #94a3b8;
+}
+
+.cms-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 65px;
+  min-height: 27px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cms-status.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.cms-status.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+.cms-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cms-icon-button {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cms-icon-button.edit {
+  color: #2563eb;
+}
+
+.cms-icon-button.edit:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.cms-icon-button.view {
+  color: #7c3aed;
+}
+
+.cms-icon-button.view:hover {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.cms-icon-button.delete {
+  color: #dc2626;
+}
+
+.cms-icon-button.delete:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.cms-empty-state {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.cms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  overflow-y: auto;
+}
+
+.cms-modal {
+  width: 100%;
+  max-width: 570px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.cms-banner-modal {
+  max-width: 650px;
+}
+
+.cms-modal-header {
+  min-height: 76px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.cms-modal-header h2 {
+  margin: 0 0 5px;
+  color: #111827;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.cms-modal-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.cms-modal-close {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cms-modal-close:hover {
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.cms-modal form {
+  padding: 22px;
+}
+
+.cms-form-group {
+  margin-bottom: 18px;
+}
+
+.cms-form-group label {
+  display: block;
+  margin-bottom: 7px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cms-form-group input,
+.cms-form-group textarea,
+.cms-form-group select {
+  width: 100%;
+  border: 1px solid #dbe1e8;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.cms-form-group input,
+.cms-form-group select {
+  height: 43px;
+  padding: 0 12px;
+}
+
+.cms-form-group textarea {
+  min-height: 100px;
+  padding: 11px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.cms-form-group input:focus,
+.cms-form-group textarea:focus,
+.cms-form-group select:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+}
+
+.cms-form-group input::placeholder,
+.cms-form-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+.cms-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* =========================================================
+   IMAGE UPLOAD
+========================================================= */
+
+.cms-upload-box {
+  min-height: 180px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.cms-upload-box strong {
+  color: #475569;
+  font-size: 14px;
+}
+
+.cms-upload-box span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.cms-upload-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  margin-top: 6px;
+  padding: 0 13px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cms-upload-button:hover {
+  background: #dcfce7;
+}
+
+.cms-upload-button input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cms-upload-preview {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #f1f5f9;
+}
+
+.cms-upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cms-upload-preview > button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.72);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* =========================================================
+   MODAL FOOTER
+========================================================= */
+
+.cms-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 5px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  .cms-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .admin-cms-page {
+    padding: 20px;
+  }
+
+  .cms-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cms-header-actions {
+    width: 100%;
+  }
+
+  .cms-header-actions .cms-primary-button {
+    width: 100%;
+  }
+
+  .cms-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cms-search {
+    max-width: none;
+  }
+
+  .cms-toolbar-info {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-cms-page {
+    padding: 15px;
+  }
+
+  .cms-title-wrapper h1 {
+    font-size: 23px;
+  }
+
+  .cms-title-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .cms-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .cms-stat-card {
+    min-height: 85px;
+    padding: 16px;
+  }
+
+  .cms-tabs-card {
+    overflow: hidden;
+  }
+
+  .cms-tabs {
+    overflow-x: auto;
+  }
+
+  .cms-table-header {
+    padding: 16px;
+  }
+
+  .cms-form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .cms-modal-overlay {
+    padding: 12px;
+  }
+
+  .cms-modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .cms-modal form {
+    padding: 18px;
+  }
+
+  .cms-modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .cms-modal-footer button {
+    width: 100%;
+  }
+}
