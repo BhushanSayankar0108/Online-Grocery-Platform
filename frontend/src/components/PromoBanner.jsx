@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function PromoBanner() {
   return (
     <section className="promo-banner">
@@ -10,7 +12,9 @@ function PromoBanner() {
           Get great discounts on your everyday grocery essentials.
         </p>
 
-        <button>View Offers</button>
+        <Link to="/offers" className="promo-button">
+          View Offers
+        </Link>
       </div>
 
       <div className="promo-highlight">

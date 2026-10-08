@@ -1,0 +1,1073 @@
+/* =========================================================
+   ADMIN DASHBOARD
+   CORPORATE / RESPONSIVE / FULL-WIDTH LAYOUT
+========================================================= */
+
+
+/* =========================================================
+   ROOT DASHBOARD
+========================================================= */
+
+.admin-dashboard {
+
+    --admin-sidebar-width: 275px;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
+    background: #f5f8f7;
+    color: #17201d;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   MAIN DASHBOARD AREA
+
+   Sidebar is fixed.
+   Main area occupies everything beside sidebar.
+========================================================= */
+
+.admin-dashboard-main {
+
+    width: calc(100% - var(--admin-sidebar-width));
+
+    min-width: 0;
+    min-height: 100vh;
+
+    margin-left: var(--admin-sidebar-width);
+    padding: 0;
+
+    background: #f5f8f7;
+
+    box-sizing: border-box;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.admin-dashboard-header {
+
+    width: 100%;
+    min-width: 0;
+    min-height: 88px;
+
+    padding: 20px 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 24px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #e5ebe8;
+
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =========================================================
+   HEADER LEFT
+========================================================= */
+
+.admin-dashboard-header-left {
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+.admin-dashboard-welcome {
+
+    margin: 0 0 5px;
+
+    color: #8a9792;
+
+    font-size: 13px;
+    line-height: 1.4;
+
+    font-weight: 500;
+}
+
+
+.admin-dashboard-title {
+
+    margin: 0;
+
+    color: #17201d;
+
+    font-size: 27px;
+    line-height: 1.2;
+
+    font-weight: 700;
+
+    letter-spacing: -0.5px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   ADMIN PROFILE
+========================================================= */
+
+.admin-dashboard-user {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    flex: 0 0 auto;
+
+    min-width: 0;
+}
+
+
+/* =========================================================
+   ADMIN AVATAR
+========================================================= */
+
+.admin-dashboard-avatar {
+
+    width: 46px;
+    height: 46px;
+
+    flex: 0 0 46px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            #10b981,
+            #059669
+        );
+
+    color: #ffffff;
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    box-shadow:
+        0 6px 18px rgba(16, 185, 129, 0.20);
+}
+
+
+/* =========================================================
+   ADMIN USER INFO
+========================================================= */
+
+.admin-dashboard-user-info {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+
+.admin-dashboard-user-info strong {
+
+    color: #17201d;
+
+    font-size: 14px;
+
+    line-height: 1.3;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+.admin-dashboard-user-info span {
+
+    color: #8a9792;
+
+    font-size: 11px;
+
+    line-height: 1.3;
+
+    font-weight: 600;
+
+    letter-spacing: 0.4px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+
+   IMPORTANT:
+   No max-width and no auto-centering.
+   Content fills the entire available dashboard area.
+========================================================= */
+
+.admin-dashboard-content {
+
+    width: 100%;
+    max-width: none;
+
+    margin: 0;
+    padding: 32px;
+
+    box-sizing: border-box;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.admin-dashboard-section {
+
+    width: 100%;
+    min-width: 0;
+
+    margin-top: 34px;
+}
+
+
+.admin-dashboard-section:first-child {
+
+    margin-top: 0;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.admin-dashboard-section-heading {
+
+    width: 100%;
+    min-width: 0;
+
+    display: flex;
+
+    align-items: flex-end;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+
+    box-sizing: border-box;
+}
+
+
+.admin-dashboard-section-heading h2 {
+
+    margin: 0 0 6px;
+
+    color: #17201d;
+
+    font-size: 19px;
+    line-height: 1.3;
+
+    font-weight: 700;
+
+    letter-spacing: -0.2px;
+}
+
+
+.admin-dashboard-section-heading p {
+
+    margin: 0;
+
+    color: #8a9792;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   STATISTICS GRID
+========================================================= */
+
+.admin-dashboard-stat-grid {
+
+    width: 100%;
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+.admin-dashboard-stat-card {
+
+    width: 100%;
+    min-width: 0;
+
+    min-height: 170px;
+
+    padding: 22px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: space-between;
+
+    background: #ffffff;
+
+    border: 1px solid #e3ebe7;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 3px 12px rgba(20, 50, 40, 0.035);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.admin-dashboard-stat-card:hover {
+
+    transform: translateY(-3px);
+
+    border-color: #cfe5dc;
+
+    box-shadow:
+        0 12px 28px rgba(20, 50, 40, 0.08);
+}
+
+
+/* =========================================================
+   STAT TOP
+========================================================= */
+
+.admin-dashboard-stat-top {
+
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+
+/* =========================================================
+   STAT ICON
+========================================================= */
+
+.admin-dashboard-stat-icon {
+
+    width: 44px;
+    height: 44px;
+
+    flex: 0 0 44px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #e9f8f2;
+
+    color: #059669;
+}
+
+
+/* =========================================================
+   STAT VALUE
+========================================================= */
+
+.admin-dashboard-stat-value {
+
+    margin-top: 18px;
+
+    color: #111c18;
+
+    font-size: 28px;
+    line-height: 1;
+
+    font-weight: 700;
+
+    letter-spacing: -0.7px;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   STAT TITLE
+========================================================= */
+
+.admin-dashboard-stat-title {
+
+    margin-top: 7px;
+
+    color: #84918c;
+
+    font-size: 13px;
+    line-height: 1.4;
+
+    font-weight: 500;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   ORDER STATUS GRID
+========================================================= */
+
+.admin-dashboard-order-grid {
+
+    width: 100%;
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   ORDER CARD
+========================================================= */
+
+.admin-dashboard-order-card {
+
+    width: 100%;
+    min-width: 0;
+
+    min-height: 112px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    background: #ffffff;
+
+    border: 1px solid #e3ebe7;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 3px 12px rgba(20, 50, 40, 0.035);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.admin-dashboard-order-card:hover {
+
+    transform: translateY(-2px);
+
+    border-color: #d3e4de;
+
+    box-shadow:
+        0 10px 24px rgba(20, 50, 40, 0.07);
+}
+
+
+/* =========================================================
+   ORDER ICON
+========================================================= */
+
+.admin-dashboard-order-icon {
+
+    width: 44px;
+    height: 44px;
+
+    flex: 0 0 44px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: #f0f5f3;
+
+    color: #5c6d66;
+}
+
+
+/* =========================================================
+   ORDER CONTENT
+========================================================= */
+
+.admin-dashboard-order-content {
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+/* =========================================================
+   ORDER VALUE
+========================================================= */
+
+.admin-dashboard-order-value {
+
+    color: #17201d;
+
+    font-size: 23px;
+    line-height: 1.1;
+
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   ORDER TITLE
+========================================================= */
+
+.admin-dashboard-order-title {
+
+    margin-top: 5px;
+
+    color: #87938e;
+
+    font-size: 12px;
+    line-height: 1.4;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   ALERT GRID
+========================================================= */
+
+.admin-dashboard-alert-grid {
+
+    width: 100%;
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   ALERT CARD
+========================================================= */
+
+.admin-dashboard-alert-card {
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 21px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 15px;
+
+    background: #ffffff;
+
+    border: 1px solid #e3ebe7;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 3px 12px rgba(20, 50, 40, 0.035);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.admin-dashboard-alert-card:hover {
+
+    transform: translateY(-2px);
+
+    border-color: #d3e4de;
+
+    box-shadow:
+        0 10px 24px rgba(20, 50, 40, 0.07);
+}
+
+
+/* =========================================================
+   ALERT ICON
+========================================================= */
+
+.admin-dashboard-alert-icon {
+
+    width: 42px;
+    height: 42px;
+
+    flex: 0 0 42px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: #fff6df;
+
+    color: #c58a19;
+}
+
+
+/* =========================================================
+   ALERT CONTENT
+========================================================= */
+
+.admin-dashboard-alert-content {
+
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+.admin-dashboard-alert-card strong {
+
+    display: block;
+
+    color: #26322e;
+
+    font-size: 14px;
+    line-height: 1.4;
+
+    font-weight: 700;
+}
+
+
+.admin-dashboard-alert-card p {
+
+    margin: 5px 0 0;
+
+    color: #8a9792;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
+
+@media (max-width: 1400px) {
+
+    .admin-dashboard-content {
+
+        padding: 30px;
+    }
+
+
+    .admin-dashboard-stat-card {
+
+        padding: 20px;
+    }
+
+
+    .admin-dashboard-order-card {
+
+        padding: 18px;
+    }
+}
+
+
+/* =========================================================
+   DESKTOP / SMALL LAPTOP
+========================================================= */
+
+@media (max-width: 1200px) {
+
+    .admin-dashboard-content {
+
+        padding: 28px;
+    }
+
+
+    .admin-dashboard-stat-grid,
+    .admin-dashboard-order-grid {
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+    .admin-dashboard {
+
+        --admin-sidebar-width: 240px;
+    }
+
+
+    .admin-dashboard-main {
+
+        width: calc(100% - 240px);
+
+        margin-left: 240px;
+    }
+
+
+    .admin-dashboard-header {
+
+        min-height: 80px;
+
+        padding: 18px 24px;
+    }
+
+
+    .admin-dashboard-title {
+
+        font-size: 24px;
+    }
+
+
+    .admin-dashboard-content {
+
+        padding: 24px;
+    }
+
+
+    .admin-dashboard-alert-grid {
+
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   SMALL TABLET
+========================================================= */
+
+@media (max-width: 760px) {
+
+    .admin-dashboard-header {
+
+        padding: 18px;
+    }
+
+
+    .admin-dashboard-user-info {
+
+        display: none;
+    }
+
+
+    .admin-dashboard-avatar {
+
+        width: 42px;
+        height: 42px;
+
+        flex-basis: 42px;
+
+        font-size: 15px;
+    }
+
+
+    .admin-dashboard-content {
+
+        padding: 20px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 650px) {
+
+    .admin-dashboard {
+
+        --admin-sidebar-width: 0px;
+
+        width: 100%;
+    }
+
+
+    .admin-dashboard-main {
+
+        width: 100%;
+
+        margin-left: 0;
+
+        min-width: 0;
+    }
+
+
+    .admin-dashboard-header {
+
+        width: 100%;
+
+        min-height: auto;
+
+        padding: 18px 16px;
+
+        align-items: center;
+    }
+
+
+    .admin-dashboard-title {
+
+        font-size: 22px;
+
+        white-space: normal;
+    }
+
+
+    .admin-dashboard-welcome {
+
+        font-size: 12px;
+    }
+
+
+    .admin-dashboard-avatar {
+
+        width: 40px;
+        height: 40px;
+
+        flex-basis: 40px;
+
+        font-size: 14px;
+    }
+
+
+    .admin-dashboard-content {
+
+        width: 100%;
+
+        padding: 20px 16px;
+
+        overflow-x: hidden;
+    }
+
+
+    .admin-dashboard-stat-grid,
+    .admin-dashboard-order-grid {
+
+        grid-template-columns: 1fr;
+
+        gap: 14px;
+    }
+
+
+    .admin-dashboard-alert-grid {
+
+        grid-template-columns: 1fr;
+
+        gap: 14px;
+    }
+
+
+    .admin-dashboard-stat-card {
+
+        min-height: 145px;
+
+        padding: 19px;
+    }
+
+
+    .admin-dashboard-order-card {
+
+        min-height: 100px;
+
+        padding: 17px;
+    }
+
+
+    .admin-dashboard-section {
+
+        margin-top: 28px;
+    }
+
+
+    .admin-dashboard-section-heading {
+
+        margin-bottom: 15px;
+    }
+
+
+    .admin-dashboard-section-heading h2 {
+
+        font-size: 17px;
+    }
+
+
+    .admin-dashboard-section-heading p {
+
+        font-size: 12px;
+    }
+
+
+    .admin-dashboard-alert-card {
+
+        padding: 17px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+
+    .admin-dashboard-header {
+
+        padding: 16px 13px;
+    }
+
+
+    .admin-dashboard-content {
+
+        padding: 18px 13px;
+    }
+
+
+    .admin-dashboard-title {
+
+        font-size: 20px;
+    }
+
+
+    .admin-dashboard-stat-card {
+
+        padding: 18px;
+    }
+
+
+    .admin-dashboard-order-card {
+
+        padding: 16px;
+    }
+
+
+    .admin-dashboard-stat-value {
+
+        font-size: 25px;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .admin-dashboard-stat-card,
+    .admin-dashboard-order-card,
+    .admin-dashboard-alert-card {
+
+        transition: none;
+    }
+
+    .admin-dashboard-stat-card:hover,
+    .admin-dashboard-order-card:hover,
+    .admin-dashboard-alert-card:hover {
+
+        transform: none;
+    }
+}
