@@ -12,6 +12,8 @@ import {
   Check,
   LockKeyhole,
   ShoppingBag,
+  Tag,
+  X,
 } from "lucide-react";
 
 function Checkout({ cart, setCart }) {
@@ -20,6 +22,10 @@ function Checkout({ cart, setCart }) {
   const [selectedSlot, setSelectedSlot] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoMessage, setPromoMessage] = useState("");
+  const [promoError, setPromoError] = useState(false);
 
   const [paymentDetails, setPaymentDetails] = useState({
     upiId: "",
@@ -71,13 +77,70 @@ function Checkout({ cart, setCart }) {
   ];
 
   const cartSubtotal = cart.reduce(
-    (total, product) =>
-      total + product.price * product.quantity,
+    (total, product) => total + product.price * product.quantity,
     0
   );
 
   const deliveryCharge = cartSubtotal >= 500 ? 0 : 40;
-  const cartTotal = cartSubtotal + deliveryCharge;
+
+  const discount = appliedPromo
+    ? Math.min(appliedPromo.discount, cartSubtotal)
+    : 0;
+
+  const cartTotal = Math.max(
+    0,
+    cartSubtotal - discount + deliveryCharge
+  );
+
+  const applyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+
+    if (!code) {
+      setPromoError(true);
+      setPromoMessage("Please enter a promo code.");
+      return;
+    }
+
+    if (code === "FRESH10") {
+      if (cartSubtotal <= 0) {
+        setPromoError(true);
+        setPromoMessage("Add products before applying this code.");
+        return;
+      }
+
+      const amount = Math.round(cartSubtotal * 0.1);
+
+      setAppliedPromo({ code, discount: amount });
+      setPromoError(false);
+      setPromoMessage("Promo code applied successfully!");
+      return;
+    }
+
+    if (code === "SAVE50") {
+      if (cartSubtotal < 299) {
+        setAppliedPromo(null);
+        setPromoError(true);
+        setPromoMessage("SAVE50 requires a subtotal of ₹299 or more.");
+        return;
+      }
+
+      setAppliedPromo({ code, discount: 50 });
+      setPromoError(false);
+      setPromoMessage("Promo code applied successfully!");
+      return;
+    }
+
+    setAppliedPromo(null);
+    setPromoError(true);
+    setPromoMessage("Invalid promo code. Please try again.");
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoInput("");
+    setPromoMessage("Promo code removed.");
+    setPromoError(false);
+  };
 
   const handleAddressChange = (event) => {
     const { name, value } = event.target;
@@ -111,30 +174,25 @@ function Checkout({ cart, setCart }) {
   };
 
   const validatePaymentDetails = () => {
-    if (selectedPayment === "UPI") {
-      if (!paymentDetails.upiId.trim()) {
-        alert("Please enter your UPI ID.");
-        return false;
-      }
+    if (selectedPayment === "UPI" && !paymentDetails.upiId.trim()) {
+      alert("Please enter your UPI ID.");
+      return false;
     }
 
-    if (selectedPayment === "Credit / Debit Card") {
-      if (
-        !paymentDetails.cardName.trim() ||
+    if (
+      selectedPayment === "Credit / Debit Card" &&
+      (!paymentDetails.cardName.trim() ||
         !paymentDetails.cardNumber.trim() ||
         !paymentDetails.expiry.trim() ||
-        !paymentDetails.cvv.trim()
-      ) {
-        alert("Please enter all card details.");
-        return false;
-      }
+        !paymentDetails.cvv.trim())
+    ) {
+      alert("Please enter all card details.");
+      return false;
     }
 
-    if (selectedPayment === "Net Banking") {
-      if (!paymentDetails.bank) {
-        alert("Please select your bank.");
-        return false;
-      }
+    if (selectedPayment === "Net Banking" && !paymentDetails.bank) {
+      alert("Please select your bank.");
+      return false;
     }
 
     return true;
@@ -194,7 +252,6 @@ function Checkout({ cart, setCart }) {
             </div>
 
             <span>YOUR CART IS EMPTY</span>
-
             <h1>Nothing to checkout yet.</h1>
 
             <p>
@@ -224,10 +281,7 @@ function Checkout({ cart, setCart }) {
             Home / Cart / Checkout
           </p>
 
-          <span className="checkout-eyebrow">
-            SECURE CHECKOUT
-          </span>
-
+          <span className="checkout-eyebrow">SECURE CHECKOUT</span>
           <h1>Complete your order.</h1>
 
           <p className="checkout-intro">
@@ -241,7 +295,6 @@ function Checkout({ cart, setCart }) {
             <section className="checkout-card">
               <div className="checkout-card-heading">
                 <div className="checkout-step">01</div>
-
                 <div>
                   <span>WHERE SHOULD WE DELIVER?</span>
                   <h2>Delivery Address</h2>
@@ -352,7 +405,6 @@ function Checkout({ cart, setCart }) {
             <section className="checkout-card">
               <div className="checkout-card-heading">
                 <div className="checkout-step">02</div>
-
                 <div>
                   <span>CHOOSE WHEN TO RECEIVE IT</span>
                   <h2>Delivery Slot</h2>
@@ -374,10 +426,7 @@ function Checkout({ cart, setCart }) {
                     }`}
                     onClick={() => setSelectedSlot(slot)}
                   >
-                    {selectedSlot === slot && (
-                      <Check size={16} />
-                    )}
-
+                    {selectedSlot === slot && <Check size={16} />}
                     <span>{slot}</span>
                   </button>
                 ))}
@@ -387,7 +436,6 @@ function Checkout({ cart, setCart }) {
             <section className="checkout-card">
               <div className="checkout-card-heading">
                 <div className="checkout-step">03</div>
-
                 <div>
                   <span>HOW WOULD YOU LIKE TO PAY?</span>
                   <h2>Payment Method</h2>
@@ -400,13 +448,9 @@ function Checkout({ cart, setCart }) {
                     key={method.name}
                     type="button"
                     className={`payment-method ${
-                      selectedPayment === method.name
-                        ? "selected"
-                        : ""
+                      selectedPayment === method.name ? "selected" : ""
                     }`}
-                    onClick={() =>
-                      handlePaymentSelection(method.name)
-                    }
+                    onClick={() => handlePaymentSelection(method.name)}
                   >
                     <div className="payment-method-icon">
                       {method.icon}
@@ -429,7 +473,6 @@ function Checkout({ cart, setCart }) {
               {selectedPayment === "UPI" && (
                 <div className="payment-details">
                   <h3>UPI Payment</h3>
-
                   <label>
                     <span>UPI ID</span>
                     <input
@@ -440,7 +483,6 @@ function Checkout({ cart, setCart }) {
                       onChange={handlePaymentChange}
                     />
                   </label>
-
                   <small>
                     Enter the UPI ID linked to your payment app.
                   </small>
@@ -501,8 +543,7 @@ function Checkout({ cart, setCart }) {
                   </div>
 
                   <small>
-                    Demo payment form — do not enter real card
-                    details.
+                    Demo payment form — do not enter real card details.
                   </small>
                 </div>
               )}
@@ -510,25 +551,19 @@ function Checkout({ cart, setCart }) {
               {selectedPayment === "Net Banking" && (
                 <div className="payment-details">
                   <h3>Select Your Bank</h3>
-
                   <label>
                     <span>Bank</span>
-
                     <select
                       name="bank"
                       value={paymentDetails.bank}
                       onChange={handlePaymentChange}
                     >
                       <option value="">Select Bank</option>
-                      <option value="SBI">
-                        State Bank of India
-                      </option>
+                      <option value="SBI">State Bank of India</option>
                       <option value="HDFC">HDFC Bank</option>
                       <option value="ICICI">ICICI Bank</option>
                       <option value="Axis">Axis Bank</option>
-                      <option value="Kotak">
-                        Kotak Mahindra Bank
-                      </option>
+                      <option value="Kotak">Kotak Mahindra Bank</option>
                     </select>
                   </label>
                 </div>
@@ -537,7 +572,6 @@ function Checkout({ cart, setCart }) {
               {selectedPayment === "Cash on Delivery" && (
                 <div className="payment-details payment-cod">
                   <Banknote size={22} />
-
                   <div>
                     <h3>Cash on Delivery</h3>
                     <p>
@@ -563,11 +597,7 @@ function Checkout({ cart, setCart }) {
                   key={`${product.name}-${index}`}
                 >
                   <div className="checkout-product-image">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                    />
-
+                    <img src={product.image} alt={product.name} />
                     <span>{product.quantity}</span>
                   </div>
 
@@ -585,18 +615,109 @@ function Checkout({ cart, setCart }) {
               ))}
             </div>
 
+            <section className="checkout-promo">
+              <div className="checkout-promo-heading">
+                <Tag size={19} />
+                <div>
+                  <strong>Have a promo code?</strong>
+                  <span>Save more on your groceries</span>
+                </div>
+              </div>
+
+              {appliedPromo ? (
+                <div className="checkout-promo-applied">
+                  <div className="checkout-promo-applied-info">
+                    <Check size={17} />
+                    <div>
+                      <strong>{appliedPromo.code}</strong>
+                      <small>₹{discount} discount applied</small>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={removePromo}
+                    aria-label="Remove promo code"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              ) : (
+                <div className="checkout-promo-form">
+                  <input
+                    type="text"
+                    placeholder="Enter promo code"
+                    aria-label="Promo code"
+                    value={promoInput}
+                    onChange={(event) => {
+                      setPromoInput(event.target.value);
+                      setPromoMessage("");
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyPromo();
+                      }
+                    }}
+                  />
+
+                  <button type="button" onClick={applyPromo}>
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              {promoMessage && (
+                <p
+                  className={`checkout-promo-message ${
+                    promoError ? "error" : "success"
+                  }`}
+                  role="status"
+                >
+                  {promoMessage}
+                </p>
+              )}
+
+              <div className="checkout-demo-codes">
+                <span>Demo codes:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromoInput("FRESH10");
+                    setPromoMessage("");
+                  }}
+                >
+                  FRESH10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPromoInput("SAVE50");
+                    setPromoMessage("");
+                  }}
+                >
+                  SAVE50
+                </button>
+              </div>
+            </section>
+
             <div className="checkout-summary-lines">
               <div>
                 <span>Subtotal</span>
                 <strong>₹{cartSubtotal}</strong>
               </div>
 
+              {discount > 0 && (
+                <div className="checkout-discount-line">
+                  <span>Promo discount</span>
+                  <strong>−₹{discount}</strong>
+                </div>
+              )}
+
               <div>
                 <span>Delivery</span>
                 <strong>
-                  {deliveryCharge === 0
-                    ? "FREE"
-                    : `₹${deliveryCharge}`}
+                  {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}
                 </strong>
               </div>
             </div>
@@ -620,7 +741,6 @@ function Checkout({ cart, setCart }) {
                 <LockKeyhole size={16} />
                 <span>Secure checkout</span>
               </div>
-
               <div>
                 <ShieldCheck size={16} />
                 <span>Your information is protected</span>

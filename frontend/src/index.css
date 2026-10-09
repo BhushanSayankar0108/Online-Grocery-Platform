@@ -13989,3 +13989,178 @@ button:active {
     font-size: 12px;
   }
 }
+
+/* ===== Checkout Promo Code ===== */
+.checkout-promo {
+  margin: 20px 0;
+  padding: 16px;
+  background: #f7faf6;
+  border: 1px solid #e1e9dc;
+  border-radius: 12px;
+}
+
+.checkout-promo-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  color: #287a3e;
+}
+
+.checkout-promo-heading div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checkout-promo-heading strong {
+  color: #243328;
+  font-size: 14px;
+}
+
+.checkout-promo-heading span {
+  color: #788279;
+  font-size: 12px;
+}
+
+.checkout-promo-form {
+  display: flex;
+  gap: 8px;
+}
+
+.checkout-promo-form input {
+  min-width: 0;
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid #d6ded3;
+  border-radius: 7px;
+  background: #fff;
+  color: #26352a;
+  font-size: 13px;
+  outline: none;
+}
+
+.checkout-promo-form input:focus {
+  border-color: #38864b;
+  box-shadow: 0 0 0 3px rgba(56, 134, 75, 0.1);
+}
+
+.checkout-promo-form button {
+  padding: 0 16px;
+  border: none;
+  border-radius: 7px;
+  background: #287a3e;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.checkout-promo-form button:hover {
+  background: #1d6130;
+}
+
+.checkout-promo-applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed #76ad7d;
+  border-radius: 8px;
+  background: #edf8ee;
+}
+
+.checkout-promo-applied-info {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #25813b;
+}
+
+.checkout-promo-applied-info div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checkout-promo-applied-info strong {
+  font-size: 13px;
+}
+
+.checkout-promo-applied-info small {
+  color: #477951;
+  font-size: 12px;
+}
+
+.checkout-promo-applied > button {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #477951;
+  cursor: pointer;
+}
+
+.checkout-promo-applied > button:hover {
+  background: #dcefe0;
+}
+
+.checkout-promo-message {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.checkout-promo-message.success {
+  color: #23813b;
+}
+
+.checkout-promo-message.error {
+  color: #c0392b;
+}
+
+.checkout-demo-codes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+  color: #778078;
+  font-size: 11px;
+}
+
+.checkout-demo-codes button {
+  padding: 4px 7px;
+  border: 1px dashed #a5bba5;
+  border-radius: 5px;
+  background: #fff;
+  color: #287a3e;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.checkout-demo-codes button:hover {
+  background: #e8f4e8;
+}
+
+.checkout-discount-line {
+  color: #25813b;
+}
+
+.checkout-discount-line strong {
+  color: #25813b;
+}
+
+@media (max-width: 480px) {
+  .checkout-promo {
+    padding: 12px;
+  }
+
+  .checkout-promo-form button {
+    padding: 0 12px;
+  }
+}
