@@ -2,45 +2,25 @@
    ADMIN CMS PAGE
 ========================================================= */
 
+.admin-cms-page,
+.admin-cms-page * {
+  box-sizing: border-box;
+}
+
 .admin-cms-page {
   width: 100%;
   min-height: 100vh;
   padding: 28px;
   background: #f6f8fb;
   color: #1f2937;
+  font-family: inherit;
+  line-height: 1.5;
 }
 
 .cms-container {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-}
-
-/* =========================================================
-   TOP ROW
-========================================================= */
-
-.cms-top-row {
-  margin-bottom: 20px;
-}
-
-.cms-back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 0;
-  transition: 0.2s ease;
-}
-
-.cms-back-button:hover {
-  color: #16a34a;
-  transform: translateX(-2px);
 }
 
 /* =========================================================
@@ -59,6 +39,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .cms-title-icon {
@@ -67,17 +48,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 52px;
   border-radius: 14px;
   background: #dcfce7;
   color: #16a34a;
-  flex-shrink: 0;
 }
 
 .cms-title-wrapper h1 {
   margin: 0 0 5px;
-  font-size: 28px;
-  font-weight: 700;
   color: #111827;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
 }
 
 .cms-title-wrapper p {
@@ -90,14 +72,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 /* =========================================================
    BUTTONS
 ========================================================= */
 
-.cms-primary-button,
-.cms-secondary-button {
+.admin-cms-page .cms-primary-button,
+.admin-cms-page .cms-secondary-button {
   min-height: 42px;
   padding: 0 16px;
   border-radius: 9px;
@@ -105,32 +88,46 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
-.cms-primary-button {
+.admin-cms-page .cms-primary-button {
   border: 1px solid #16a34a;
   background: #16a34a;
   color: #ffffff;
 }
 
-.cms-primary-button:hover {
-  background: #15803d;
+.admin-cms-page .cms-primary-button:hover {
   border-color: #15803d;
+  background: #15803d;
 }
 
-.cms-secondary-button {
+.admin-cms-page .cms-secondary-button {
   border: 1px solid #d1d5db;
   background: #ffffff;
   color: #374151;
 }
 
-.cms-secondary-button:hover {
-  background: #f8fafc;
+.admin-cms-page .cms-secondary-button:hover {
   border-color: #9ca3af;
+  background: #f8fafc;
+}
+
+.admin-cms-page button:focus-visible,
+.admin-cms-page input:focus-visible,
+.admin-cms-page textarea:focus-visible,
+.admin-cms-page select:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, 0.2);
+  outline-offset: 2px;
 }
 
 /* =========================================================
@@ -141,10 +138,11 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .cms-stat-card {
+  min-width: 0;
   min-height: 100px;
   padding: 20px;
   border: 1px solid #e5e7eb;
@@ -159,7 +157,7 @@
 .cms-stat-icon {
   width: 46px;
   height: 46px;
-  flex-shrink: 0;
+  flex: 0 0 46px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,6 +178,7 @@
   display: block;
   color: #111827;
   font-size: 24px;
+  line-height: 1.2;
   font-weight: 700;
 }
 
@@ -201,31 +200,33 @@
   scrollbar-width: thin;
 }
 
-.cms-tabs button {
+.admin-cms-page .cms-tabs button {
   min-height: 48px;
   padding: 0 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: none;
+  border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
   color: #64748b;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.cms-tabs button:hover {
+.admin-cms-page .cms-tabs button:hover {
   color: #16a34a;
 }
 
-.cms-tabs button.active {
-  color: #16a34a;
+.admin-cms-page .cms-tabs button.active {
   border-bottom-color: #16a34a;
+  color: #16a34a;
 }
 
 /* =========================================================
@@ -261,11 +262,16 @@
 
 .cms-search input {
   width: 100%;
-  border: none;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
   outline: none;
   background: transparent;
   color: #1f2937;
+  font-family: inherit;
   font-size: 14px;
+  box-shadow: none;
 }
 
 .cms-search input::placeholder {
@@ -279,6 +285,7 @@
   color: #64748b;
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 /* =========================================================
@@ -300,6 +307,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   border-bottom: 1px solid #edf0f3;
 }
 
@@ -307,6 +315,7 @@
   margin: 0 0 5px;
   color: #111827;
   font-size: 18px;
+  line-height: 1.35;
   font-weight: 700;
 }
 
@@ -329,6 +338,7 @@
   width: 100%;
   min-width: 820px;
   border-collapse: collapse;
+  border-spacing: 0;
 }
 
 .cms-table th {
@@ -353,7 +363,7 @@
 }
 
 .cms-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: 0;
 }
 
 .cms-table tbody tr:hover {
@@ -361,7 +371,7 @@
 }
 
 /* =========================================================
-   NAME CELL
+   TABLE CELLS
 ========================================================= */
 
 .cms-name-cell {
@@ -380,7 +390,7 @@
 .cms-row-icon {
   width: 38px;
   height: 38px;
-  flex-shrink: 0;
+  flex: 0 0 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -389,28 +399,23 @@
   color: #16a34a;
 }
 
-.cms-description {
-  display: block;
-  max-width: 470px;
-  color: #64748b;
-  line-height: 1.5;
-}
-
+.cms-description,
 .cms-content-preview {
   display: block;
   max-width: 500px;
   color: #64748b;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* =========================================================
-   BANNER THUMBNAIL
+   BANNER THUMBNAILS
 ========================================================= */
 
 .cms-banner-thumb {
   width: 64px;
   height: 42px;
-  flex-shrink: 0;
+  flex: 0 0 64px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -422,14 +427,11 @@
 }
 
 .cms-banner-thumb img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
-/* =========================================================
-   BUTTON PREVIEW
-========================================================= */
 
 .cms-button-preview {
   display: inline-flex;
@@ -447,12 +449,12 @@
    STATUS
 ========================================================= */
 
-.cms-status-toggle {
+.admin-cms-page .cms-status-toggle {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   padding: 0;
-  border: none;
+  border: 0;
   background: transparent;
   cursor: pointer;
 }
@@ -466,12 +468,12 @@
 }
 
 .cms-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-width: 65px;
   min-height: 27px;
   padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -497,9 +499,10 @@
   gap: 7px;
 }
 
-.cms-icon-button {
+.admin-cms-page .cms-icon-button {
   width: 34px;
   height: 34px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -507,7 +510,7 @@
   border-radius: 8px;
   background: #ffffff;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .cms-icon-button.edit {
@@ -594,6 +597,7 @@
   margin: 0 0 5px;
   color: #111827;
   font-size: 19px;
+  line-height: 1.35;
   font-weight: 700;
 }
 
@@ -603,10 +607,11 @@
   font-size: 13px;
 }
 
-.cms-modal-close {
+.admin-cms-page .cms-modal-close {
   width: 34px;
   height: 34px;
-  flex-shrink: 0;
+  flex: 0 0 34px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -615,7 +620,6 @@
   background: #ffffff;
   color: #64748b;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
 .cms-modal-close:hover {
@@ -632,6 +636,7 @@
 }
 
 .cms-form-group {
+  min-width: 0;
   margin-bottom: 18px;
 }
 
@@ -647,6 +652,7 @@
 .cms-form-group textarea,
 .cms-form-group select {
   width: 100%;
+  max-width: 100%;
   border: 1px solid #dbe1e8;
   border-radius: 8px;
   outline: none;
@@ -654,7 +660,7 @@
   color: #1f2937;
   font-family: inherit;
   font-size: 14px;
-  transition: 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .cms-form-group input,
@@ -684,7 +690,7 @@
 
 .cms-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -717,7 +723,7 @@
   font-size: 12px;
 }
 
-.cms-upload-button {
+.admin-cms-page .cms-upload-button {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -732,17 +738,19 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .cms-upload-button:hover {
   background: #dcfce7;
 }
 
-.cms-upload-button input {
+.cms-upload-button input[type="file"] {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  margin: 0;
   opacity: 0;
   cursor: pointer;
 }
@@ -771,11 +779,115 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 0;
   border-radius: 50%;
   background: rgba(15, 23, 42, 0.72);
   color: #ffffff;
   cursor: pointer;
+}
+
+/* Multiple image preview support */
+
+.cms-image-help {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.cms-image-error {
+  margin: 8px 0 0;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.cms-multiple-image-grid,
+.cms-preview-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cms-multiple-image-item {
+  position: relative;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.cms-multiple-image-item img {
+  display: block;
+  width: 100%;
+  height: 105px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.cms-multiple-image-item > span {
+  display: block;
+  margin-top: 6px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-cms-page .cms-multiple-image-item > button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  color: #dc2626;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.18);
+}
+
+.cms-multiple-image-item > button:hover {
+  background: #fee2e2;
+}
+
+.cms-banner-preview-content {
+  padding: 22px;
+}
+
+.cms-preview-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.cms-preview-image-grid img {
+  display: block;
+  width: 100%;
+  height: 125px;
+  border-radius: 9px;
+  background: #f1f5f9;
+  object-fit: cover;
+}
+
+.cms-banner-preview-content h3 {
+  margin: 18px 0 8px;
+  color: #111827;
+  font-size: 20px;
+}
+
+.cms-banner-preview-content p {
+  margin: 8px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.cms-preview-footer {
+  padding: 0 22px 22px;
 }
 
 /* =========================================================
@@ -844,6 +956,7 @@
   .cms-title-icon {
     width: 46px;
     height: 46px;
+    flex-basis: 46px;
   }
 
   .cms-stats-grid {
@@ -891,5 +1004,10 @@
 
   .cms-modal-footer button {
     width: 100%;
+  }
+
+  .cms-multiple-image-grid,
+  .cms-preview-image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

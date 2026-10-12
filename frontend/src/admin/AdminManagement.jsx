@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   Activity,
-  ArrowLeft,
   Edit,
   Eye,
   KeyRound,
@@ -15,7 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+
 import "./AdminManagement.css";
 
 const initialAdmins = [
@@ -113,9 +112,9 @@ const emptyForm = {
   permissions: ["Dashboard"],
 };
 
-function AdminManagement() {
-  const navigate = useNavigate();
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const AdminManagement = () => {
   const [admins, setAdmins] = useState(initialAdmins);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -124,14 +123,16 @@ function AdminManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [formDirty, setFormDirty] = useState(false);
 
   const [viewAdmin, setViewAdmin] = useState(null);
   const [resetAdmin, setResetAdmin] = useState(null);
 
+  // Filter administrators.
   const filteredAdmins = useMemo(() => {
-    return admins.filter((admin) => {
-      const search = searchTerm.toLowerCase().trim();
+    const search = searchTerm.toLowerCase().trim();
 
+    return admins.filter((admin) => {
       const matchesSearch =
         !search ||
         admin.name.toLowerCase().includes(search) ||
@@ -148,25 +149,36 @@ function AdminManagement() {
     });
   }, [admins, searchTerm, roleFilter, statusFilter]);
 
+  // Statistics.
   const totalAdmins = admins.length;
+
   const activeAdmins = admins.filter(
     (admin) => admin.status === "Active"
   ).length;
+
   const inactiveAdmins = admins.filter(
     (admin) => admin.status === "Inactive"
   ).length;
+
   const superAdmins = admins.filter(
     (admin) => admin.role === "Super Admin"
   ).length;
 
+  // Open add modal.
   const openAddModal = () => {
     setEditingAdmin(null);
-    setFormData(emptyForm);
+    setFormData({
+      ...emptyForm,
+      permissions: [...emptyForm.permissions],
+    });
+    setFormDirty(false);
     setShowModal(true);
   };
 
+  // Open edit modal.
   const openEditModal = (admin) => {
     setEditingAdmin(admin);
+
     setFormData({
       name: admin.name,
       email: admin.email,
@@ -175,112 +187,258 @@ function AdminManagement() {
       status: admin.status,
       permissions: [...admin.permissions],
     });
+
+    setFormDirty(false);
     setShowModal(true);
   };
 
+  // Close add/edit modal.
   const closeModal = () => {
+    if (formDirty) {
+      const confirmed = window.confirm(
+        "Discard your unsaved changes?"
+      );
+
+      if (!confirmed) return;
+    }
+
     setShowModal(false);
     setEditingAdmin(null);
-    setFormData(emptyForm);
+    setFormData({
+      ...emptyForm,
+      permissions: [...emptyForm.permissions],
+    });
+    setFormDirty(false);
   };
 
+  // Handle form changes.
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
-    setFormData((prev) => ({
-      ...prev,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
     }));
+
+    setFormDirty(true);
   };
 
+  // Toggle permissions.
   const togglePermission = (permission) => {
-    setFormData((prev) => {
-      const exists = prev.permissions.includes(permission);
+    setFormData((previous) => {
+      const exists = previous.permissions.includes(permission);
 
       return {
-        ...prev,
+        ...previous,
         permissions: exists
-          ? prev.permissions.filter((item) => item !== permission)
-          : [...prev.permissions, permission],
+          ? previous.permissions.filter(
+              (item) => item !== permission
+            )
+          : [...previous.permissions, permission],
       };
     });
+
+    setFormDirty(true);
   };
 
+  // Add or update administrator.
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (
-      !formData.name.trim() ||
-      !formData.email.trim() ||
-      !formData.mobile.trim()
-    ) {
-      alert("Please fill all required fields.");
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const mobile = formData.mobile.replace(/\s+/g, "");
+
+    if (!name || !email || !mobile) {
+      window.alert("Please fill in all required fields.");
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(email)) {
+      window.alert("Please enter a valid email address.");
+      return;
+    }
+
+    if (!/^\+?[0-9]{10,15}$/.test(mobile)) {
+      window.alert(
+        "Please enter a valid mobile number containing 10 to 15 digits."
+      );
       return;
     }
 
     if (formData.permissions.length === 0) {
-      alert("Please select at least one permission.");
+      window.alert("Please select at least one permission.");
       return;
     }
 
+    const duplicateEmail = admins.some(
+      (admin) =>
+        admin.email.toLowerCase() === email &&
+        admin.id !== editingAdmin?.id
+    );
+
+    if (duplicateEmail) {
+      window.alert(
+        "An administrator with this email address already exists."
+      );
+      return;
+    }
+
+    if (
+      editingAdmin?.role === "Super Admin" &&
+      formData.role !== "Super Admin"
+    ) {
+      const confirmed = window.confirm(
+        "You are changing the Super Admin role. This may affect administrative access. Continue?"
+      );
+
+      if (!confirmed) return;
+    }
+
+    if (
+      editingAdmin?.role === "Super Admin" &&
+      formData.status !== "Active"
+    ) {
+      window.alert("The Super Admin account cannot be deactivated.");
+      return;
+    }
+
+    const normalizedForm = {
+      ...formData,
+      name,
+      email,
+      mobile,
+      permissions: [...formData.permissions],
+    };
+
     if (editingAdmin) {
-      setAdmins((prev) =>
-        prev.map((admin) =>
+      const confirmed = window.confirm(
+        `Save changes to administrator "${name}"?`
+      );
+
+      if (!confirmed) return;
+
+      setAdmins((previous) =>
+        previous.map((admin) =>
           admin.id === editingAdmin.id
             ? {
                 ...admin,
-                ...formData,
+                ...normalizedForm,
               }
             : admin
         )
       );
+
+      setViewAdmin((previous) =>
+        previous?.id === editingAdmin.id
+          ? { ...previous, ...normalizedForm }
+          : previous
+      );
+
+      window.alert("Administrator updated successfully.");
     } else {
+      const confirmed = window.confirm(
+        `Create a new administrator account for "${name}"?`
+      );
+
+      if (!confirmed) return;
+
       const newAdmin = {
         id: Date.now(),
-        ...formData,
+        ...normalizedForm,
         lastLogin: "Never",
         createdAt: new Date().toISOString().split("T")[0],
       };
 
-      setAdmins((prev) => [newAdmin, ...prev]);
+      setAdmins((previous) => [newAdmin, ...previous]);
+
+      window.alert("Administrator created successfully.");
     }
 
-    closeModal();
+    setShowModal(false);
+    setEditingAdmin(null);
+    setFormData({
+      ...emptyForm,
+      permissions: [...emptyForm.permissions],
+    });
+    setFormDirty(false);
   };
 
+  // Delete administrator.
   const handleDelete = (admin) => {
     if (admin.role === "Super Admin") {
-      alert("Super Admin cannot be deleted.");
+      window.alert("The Super Admin account cannot be deleted.");
       return;
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${admin.name}?`
+      `Are you sure you want to delete "${admin.name}"? This action cannot be undone.`
     );
 
     if (!confirmed) return;
 
-    setAdmins((prev) => prev.filter((item) => item.id !== admin.id));
+    setAdmins((previous) =>
+      previous.filter((item) => item.id !== admin.id)
+    );
+
+    if (viewAdmin?.id === admin.id) {
+      setViewAdmin(null);
+    }
+
+    if (resetAdmin?.id === admin.id) {
+      setResetAdmin(null);
+    }
+
+    window.alert("Administrator deleted successfully.");
   };
 
+  // Toggle active/inactive status.
   const toggleAdminStatus = (admin) => {
-    setAdmins((prev) =>
-      prev.map((item) =>
+    if (admin.role === "Super Admin") {
+      window.alert("The Super Admin account cannot be deactivated.");
+      return;
+    }
+
+    const nextStatus =
+      admin.status === "Active" ? "Inactive" : "Active";
+
+    const confirmed = window.confirm(
+      `Change ${admin.name}'s status to "${nextStatus}"?`
+    );
+
+    if (!confirmed) return;
+
+    setAdmins((previous) =>
+      previous.map((item) =>
         item.id === admin.id
-          ? {
-              ...item,
-              status: item.status === "Active" ? "Inactive" : "Active",
-            }
+          ? { ...item, status: nextStatus }
           : item
       )
     );
+
+    setViewAdmin((previous) =>
+      previous?.id === admin.id
+        ? { ...previous, status: nextStatus }
+        : previous
+    );
+
+    window.alert(
+      `${admin.name}'s status changed to ${nextStatus}.`
+    );
   };
 
+  // Simulated password-reset action.
   const handleResetPassword = () => {
     if (!resetAdmin) return;
 
-    alert(
-      `Password reset link would be sent to ${resetAdmin.email}.`
+    const confirmed = window.confirm(
+      `Request a password reset for ${resetAdmin.email}?`
+    );
+
+    if (!confirmed) return;
+
+    window.alert(
+      `Password reset is currently a frontend demonstration. A reset link has not actually been sent to ${resetAdmin.email}.`
     );
 
     setResetAdmin(null);
@@ -292,15 +450,6 @@ function AdminManagement() {
         {/* Header */}
         <div className="admin-management-header">
           <div className="admin-management-heading">
-            <button
-              className="admin-management-back-button"
-              onClick={() => navigate("/admin/dashboard")}
-              type="button"
-            >
-              <ArrowLeft size={18} />
-              Back to Dashboard
-            </button>
-
             <div className="admin-management-title-row">
               <div className="admin-management-title-icon">
                 <UserCog size={26} />
@@ -309,7 +458,8 @@ function AdminManagement() {
               <div>
                 <h1>Admin Management</h1>
                 <p>
-                  Manage administrator accounts, roles and permissions.
+                  Manage administrator accounts, roles and
+                  permissions.
                 </p>
               </div>
             </div>
@@ -331,7 +481,6 @@ function AdminManagement() {
             <div className="admin-management-stat-icon">
               <Users size={21} />
             </div>
-
             <div>
               <span>Total Admins</span>
               <strong>{totalAdmins}</strong>
@@ -342,7 +491,6 @@ function AdminManagement() {
             <div className="admin-management-stat-icon">
               <Activity size={21} />
             </div>
-
             <div>
               <span>Active Admins</span>
               <strong>{activeAdmins}</strong>
@@ -353,7 +501,6 @@ function AdminManagement() {
             <div className="admin-management-stat-icon">
               <ShieldCheck size={21} />
             </div>
-
             <div>
               <span>Super Admins</span>
               <strong>{superAdmins}</strong>
@@ -364,7 +511,6 @@ function AdminManagement() {
             <div className="admin-management-stat-icon">
               <UserCog size={21} />
             </div>
-
             <div>
               <span>Inactive Admins</span>
               <strong>{inactiveAdmins}</strong>
@@ -381,13 +527,19 @@ function AdminManagement() {
               type="text"
               placeholder="Search by name, email or mobile..."
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) =>
+                setSearchTerm(event.target.value)
+              }
+              aria-label="Search administrators"
             />
           </div>
 
           <select
             value={roleFilter}
-            onChange={(event) => setRoleFilter(event.target.value)}
+            onChange={(event) =>
+              setRoleFilter(event.target.value)
+            }
+            aria-label="Filter by role"
           >
             <option value="All">All Roles</option>
             <option value="Super Admin">Super Admin</option>
@@ -398,7 +550,10 @@ function AdminManagement() {
 
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) =>
+              setStatusFilter(event.target.value)
+            }
+            aria-label="Filter by status"
           >
             <option value="All">All Status</option>
             <option value="Active">Active</option>
@@ -447,7 +602,6 @@ function AdminManagement() {
                             <Mail size={14} />
                             {admin.email}
                           </span>
-
                           <span>
                             <Phone size={14} />
                             {admin.mobile}
@@ -496,8 +650,17 @@ function AdminManagement() {
                               ? "active"
                               : "inactive"
                           }`}
-                          onClick={() => toggleAdminStatus(admin)}
+                          onClick={() =>
+                            toggleAdminStatus(admin)
+                          }
                           type="button"
+                          disabled={admin.role === "Super Admin"}
+                          aria-label={`Status: ${admin.status}`}
+                          title={
+                            admin.role === "Super Admin"
+                              ? "Super Admin cannot be deactivated"
+                              : "Change administrator status"
+                          }
                         >
                           <span />
                           {admin.status}
@@ -509,6 +672,7 @@ function AdminManagement() {
                           <button
                             className="admin-management-action view"
                             title="View Admin"
+                            aria-label={`View ${admin.name}`}
                             onClick={() => setViewAdmin(admin)}
                             type="button"
                           >
@@ -518,6 +682,7 @@ function AdminManagement() {
                           <button
                             className="admin-management-action edit"
                             title="Edit Admin"
+                            aria-label={`Edit ${admin.name}`}
                             onClick={() => openEditModal(admin)}
                             type="button"
                           >
@@ -527,6 +692,7 @@ function AdminManagement() {
                           <button
                             className="admin-management-action password"
                             title="Reset Password"
+                            aria-label={`Reset password for ${admin.name}`}
                             onClick={() => setResetAdmin(admin)}
                             type="button"
                           >
@@ -536,6 +702,7 @@ function AdminManagement() {
                           <button
                             className="admin-management-action delete"
                             title="Delete Admin"
+                            aria-label={`Delete ${admin.name}`}
                             onClick={() => handleDelete(admin)}
                             type="button"
                           >
@@ -574,11 +741,18 @@ function AdminManagement() {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="admin-management-modal-overlay">
-          <div className="admin-management-modal">
+          <div
+            className="admin-management-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-management-form-title"
+          >
             <div className="admin-management-modal-header">
               <div>
-                <h2>
-                  {editingAdmin ? "Edit Administrator" : "Add Administrator"}
+                <h2 id="admin-management-form-title">
+                  {editingAdmin
+                    ? "Edit Administrator"
+                    : "Add Administrator"}
                 </h2>
                 <p>
                   {editingAdmin
@@ -591,6 +765,7 @@ function AdminManagement() {
                 className="admin-management-modal-close"
                 onClick={closeModal}
                 type="button"
+                aria-label="Close administrator form"
               >
                 <X size={20} />
               </button>
@@ -609,6 +784,9 @@ function AdminManagement() {
                     placeholder="Enter full name"
                     value={formData.name}
                     onChange={handleInputChange}
+                    autoComplete="name"
+                    required
+                    maxLength={100}
                   />
                 </label>
 
@@ -620,6 +798,9 @@ function AdminManagement() {
                     placeholder="Enter email address"
                     value={formData.email}
                     onChange={handleInputChange}
+                    autoComplete="email"
+                    required
+                    maxLength={150}
                   />
                 </label>
 
@@ -631,6 +812,9 @@ function AdminManagement() {
                     placeholder="Enter mobile number"
                     value={formData.mobile}
                     onChange={handleInputChange}
+                    autoComplete="tel"
+                    required
+                    maxLength={16}
                   />
                 </label>
 
@@ -641,7 +825,9 @@ function AdminManagement() {
                     value={formData.role}
                     onChange={handleInputChange}
                   >
-                    <option value="Super Admin">Super Admin</option>
+                    <option value="Super Admin">
+                      Super Admin
+                    </option>
                     <option value="Manager">Manager</option>
                     <option value="Content Manager">
                       Content Manager
@@ -658,6 +844,9 @@ function AdminManagement() {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
+                    disabled={
+                      editingAdmin?.role === "Super Admin"
+                    }
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -669,7 +858,10 @@ function AdminManagement() {
                 <div className="admin-management-permission-heading">
                   <div>
                     <h3>Permissions</h3>
-                    <p>Select the sections this administrator can access.</p>
+                    <p>
+                      Select the sections this administrator can
+                      access.
+                    </p>
                   </div>
 
                   <span>
@@ -685,10 +877,13 @@ function AdminManagement() {
                     >
                       <input
                         type="checkbox"
-                        checked={formData.permissions.includes(permission)}
-                        onChange={() => togglePermission(permission)}
+                        checked={formData.permissions.includes(
+                          permission
+                        )}
+                        onChange={() =>
+                          togglePermission(permission)
+                        }
                       />
-
                       <span>{permission}</span>
                     </label>
                   ))}
@@ -708,7 +903,9 @@ function AdminManagement() {
                   className="admin-management-save-button"
                   type="submit"
                 >
-                  {editingAdmin ? "Update Admin" : "Create Admin"}
+                  {editingAdmin
+                    ? "Update Admin"
+                    : "Create Admin"}
                 </button>
               </div>
             </form>
@@ -719,17 +916,27 @@ function AdminManagement() {
       {/* View Modal */}
       {viewAdmin && (
         <div className="admin-management-modal-overlay">
-          <div className="admin-management-view-modal">
+          <div
+            className="admin-management-view-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-management-view-title"
+          >
             <div className="admin-management-modal-header">
               <div>
-                <h2>Administrator Details</h2>
-                <p>View account information and permissions.</p>
+                <h2 id="admin-management-view-title">
+                  Administrator Details
+                </h2>
+                <p>
+                  View account information and permissions.
+                </p>
               </div>
 
               <button
                 className="admin-management-modal-close"
                 onClick={() => setViewAdmin(null)}
                 type="button"
+                aria-label="Close administrator details"
               >
                 <X size={20} />
               </button>
@@ -798,15 +1005,22 @@ function AdminManagement() {
       {/* Reset Password Modal */}
       {resetAdmin && (
         <div className="admin-management-modal-overlay">
-          <div className="admin-management-reset-modal">
+          <div
+            className="admin-management-reset-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-management-reset-title"
+          >
             <div className="admin-management-reset-icon">
               <KeyRound size={28} />
             </div>
 
-            <h2>Reset Password?</h2>
+            <h2 id="admin-management-reset-title">
+              Reset Password?
+            </h2>
 
             <p>
-              A password reset link would be sent to:
+              A password reset request would be prepared for:
             </p>
 
             <strong>{resetAdmin.email}</strong>
@@ -825,7 +1039,7 @@ function AdminManagement() {
                 onClick={handleResetPassword}
                 type="button"
               >
-                Send Reset Link
+                Request Reset
               </button>
             </div>
           </div>
@@ -833,6 +1047,6 @@ function AdminManagement() {
       )}
     </div>
   );
-}
+};
 
 export default AdminManagement;

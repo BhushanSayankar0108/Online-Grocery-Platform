@@ -1,7 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useRef, useState, useEffect } from "react";
 import {
-  ArrowLeft,
   ChevronDown,
   Edit,
   ImagePlus,
@@ -29,6 +27,7 @@ const INITIAL_SUBCATEGORIES = [
     categoryName: "Fruits & Vegetables",
     description: "Fresh seasonal fruits and everyday favorites.",
     image: "",
+    images: [],
     imageSize: "medium",
     status: "active",
     createdAt: "02 Oct 2026",
@@ -40,6 +39,7 @@ const INITIAL_SUBCATEGORIES = [
     categoryName: "Fruits & Vegetables",
     description: "Fresh vegetables for everyday cooking.",
     image: "",
+    images: [],
     imageSize: "medium",
     status: "active",
     createdAt: "02 Oct 2026",
@@ -51,6 +51,7 @@ const INITIAL_SUBCATEGORIES = [
     categoryName: "Dairy & Bakery",
     description: "Milk, curd, butter, paneer and other dairy products.",
     image: "",
+    images: [],
     imageSize: "medium",
     status: "active",
     createdAt: "02 Oct 2026",
@@ -62,6 +63,7 @@ const INITIAL_SUBCATEGORIES = [
     categoryName: "Staples & Grains",
     description: "Rice, wheat, grains and staple food products.",
     image: "",
+    images: [],
     imageSize: "medium",
     status: "inactive",
     createdAt: "02 Oct 2026",
@@ -73,13 +75,25 @@ const EMPTY_FORM = {
   categoryId: "",
   description: "",
   image: "",
+  images: [],
   imageSize: "medium",
   status: "active",
 };
 
+const MAX_IMAGES = 10;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const normalizeImages = (item) => {
+  if (Array.isArray(item.images) && item.images.length > 0) {
+    return item.images;
+  }
+
+  return item.image ? [item.image] : [];
+};
+
 const AdminSubCategories = () => {
-  const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const objectUrlsRef = useRef(new Set());
 
   const [subCategories, setSubCategories] = useState(
     INITIAL_SUBCATEGORIES
@@ -91,10 +105,24 @@ const AdminSubCategories = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({
+    ...EMPTY_FORM,
+    images: [],
+  });
+  const [validationError, setValidationError] = useState("");
+  const [imagePreview, setImagePreview] = useState([]);
+  const [isDirty, setIsDirty] = useState(false);
 
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  // Capture the Set once inside the effect. This avoids reading the
+  // mutable ref's current value from the cleanup function.
+  useEffect(() => {
+    const urls = objectUrlsRef.current;
 
-  const [imagePreview, setImagePreview] = useState("");
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.clear();
+    };
+  }, []);
 
   const filteredSubCategories = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -104,7 +132,7 @@ const AdminSubCategories = () => {
         !search ||
         item.name.toLowerCase().includes(search) ||
         item.categoryName.toLowerCase().includes(search) ||
-        item.description.toLowerCase().includes(search);
+        (item.description || "").toLowerCase().includes(search);
 
       const matchesCategory =
         selectedCategoryFilter === "all" ||
@@ -114,34 +142,86 @@ const AdminSubCategories = () => {
     });
   }, [subCategories, searchTerm, selectedCategoryFilter]);
 
+  const activeCount = subCategories.filter(
+    (item) => item.status === "active"
+  ).length;
+
+  const inactiveCount = subCategories.filter(
+    (item) => item.status === "inactive"
+  ).length;
+
+  const releaseImageUrl = (url) => {
+    if (url && objectUrlsRef.current.has(url)) {
+      URL.revokeObjectURL(url);
+      objectUrlsRef.current.delete(url);
+    }
+  };
+
+  const releaseNewImages = (images) => {
+    images.forEach((image) => {
+      if (image?.isNew) {
+        releaseImageUrl(image.url);
+      }
+    });
+  };
+
   const openAddModal = () => {
     setEditingId(null);
-    setFormData(EMPTY_FORM);
-    setImagePreview("");
+    setFormData({ ...EMPTY_FORM, images: [] });
+    setImagePreview([]);
+    setValidationError("");
+    setIsDirty(false);
     setIsModalOpen(true);
   };
 
   const openEditModal = (item) => {
-    setEditingId(item.id);
+    const existingImages = normalizeImages(item);
 
+    setEditingId(item.id);
     setFormData({
       name: item.name,
       categoryId: item.categoryId,
-      description: item.description,
-      image: item.image,
-      imageSize: item.imageSize,
+      description: item.description || "",
+      image: item.image || existingImages[0] || "",
+      images: existingImages.map((url) => ({
+        url,
+        name: "Existing image",
+        isNew: false,
+      })),
+      imageSize: item.imageSize || "medium",
       status: item.status,
     });
 
-    setImagePreview(item.image || "");
+    setImagePreview(
+      existingImages.map((url) => ({
+        url,
+        name: "Existing image",
+        isNew: false,
+      }))
+    );
+
+    setValidationError("");
+    setIsDirty(false);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const closeModal = (force = false) => {
+    if (!force && isDirty) {
+      const confirmed = window.confirm(
+        "You have unsaved changes. Are you sure you want to discard them?"
+      );
+
+      if (!confirmed) return;
+    }
+
+    releaseNewImages(formData.images || []);
+
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData(EMPTY_FORM);
-    setImagePreview("");
+    setFormData({ ...EMPTY_FORM, images: [] });
+    setImagePreview([]);
+    setValidationError("");
+    setIsDirty(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -155,48 +235,122 @@ const AdminSubCategories = () => {
       ...previous,
       [name]: value,
     }));
+
+    setIsDirty(true);
+    setValidationError("");
   };
 
   const handleImageChange = (event) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
 
-    if (!file) {
+    if (files.length === 0) return;
+
+    const currentImages = formData.images || [];
+    const remainingSlots = MAX_IMAGES - currentImages.length;
+
+    if (remainingSlots <= 0) {
+      setValidationError(
+        `You can upload a maximum of ${MAX_IMAGES} images.`
+      );
+      event.target.value = "";
       return;
     }
 
-    const previewUrl = URL.createObjectURL(file);
+    const acceptedImages = [];
+    const errors = [];
+
+    files.slice(0, remainingSlots).forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        errors.push(`${file.name} is not a supported image.`);
+        return;
+      }
+
+      if (file.size > MAX_IMAGE_SIZE) {
+        errors.push(`${file.name} exceeds the 5 MB limit.`);
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      objectUrlsRef.current.add(url);
+
+      acceptedImages.push({
+        url,
+        name: file.name,
+        isNew: true,
+      });
+    });
+
+    const updatedImages = [...currentImages, ...acceptedImages];
 
     setFormData((previous) => ({
       ...previous,
-      image: previewUrl,
+      images: updatedImages,
+      image: updatedImages[0]?.url || "",
     }));
 
-    setImagePreview(previewUrl);
+    setImagePreview(updatedImages);
+    setIsDirty(true);
+
+    setValidationError(
+      errors.length > 0
+        ? errors.join(" ")
+        : files.length > remainingSlots
+          ? `Only ${MAX_IMAGES} images are allowed. Extra images were skipped.`
+          : ""
+    );
+
+    // Allows the same file to be selected again if needed.
+    event.target.value = "";
   };
 
-  const removeImage = () => {
+  const removeImage = (index) => {
+    const imageToRemove = formData.images[index];
+
+    if (!imageToRemove) return;
+
+    const confirmed = window.confirm(
+      `Remove "${imageToRemove.name || "this image"}" from the subcategory?`
+    );
+
+    if (!confirmed) return;
+
+    // Do not revoke an image URL here. If the user cancels editing,
+    // the original table entry must continue displaying its image.
+    const updatedImages = formData.images.filter(
+      (_, imageIndex) => imageIndex !== index
+    );
+
     setFormData((previous) => ({
       ...previous,
-      image: "",
+      images: updatedImages,
+      image: updatedImages[0]?.url || "",
     }));
 
-    setImagePreview("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setImagePreview(updatedImages);
+    setIsDirty(true);
+    setValidationError("");
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    setValidationError("");
 
-    if (!formData.name.trim()) {
-      alert("Please enter subcategory name.");
+    const trimmedName = formData.name.trim();
+
+    if (!trimmedName) {
+      setValidationError("Please enter a subcategory name.");
       return;
     }
 
     if (!formData.categoryId) {
-      alert("Please select parent category.");
+      setValidationError("Please select a parent category.");
+      return;
+    }
+
+    if (trimmedName.length > 100) {
+      setValidationError(
+        "Subcategory name cannot exceed 100 characters."
+      );
       return;
     }
 
@@ -205,20 +359,62 @@ const AdminSubCategories = () => {
     );
 
     if (!selectedCategory) {
+      setValidationError("Please select a valid parent category.");
       return;
     }
 
+    const duplicate = subCategories.some(
+      (item) =>
+        item.id !== editingId &&
+        item.categoryId === formData.categoryId &&
+        item.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (duplicate) {
+      setValidationError(
+        "A subcategory with this name already exists under the selected parent category."
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      editingId
+        ? `Are you sure you want to update "${trimmedName}"?`
+        : `Are you sure you want to add "${trimmedName}"?`
+    );
+
+    if (!confirmed) return;
+
+    const imageObjects = formData.images || [];
+    const imageUrls = imageObjects.map((image) => image.url);
+
     if (editingId) {
+      const existingItem = subCategories.find(
+        (item) => item.id === editingId
+      );
+
+      // Revoke old object URLs only when the update is confirmed.
+      if (existingItem) {
+        const oldUrls = normalizeImages(existingItem);
+
+        oldUrls.forEach((url) => {
+          if (!imageUrls.includes(url)) {
+            releaseImageUrl(url);
+          }
+        });
+      }
+
       setSubCategories((previous) =>
         previous.map((item) =>
           item.id === editingId
             ? {
                 ...item,
-                name: formData.name.trim(),
+                name: trimmedName,
                 categoryId: formData.categoryId,
                 categoryName: selectedCategory.name,
                 description: formData.description.trim(),
-                image: formData.image,
+                image: imageUrls[0] || "",
+                images: imageUrls,
                 imageSize: formData.imageSize,
                 status: formData.status,
               }
@@ -226,13 +422,17 @@ const AdminSubCategories = () => {
         )
       );
     } else {
+      // Generate the ID outside the state updater to keep the updater pure.
+      const newSubCategoryId = Date.now();
+
       const newSubCategory = {
-        id: Date.now(),
-        name: formData.name.trim(),
+        id: newSubCategoryId,
+        name: trimmedName,
         categoryId: formData.categoryId,
         categoryName: selectedCategory.name,
         description: formData.description.trim(),
-        image: formData.image,
+        image: imageUrls[0] || "",
+        images: imageUrls,
         imageSize: formData.imageSize,
         status: formData.status,
         createdAt: new Date().toLocaleDateString("en-GB", {
@@ -248,7 +448,8 @@ const AdminSubCategories = () => {
       ]);
     }
 
-    closeModal();
+    setIsDirty(false);
+    closeModal(true);
   };
 
   const handleDelete = (id) => {
@@ -256,52 +457,32 @@ const AdminSubCategories = () => {
       (subcategory) => subcategory.id === id
     );
 
-    if (!item) {
-      return;
-    }
+    if (!item) return;
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${item.name}"?`
+      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setSubCategories((previous) =>
       previous.filter((subcategory) => subcategory.id !== id)
     );
+
+    normalizeImages(item).forEach((url) => {
+      releaseImageUrl(url);
+    });
   };
 
   const getImageSizeClass = (size) => {
-    if (size === "small") {
-      return "sub-category-image-small";
-    }
-
-    if (size === "large") {
-      return "sub-category-image-large";
-    }
-
+    if (size === "small") return "sub-category-image-small";
+    if (size === "large") return "sub-category-image-large";
     return "sub-category-image-medium";
   };
 
   return (
     <div className="admin-subcategories-page">
       <div className="admin-subcategories-container">
-
-        {/* Back Button */}
-        <div className="admin-subcategories-back-wrapper">
-          <button
-            type="button"
-            className="admin-subcategories-back-button"
-            onClick={() => navigate("/admin/dashboard")}
-          >
-            <ArrowLeft size={17} />
-            <span>Back to Dashboard</span>
-          </button>
-        </div>
-
-        {/* Header */}
         <div className="admin-subcategories-header">
           <div>
             <p className="admin-subcategories-eyebrow">
@@ -325,7 +506,6 @@ const AdminSubCategories = () => {
           </button>
         </div>
 
-        {/* Stats */}
         <div className="admin-subcategories-stats">
           <div className="admin-subcategories-stat-card">
             <span>Total Subcategories</span>
@@ -334,46 +514,32 @@ const AdminSubCategories = () => {
 
           <div className="admin-subcategories-stat-card">
             <span>Active</span>
-            <strong>
-              {
-                subCategories.filter(
-                  (item) => item.status === "active"
-                ).length
-              }
-            </strong>
+            <strong>{activeCount}</strong>
           </div>
 
           <div className="admin-subcategories-stat-card">
             <span>Inactive</span>
-            <strong>
-              {
-                subCategories.filter(
-                  (item) => item.status === "inactive"
-                ).length
-              }
-            </strong>
+            <strong>{inactiveCount}</strong>
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className="admin-subcategories-toolbar">
-
           <div className="admin-subcategories-search">
             <Search size={18} />
 
             <input
-              type="text"
+              type="search"
+              aria-label="Search subcategories"
               placeholder="Search subcategories..."
               value={searchTerm}
-              onChange={(event) =>
-                setSearchTerm(event.target.value)
-              }
+              onChange={(event) => setSearchTerm(event.target.value)}
             />
 
             {searchTerm && (
               <button
                 type="button"
                 className="admin-subcategories-clear-search"
+                aria-label="Clear search"
                 onClick={() => setSearchTerm("")}
               >
                 <X size={15} />
@@ -383,6 +549,7 @@ const AdminSubCategories = () => {
 
           <div className="admin-subcategories-filter">
             <select
+              aria-label="Filter by parent category"
               value={selectedCategoryFilter}
               onChange={(event) =>
                 setSelectedCategoryFilter(event.target.value)
@@ -391,10 +558,7 @@ const AdminSubCategories = () => {
               <option value="all">All Categories</option>
 
               {CATEGORY_OPTIONS.map((category) => (
-                <option
-                  key={category.id}
-                  value={category.id}
-                >
+                <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}
@@ -404,14 +568,13 @@ const AdminSubCategories = () => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="admin-subcategories-table-card">
           <div className="admin-subcategories-table-header">
             <div>
               <h2>Subcategory List</h2>
               <p>
-                {filteredSubCategories.length} subcategory
-                {filteredSubCategories.length !== 1 ? "ies" : "y"} found
+                {filteredSubCategories.length} subcategor
+                {filteredSubCategories.length === 1 ? "y" : "ies"} found
               </p>
             </div>
           </div>
@@ -433,104 +596,103 @@ const AdminSubCategories = () => {
 
               <tbody>
                 {filteredSubCategories.length > 0 ? (
-                  filteredSubCategories.map((item, index) => (
-                    <tr key={item.id}>
-                      <td className="sub-category-number">
-                        {index + 1}
-                      </td>
+                  filteredSubCategories.map((item, index) => {
+                    const images = normalizeImages(item);
 
-                      <td>
-                        <div
-                          className={`sub-category-table-image ${getImageSizeClass(
-                            item.imageSize
-                          )}`}
-                        >
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                            />
-                          ) : (
-                            <ImagePlus size={20} />
+                    return (
+                      <tr key={item.id}>
+                        <td className="sub-category-number">
+                          {index + 1}
+                        </td>
+
+                        <td>
+                          <div
+                            className={`sub-category-table-image ${getImageSizeClass(
+                              item.imageSize
+                            )}`}
+                          >
+                            {images[0] ? (
+                              <img src={images[0]} alt={item.name} />
+                            ) : (
+                              <ImagePlus size={20} />
+                            )}
+                          </div>
+
+                          {images.length > 1 && (
+                            <small className="sub-category-image-count">
+                              +{images.length - 1} more
+                            </small>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      <td>
-                        <div className="sub-category-name-cell">
-                          <strong>{item.name}</strong>
-                        </div>
-                      </td>
+                        <td>
+                          <div className="sub-category-name-cell">
+                            <strong>{item.name}</strong>
+                          </div>
+                        </td>
 
-                      <td>
-                        <span className="sub-category-parent-badge">
-                          {item.categoryName}
-                        </span>
-                      </td>
+                        <td>
+                          <span className="sub-category-parent-badge">
+                            {item.categoryName}
+                          </span>
+                        </td>
 
-                      <td>
-                        <p className="sub-category-description">
-                          {item.description || "No description"}
-                        </p>
-                      </td>
+                        <td>
+                          <p className="sub-category-description">
+                            {item.description || "No description"}
+                          </p>
+                        </td>
 
-                      <td>
-                        <span
-                          className={`sub-category-status ${
-                            item.status === "active"
-                              ? "active"
-                              : "inactive"
-                          }`}
-                        >
-                          {item.status === "active"
-                            ? "Active"
-                            : "Inactive"}
-                        </span>
-                      </td>
-
-                      <td className="sub-category-date">
-                        {item.createdAt}
-                      </td>
-
-                      <td>
-                        <div className="sub-category-actions">
-                          <button
-                            type="button"
-                            className="sub-category-edit-button"
-                            title="Edit"
-                            onClick={() =>
-                              openEditModal(item)
-                            }
+                        <td>
+                          <span
+                            className={`sub-category-status ${
+                              item.status === "active"
+                                ? "active"
+                                : "inactive"
+                            }`}
                           >
-                            <Edit size={16} />
-                          </button>
+                            {item.status === "active" ? "Active" : "Inactive"}
+                          </span>
+                        </td>
 
-                          <button
-                            type="button"
-                            className="sub-category-delete-button"
-                            title="Delete"
-                            onClick={() =>
-                              handleDelete(item.id)
-                            }
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="sub-category-date">
+                          {item.createdAt}
+                        </td>
+
+                        <td>
+                          <div className="sub-category-actions">
+                            <button
+                              type="button"
+                              className="sub-category-edit-button"
+                              title="Edit subcategory"
+                              aria-label={`Edit ${item.name}`}
+                              onClick={() => openEditModal(item)}
+                            >
+                              <Edit size={16} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className="sub-category-delete-button"
+                              title="Delete subcategory"
+                              aria-label={`Delete ${item.name}`}
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="sub-category-empty-state"
-                    >
+                    <td colSpan={8} className="sub-category-empty-state">
                       <div>
                         <ImagePlus size={32} />
                         <h3>No subcategories found</h3>
                         <p>
-                          Try changing your search or category
-                          filter.
+                          Try changing your search or category filter.
                         </p>
                       </div>
                     </td>
@@ -542,35 +704,34 @@ const AdminSubCategories = () => {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
       {isModalOpen && (
         <div
           className="admin-subcategories-modal-overlay"
           onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget
-            ) {
+            if (event.target === event.currentTarget) {
               closeModal();
             }
           }}
         >
-          <div className="admin-subcategories-modal">
-
+          <div
+            className="admin-subcategories-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="subcategory-modal-title"
+          >
             <div className="admin-subcategories-modal-header">
               <div>
                 <p>Catalogue Management</p>
-
-                <h2>
-                  {editingId
-                    ? "Edit Subcategory"
-                    : "Add Subcategory"}
+                <h2 id="subcategory-modal-title">
+                  {editingId ? "Edit Subcategory" : "Add Subcategory"}
                 </h2>
               </div>
 
               <button
                 type="button"
                 className="admin-subcategories-modal-close"
-                onClick={closeModal}
+                aria-label="Close modal"
+                onClick={() => closeModal()}
               >
                 <X size={20} />
               </button>
@@ -580,12 +741,18 @@ const AdminSubCategories = () => {
               className="admin-subcategories-form"
               onSubmit={handleSubmit}
             >
+              {validationError && (
+                <div
+                  className="admin-subcategories-validation-error"
+                  role="alert"
+                >
+                  {validationError}
+                </div>
+              )}
 
-              {/* Parent Category */}
               <div className="admin-subcategories-form-group">
                 <label htmlFor="categoryId">
-                  Parent Category
-                  <span>*</span>
+                  Parent Category <span>*</span>
                 </label>
 
                 <div className="admin-subcategories-select-wrapper">
@@ -596,15 +763,10 @@ const AdminSubCategories = () => {
                     onChange={handleInputChange}
                     required
                   >
-                    <option value="">
-                      Select parent category
-                    </option>
+                    <option value="">Select parent category</option>
 
                     {CATEGORY_OPTIONS.map((category) => (
-                      <option
-                        key={category.id}
-                        value={category.id}
-                      >
+                      <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
@@ -614,17 +776,16 @@ const AdminSubCategories = () => {
                 </div>
               </div>
 
-              {/* Name */}
               <div className="admin-subcategories-form-group">
                 <label htmlFor="name">
-                  Subcategory Name
-                  <span>*</span>
+                  Subcategory Name <span>*</span>
                 </label>
 
                 <input
                   id="name"
                   name="name"
                   type="text"
+                  maxLength={100}
                   placeholder="Enter subcategory name"
                   value={formData.name}
                   onChange={handleInputChange}
@@ -632,44 +793,35 @@ const AdminSubCategories = () => {
                 />
               </div>
 
-              {/* Description */}
               <div className="admin-subcategories-form-group">
-                <label htmlFor="description">
-                  Description
-                </label>
+                <label htmlFor="description">Description</label>
 
                 <textarea
                   id="description"
                   name="description"
-                  rows="4"
+                  rows={4}
+                  maxLength={500}
                   placeholder="Enter subcategory description"
                   value={formData.description}
                   onChange={handleInputChange}
                 />
               </div>
 
-              {/* Status */}
               <div className="admin-subcategories-form-group">
-                <label htmlFor="status">
-                  Status
-                </label>
+                <label htmlFor="status-active">Status</label>
 
                 <div className="admin-subcategories-status-options">
-
                   <label
                     className={`sub-category-status-option ${
-                      formData.status === "active"
-                        ? "selected"
-                        : ""
+                      formData.status === "active" ? "selected" : ""
                     }`}
                   >
                     <input
+                      id="status-active"
                       type="radio"
                       name="status"
                       value="active"
-                      checked={
-                        formData.status === "active"
-                      }
+                      checked={formData.status === "active"}
                       onChange={handleInputChange}
                     />
                     <span>Active</span>
@@ -677,100 +829,98 @@ const AdminSubCategories = () => {
 
                   <label
                     className={`sub-category-status-option ${
-                      formData.status === "inactive"
-                        ? "selected"
-                        : ""
+                      formData.status === "inactive" ? "selected" : ""
                     }`}
                   >
                     <input
                       type="radio"
                       name="status"
                       value="inactive"
-                      checked={
-                        formData.status === "inactive"
-                      }
+                      checked={formData.status === "inactive"}
                       onChange={handleInputChange}
                     />
                     <span>Inactive</span>
                   </label>
-
                 </div>
               </div>
 
-              {/* Image */}
               <div className="admin-subcategories-form-group">
-                <label>
-                  Subcategory Image
-                </label>
+                <label>Subcategory Images</label>
 
                 <div className="sub-category-upload-area">
-
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageChange}
                     className="sub-category-file-input"
+                    aria-label="Choose subcategory images"
                   />
 
-                  {!imagePreview ? (
-                    <button
-                      type="button"
-                      className="sub-category-upload-button"
-                      onClick={() =>
-                        fileInputRef.current?.click()
-                      }
-                    >
-                      <ImagePlus size={22} />
+                  <button
+                    type="button"
+                    className="sub-category-upload-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={formData.images.length >= MAX_IMAGES}
+                  >
+                    <ImagePlus size={22} />
 
-                      <div>
-                        <strong>
-                          Upload Image
-                        </strong>
+                    <div>
+                      <strong>Upload Images</strong>
+                      <span>Choose multiple images from your device</span>
+                      <span>
+                        Maximum {MAX_IMAGES} images, 5 MB per image
+                      </span>
+                    </div>
+                  </button>
 
-                        <span>
-                          Choose an image from your device
-                        </span>
-                      </div>
-                    </button>
-                  ) : (
-                    <div className="sub-category-preview-box">
-
-                      <img
-                        src={imagePreview}
-                        alt="Subcategory preview"
-                      />
-
-                      <div className="sub-category-preview-info">
-                        <strong>
-                          Image Preview
-                        </strong>
-
-                        <span>
-                          Image selected successfully
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={removeImage}
+                  {imagePreview.length > 0 && (
+                    <div className="sub-category-multiple-preview-grid">
+                      {imagePreview.map((image, index) => (
+                        <div
+                          className="sub-category-multiple-preview-item"
+                          key={`${image.url}-${index}`}
                         >
-                          Remove Image
-                        </button>
-                      </div>
+                          <img
+                            src={image.url}
+                            alt={`Subcategory preview ${index + 1}`}
+                          />
+
+                          {index === 0 && (
+                            <span className="sub-category-primary-image-label">
+                              Primary
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            className="sub-category-remove-image-button"
+                            aria-label={`Remove image ${index + 1}`}
+                            onClick={() => removeImage(index)}
+                          >
+                            <X size={15} />
+                          </button>
+
+                          <span className="sub-category-preview-image-name">
+                            {image.name}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
 
+                  <p className="sub-category-size-note">
+                    The first image is used as the primary image in the table.
+                    Choose image display size below.
+                  </p>
                 </div>
               </div>
 
-              {/* Image Size */}
               <div className="admin-subcategories-form-group">
-                <label>
-                  Image Display Size
-                </label>
+                <label>Image Display Size</label>
 
                 <div className="sub-category-size-options">
-
                   {[
                     {
                       value: "small",
@@ -791,8 +941,7 @@ const AdminSubCategories = () => {
                     <label
                       key={option.value}
                       className={`sub-category-size-option ${
-                        formData.imageSize ===
-                        option.value
+                        formData.imageSize === option.value
                           ? "selected"
                           : ""
                       }`}
@@ -801,40 +950,28 @@ const AdminSubCategories = () => {
                         type="radio"
                         name="imageSize"
                         value={option.value}
-                        checked={
-                          formData.imageSize ===
-                          option.value
-                        }
+                        checked={formData.imageSize === option.value}
                         onChange={handleInputChange}
                       />
 
                       <div>
-                        <strong>
-                          {option.title}
-                        </strong>
-
-                        <span>
-                          {option.subtitle}
-                        </span>
+                        <strong>{option.title}</strong>
+                        <span>{option.subtitle}</span>
                       </div>
                     </label>
                   ))}
-
                 </div>
 
                 <p className="sub-category-size-note">
-                  These options control the image display
-                  size in the frontend UI.
+                  These options control the image display size in the frontend UI.
                 </p>
               </div>
 
-              {/* Buttons */}
               <div className="admin-subcategories-form-actions">
-
                 <button
                   type="button"
                   className="sub-category-cancel-button"
-                  onClick={closeModal}
+                  onClick={() => closeModal()}
                 >
                   Cancel
                 </button>
@@ -843,11 +980,8 @@ const AdminSubCategories = () => {
                   type="submit"
                   className="sub-category-save-button"
                 >
-                  {editingId
-                    ? "Update Subcategory"
-                    : "Save Subcategory"}
+                  {editingId ? "Update Subcategory" : "Save Subcategory"}
                 </button>
-
               </div>
             </form>
           </div>

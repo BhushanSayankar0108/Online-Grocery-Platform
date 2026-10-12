@@ -1,43 +1,17 @@
+/* =========================================================
+   PAGE
+========================================================= */
+
 .admin-product-variants-page {
     min-height: 100vh;
-    background: #f5f7fb;
     padding: 28px;
+    background: #f5f7fb;
 }
 
 .admin-product-variants-container {
     width: 100%;
     max-width: 1550px;
     margin: 0 auto;
-}
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
-
-.admin-product-variants-back-wrapper {
-    margin-bottom: 22px;
-}
-
-.admin-product-variants-back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 14px;
-    border: 1px solid #d9dee7;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #374151;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.admin-product-variants-back-button:hover {
-    background: #f8fafc;
-    border-color: #bfc7d4;
-    color: #111827;
-    transform: translateX(-2px);
 }
 
 /* =========================================================
@@ -72,6 +46,7 @@
     margin: 8px 0 0;
     color: #6b7280;
     font-size: 14px;
+    line-height: 1.6;
 }
 
 .admin-product-variants-add-button {
@@ -88,7 +63,7 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .admin-product-variants-add-button:hover {
@@ -97,7 +72,7 @@
 }
 
 /* =========================================================
-   STATS
+   STATISTICS
 ========================================================= */
 
 .admin-product-variants-stats {
@@ -127,6 +102,7 @@
 .admin-product-variants-stat-card strong {
     color: #111827;
     font-size: 27px;
+    line-height: 1.2;
 }
 
 /* =========================================================
@@ -145,6 +121,7 @@
     display: flex;
     align-items: center;
     flex: 1;
+    min-width: 0;
 }
 
 .admin-product-variants-search > svg {
@@ -163,7 +140,9 @@
     outline: none;
     background: #ffffff;
     color: #111827;
+    font-family: inherit;
     font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .admin-product-variants-search input:focus {
@@ -187,6 +166,11 @@
     cursor: pointer;
 }
 
+.admin-product-variants-clear-search:hover {
+    background: #e2e8f0;
+    color: #111827;
+}
+
 .admin-product-variants-filter {
     position: relative;
     width: 220px;
@@ -203,9 +187,17 @@
     outline: none;
     background: #ffffff;
     color: #374151;
+    font-family: inherit;
     font-size: 14px;
     cursor: pointer;
     appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-product-variants-filter select:focus,
+.admin-product-variants-select-wrapper select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
 .admin-product-variants-filter > svg,
@@ -254,6 +246,8 @@
 .admin-product-variants-table-wrapper {
     width: 100%;
     overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
 }
 
 .admin-product-variants-table {
@@ -302,6 +296,7 @@
 ========================================================= */
 
 .variant-table-image {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -328,13 +323,32 @@
 }
 
 .variant-table-image img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
+.variant-image-count {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 4px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    background: rgba(17, 24, 39, 0.85);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
 /* =========================================================
-   PRODUCT / VARIANT INFORMATION
+   PRODUCT AND VARIANT INFORMATION
 ========================================================= */
 
 .variant-product-cell {
@@ -380,7 +394,7 @@
 
 .variant-price-cell {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     flex-direction: column;
     gap: 2px;
     width: fit-content;
@@ -406,9 +420,13 @@
     min-width: 68px;
     min-height: 27px;
     padding: 0 9px;
+    border: 0;
     border-radius: 20px;
+    font-family: inherit;
     font-size: 11px;
     font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
 }
 
 .variant-status.active {
@@ -416,9 +434,17 @@
     color: #15803d;
 }
 
+.variant-status.active:hover {
+    background: #d1fae5;
+}
+
 .variant-status.inactive {
     background: #fef2f2;
     color: #b91c1c;
+}
+
+.variant-status.inactive:hover {
+    background: #fee2e2;
 }
 
 .variant-date {
@@ -427,7 +453,7 @@
 }
 
 /* =========================================================
-   ACTIONS
+   TABLE ACTIONS
 ========================================================= */
 
 .variant-actions {
@@ -442,9 +468,10 @@
     justify-content: center;
     width: 34px;
     height: 34px;
+    padding: 0;
     border-radius: 7px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .variant-edit-button {
@@ -508,25 +535,32 @@
     justify-content: center;
     padding: 24px;
     background: rgba(15, 23, 42, 0.52);
+    backdrop-filter: blur(3px);
 }
 
 .admin-product-variants-modal {
     width: 100%;
     max-width: 720px;
     max-height: calc(100vh - 48px);
+    overflow-x: hidden;
     overflow-y: auto;
+    border: 1px solid rgba(226, 232, 240, 0.8);
     border-radius: 12px;
     background: #ffffff;
     box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
 }
 
 .admin-product-variants-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 20px;
     padding: 20px 22px;
     border-bottom: 1px solid #e8ebf0;
+    background: #ffffff;
 }
 
 .admin-product-variants-modal-header p {
@@ -542,6 +576,7 @@
     margin: 0;
     color: #111827;
     font-size: 21px;
+    line-height: 1.35;
 }
 
 .admin-product-variants-modal-close {
@@ -551,6 +586,7 @@
     width: 36px;
     height: 36px;
     flex-shrink: 0;
+    padding: 0;
     border: 0;
     border-radius: 8px;
     background: #f8fafc;
@@ -572,6 +608,7 @@
 }
 
 .admin-product-variants-form-group {
+    min-width: 0;
     margin-bottom: 19px;
 }
 
@@ -600,6 +637,7 @@
     color: #111827;
     font-family: inherit;
     font-size: 14px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .admin-product-variants-form-group input:focus,
@@ -621,6 +659,7 @@
     outline: none;
     background: #ffffff;
     color: #374151;
+    font-family: inherit;
     font-size: 14px;
     cursor: pointer;
     appearance: none;
@@ -628,8 +667,19 @@
 
 .variant-form-two-column {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+}
+
+.admin-product-variants-form-error {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 /* =========================================================
@@ -656,11 +706,12 @@
 }
 
 /* =========================================================
-   STATUS
+   STATUS OPTIONS
 ========================================================= */
 
 .variant-status-options {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 
@@ -675,6 +726,7 @@
     background: #ffffff;
     color: #64748b;
     cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .variant-status-option.selected {
@@ -688,7 +740,7 @@
 }
 
 /* =========================================================
-   IMAGE UPLOAD
+   MULTIPLE IMAGE UPLOAD
 ========================================================= */
 
 .variant-upload-area {
@@ -712,12 +764,16 @@
     color: #2563eb;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .variant-upload-button:hover {
     border-color: #2563eb;
     background: #eff6ff;
+}
+
+.variant-upload-button > svg {
+    flex-shrink: 0;
 }
 
 .variant-upload-button div {
@@ -734,7 +790,87 @@
 .variant-upload-button span {
     color: #94a3b8;
     font-size: 12px;
+    line-height: 1.5;
 }
+
+.variant-multiple-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.variant-multiple-preview-item {
+    position: relative;
+    min-width: 0;
+    overflow: hidden;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #f8fafc;
+}
+
+.variant-multiple-preview-item img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    background: #ffffff;
+    object-fit: cover;
+}
+
+.variant-primary-image-label {
+    position: absolute;
+    top: 13px;
+    left: 13px;
+    max-width: calc(100% - 48px);
+    padding: 4px 7px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.variant-remove-image-button {
+    position: absolute;
+    top: 11px;
+    right: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    border: 1px solid #fee2e2;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #dc2626;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.variant-remove-image-button:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.variant-preview-image-name {
+    display: block;
+    margin-top: 8px;
+    overflow: hidden;
+    color: #475569;
+    font-size: 11px;
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Legacy single-image preview compatibility */
 
 .variant-preview-box {
     display: flex;
@@ -783,12 +919,12 @@
 }
 
 /* =========================================================
-   IMAGE SIZE
+   IMAGE SIZE OPTIONS
 ========================================================= */
 
 .variant-size-options {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -801,6 +937,7 @@
     border: 1px solid #dbe1e9;
     border-radius: 8px;
     cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .variant-size-option.selected {
@@ -809,6 +946,7 @@
 }
 
 .variant-size-option input {
+    flex-shrink: 0;
     accent-color: #2563eb;
 }
 
@@ -832,6 +970,7 @@
     margin: 8px 0 0;
     color: #94a3b8;
     font-size: 11px;
+    line-height: 1.6;
 }
 
 /* =========================================================
@@ -852,9 +991,11 @@
     min-height: 42px;
     padding: 0 17px;
     border-radius: 8px;
+    font-family: inherit;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .variant-cancel-button {
@@ -874,15 +1015,32 @@
 }
 
 .variant-save-button:hover {
+    border-color: #1d4ed8;
     background: #1d4ed8;
 }
 
 /* =========================================================
-   RESPONSIVE
+   FOCUS AND DISABLED STATES
+========================================================= */
+
+.admin-product-variants-page button:focus-visible,
+.admin-product-variants-page input:focus-visible,
+.admin-product-variants-page select:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.admin-product-variants-page button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* =========================================================
+   RESPONSIVE: TABLET
 ========================================================= */
 
 @media (max-width: 1100px) {
-
     .admin-product-variants-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -897,11 +1055,19 @@
 
     .admin-product-variants-filter {
         flex: 1;
+        min-width: 0;
+    }
+
+    .variant-multiple-preview-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
-@media (max-width: 800px) {
+/* =========================================================
+   RESPONSIVE: SMALL TABLET
+========================================================= */
 
+@media (max-width: 800px) {
     .admin-product-variants-page {
         padding: 20px;
     }
@@ -916,21 +1082,35 @@
     }
 
     .admin-product-variants-toolbar {
+        align-items: stretch;
         flex-direction: column;
+    }
+
+    .admin-product-variants-search {
+        flex-basis: auto;
+        width: 100%;
     }
 
     .admin-product-variants-filter {
         width: 100%;
+        flex: auto;
     }
 
     .variant-form-two-column {
         grid-template-columns: 1fr;
         gap: 0;
     }
+
+    .variant-multiple-preview-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
-@media (max-width: 600px) {
+/* =========================================================
+   RESPONSIVE: MOBILE
+========================================================= */
 
+@media (max-width: 600px) {
     .admin-product-variants-page {
         padding: 14px;
     }
@@ -939,8 +1119,18 @@
         font-size: 24px;
     }
 
+    .admin-product-variants-header-text {
+        font-size: 13px;
+    }
+
     .admin-product-variants-stats {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .admin-product-variants-stat-card {
+        min-height: auto;
+        padding: 16px;
     }
 
     .admin-product-variants-modal-overlay {
@@ -950,11 +1140,16 @@
 
     .admin-product-variants-modal {
         max-height: calc(100vh - 24px);
+        border-radius: 10px;
     }
 
     .admin-product-variants-form,
     .admin-product-variants-modal-header {
         padding: 17px;
+    }
+
+    .admin-product-variants-modal-header h2 {
+        font-size: 19px;
     }
 
     .variant-size-options {
@@ -969,6 +1164,11 @@
         width: 100%;
     }
 
+    .variant-multiple-preview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
     .variant-preview-box {
         align-items: flex-start;
     }
@@ -980,5 +1180,42 @@
     .variant-cancel-button,
     .variant-save-button {
         width: 100%;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE: VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 360px) {
+    .admin-product-variants-page {
+        padding: 10px;
+    }
+
+    .admin-product-variants-form,
+    .admin-product-variants-modal-header {
+        padding: 13px;
+    }
+
+    .variant-multiple-preview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    .variant-multiple-preview-item {
+        padding: 5px;
+    }
+
+    .variant-primary-image-label {
+        top: 9px;
+        left: 9px;
+        font-size: 9px;
+    }
+
+    .variant-remove-image-button {
+        top: 7px;
+        right: 7px;
+        width: 24px;
+        height: 24px;
     }
 }
