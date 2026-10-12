@@ -15186,7 +15186,7 @@ footer a:hover,
     padding: 0 9px;
   }
 }
-\/* Fix product images overflowing their cards */
+/* Fix product images overflowing their cards */
 .product-card {
   min-width: 0;
   overflow: hidden;
