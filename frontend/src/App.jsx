@@ -1,10 +1,30 @@
-import { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
-/* =========================================================
-   PUBLIC COMPONENTS
-========================================================= */
+/* DEMO SERVICEABLE PIN CODES — UPDATE THESE LATER */
+const SERVICEABLE_PINCODES = [
+  "411001",
+  "411004",
+  "411007",
+  "411014",
+  "411018",
+  "411021",
+  "411027",
+  "411033",
+  "411038",
+  "411045",
+  "411046",
+  "411048",
+  "411057",
+  "411062",
+];
 
+/* PUBLIC COMPONENTS */
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import CategorySection from "./components/CategorySection";
@@ -16,10 +36,7 @@ import CustomerReviews from "./components/CustomerReviews";
 import Newsletter from "./components/Newsletter";
 import Footer from "./components/Footer";
 
-/* =========================================================
-   PUBLIC PAGES
-========================================================= */
-
+/* PUBLIC PAGES */
 import Shop from "./pages/Shop";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -45,10 +62,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import ReturnPolicy from "./pages/ReturnPolicy";
 
-/* =========================================================
-   ADMIN PAGES
-========================================================= */
-
+/* ADMIN PAGES */
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminCategories from "./admin/AdminCategories";
@@ -67,79 +81,176 @@ import AdminReports from "./admin/AdminReports";
 import AdminSettings from "./admin/AdminSettings";
 import AdminManagement from "./admin/AdminManagement";
 
-/* =========================================================
-   PUBLIC PAGE LAYOUT
-========================================================= */
+/* SCROLL TO TOP ON PAGE NAVIGATION */
+function ScrollToTop() {
+  const { pathname } = useLocation();
 
-function PageLayout({ children, cartCount, wishlistCount }) {
-  return (
-    <>
-      <Navbar
-        cartCount={cartCount}
-        wishlistCount={wishlistCount}
-      />
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [pathname]);
 
-      {children}
-
-      <Footer />
-    </>
-  );
+  return null;
 }
 
-/* =========================================================
-   PUBLIC HOME PAGE
-========================================================= */
-
-function Home({
+/* PUBLIC PAGE LAYOUT */
+function PageLayout({
+  children,
   cartCount,
   wishlistCount,
-  setCart,
-  wishlist,
-  setWishlist,
+  deliveryPincode,
+  setDeliveryPincode,
+  isLocationServiceable,
+  checkPincode,
+  customer,
+  onLogout,
 }) {
   return (
     <>
       <Navbar
         cartCount={cartCount}
         wishlistCount={wishlistCount}
+        deliveryPincode={deliveryPincode}
+        setDeliveryPincode={setDeliveryPincode}
+        isLocationServiceable={isLocationServiceable}
+        checkPincode={checkPincode}
+        customer={customer}
+        onLogout={onLogout}
+      />
+      {children}
+      <Footer />
+    </>
+  );
+}
+
+/* HOME PAGE */
+function Home({
+  cart,
+  cartCount,
+  wishlistCount,
+  setCart,
+  wishlist,
+  setWishlist,
+  deliveryPincode,
+  setDeliveryPincode,
+  isLocationServiceable,
+  checkPincode,
+  customer,
+  onLogout,
+}) {
+  return (
+    <>
+      <Navbar
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
+        deliveryPincode={deliveryPincode}
+        setDeliveryPincode={setDeliveryPincode}
+        isLocationServiceable={isLocationServiceable}
+        checkPincode={checkPincode}
+        customer={customer}
+        onLogout={onLogout}
       />
 
       <Hero />
-
       <CategorySection />
-
       <PromoBanner />
 
       <FeaturedProducts
+        cart={cart}
         setCart={setCart}
         wishlist={wishlist}
         setWishlist={setWishlist}
       />
 
       <DealOfTheDay />
-
       <WhyChooseUs />
-
       <CustomerReviews />
-
       <Newsletter />
-
       <Footer />
     </>
   );
 }
 
-/* =========================================================
-   APP
-========================================================= */
-
+/* APP */
 function App() {
-  /* ---------------------------------------------------------
-     PUBLIC CART & WISHLIST STATE
-  --------------------------------------------------------- */
-
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
+
+  /* SHARED DEMO CUSTOMER LOGIN */
+  /* SHARED DEMO CUSTOMER LOGIN */
+  const [customer, setCustomer] = useState(() => {
+    try {
+      const savedCustomer = localStorage.getItem("customerSession");
+      return savedCustomer ? JSON.parse(savedCustomer) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogin = (customerDetails) => {
+    const loggedInCustomer = {
+      name: customerDetails.name || "Customer",
+      email: customerDetails.email || "",
+      mobile: customerDetails.mobile || "",
+    };
+
+    setCustomer(loggedInCustomer);
+
+    try {
+      localStorage.setItem(
+        "customerSession",
+        JSON.stringify(loggedInCustomer)
+      );
+    } catch {
+      // Login state remains available for the current app session.
+    }
+  };
+
+  const handleLogout = () => {
+    setCustomer(null);
+
+    try {
+      localStorage.removeItem("customerSession");
+    } catch {
+      // The logout still works for the current app session.
+    }
+  };
+
+  /* SHARED DELIVERY LOCATION */
+  const [deliveryPincode, setDeliveryPincode] = useState(() => {
+    try {
+      return localStorage.getItem("deliveryPincode") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const checkPincode = (pincode) => {
+    const normalizedPincode = String(pincode).trim();
+
+    if (!/^\d{6}$/.test(normalizedPincode)) {
+      return false;
+    }
+
+    return SERVICEABLE_PINCODES.includes(normalizedPincode);
+  };
+
+  const isLocationServiceable = checkPincode(deliveryPincode);
+
+  useEffect(() => {
+    try {
+      if (deliveryPincode) {
+        localStorage.setItem("deliveryPincode", deliveryPincode);
+      } else {
+        localStorage.removeItem("deliveryPincode");
+      }
+    } catch {
+      // Location checking still works if browser storage is unavailable.
+    }
+  }, [deliveryPincode]);
 
   const cartCount = cart.reduce(
     (total, item) => total + (item.quantity || 1),
@@ -151,26 +262,36 @@ function App() {
   const layoutProps = {
     cartCount,
     wishlistCount,
+    deliveryPincode,
+    setDeliveryPincode,
+    isLocationServiceable,
+    checkPincode,
+    customer,
+    onLogout: handleLogout,
   };
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
+
       <Routes>
-
-        {/* =====================================================
-            PUBLIC WEBSITE
-        ====================================================== */}
-
         {/* HOME */}
         <Route
           path="/"
           element={
             <Home
+              cart={cart}
               cartCount={cartCount}
               wishlistCount={wishlistCount}
               setCart={setCart}
               wishlist={wishlist}
               setWishlist={setWishlist}
+              deliveryPincode={deliveryPincode}
+              setDeliveryPincode={setDeliveryPincode}
+              isLocationServiceable={isLocationServiceable}
+              checkPincode={checkPincode}
+              customer={customer}
+              onLogout={handleLogout}
             />
           }
         />
@@ -185,6 +306,8 @@ function App() {
                 setCart={setCart}
                 wishlist={wishlist}
                 setWishlist={setWishlist}
+                deliveryPincode={deliveryPincode}
+                isLocationServiceable={isLocationServiceable}
               />
             </PageLayout>
           }
@@ -199,6 +322,8 @@ function App() {
                 setCart={setCart}
                 wishlist={wishlist}
                 setWishlist={setWishlist}
+                deliveryPincode={deliveryPincode}
+                isLocationServiceable={isLocationServiceable}
               />
             </PageLayout>
           }
@@ -232,6 +357,8 @@ function App() {
               <Cart
                 cart={cart}
                 setCart={setCart}
+                deliveryPincode={deliveryPincode}
+                isLocationServiceable={isLocationServiceable}
               />
             </PageLayout>
           }
@@ -246,6 +373,8 @@ function App() {
                 wishlist={wishlist}
                 setWishlist={setWishlist}
                 setCart={setCart}
+                deliveryPincode={deliveryPincode}
+                isLocationServiceable={isLocationServiceable}
               />
             </PageLayout>
           }
@@ -259,6 +388,8 @@ function App() {
               <Checkout
                 cart={cart}
                 setCart={setCart}
+                deliveryPincode={deliveryPincode}
+                isLocationServiceable={isLocationServiceable}
               />
             </PageLayout>
           }
@@ -279,10 +410,7 @@ function App() {
           path="/orders"
           element={
             <PageLayout {...layoutProps}>
-              <Orders
-                cart={cart}
-                setCart={setCart}
-              />
+              <Orders cart={cart} setCart={setCart} />
             </PageLayout>
           }
         />
@@ -308,14 +436,14 @@ function App() {
         />
 
         {/* ACCOUNT */}
-        <Route
-          path="/account"
-          element={
-            <PageLayout {...layoutProps}>
-              <Account />
-            </PageLayout>
-          }
-        />
+<Route
+  path="/account"
+  element={
+    <PageLayout {...layoutProps}>
+      <Account customer={customer} onLogout={handleLogout} />
+    </PageLayout>
+  }
+/>
 
         {/* ADDRESSES */}
         <Route
@@ -367,7 +495,7 @@ function App() {
           }
         />
 
-        {/* SHIPPING POLICY */}
+        {/* POLICIES */}
         <Route
           path="/shipping-policy"
           element={
@@ -377,37 +505,6 @@ function App() {
           }
         />
 
-        {/* LOGIN */}
-        <Route
-          path="/login"
-          element={
-            <PageLayout {...layoutProps}>
-              <Login />
-            </PageLayout>
-          }
-        />
-
-        {/* SIGNUP */}
-        <Route
-          path="/signup"
-          element={
-            <PageLayout {...layoutProps}>
-              <Signup />
-            </PageLayout>
-          }
-        />
-
-        {/* FORGOT PASSWORD */}
-        <Route
-          path="/forgot-password"
-          element={
-            <PageLayout {...layoutProps}>
-              <ForgotPassword />
-            </PageLayout>
-          }
-        />
-
-        {/* PRIVACY POLICY */}
         <Route
           path="/privacy-policy"
           element={
@@ -417,7 +514,6 @@ function App() {
           }
         />
 
-        {/* TERMS */}
         <Route
           path="/terms"
           element={
@@ -427,7 +523,6 @@ function App() {
           }
         />
 
-        {/* RETURN POLICY */}
         <Route
           path="/return-policy"
           element={
@@ -437,112 +532,52 @@ function App() {
           }
         />
 
-        {/* =====================================================
-            ADMIN CMS
-        ====================================================== */}
-
-        {/* ADMIN LOGIN */}
+        {/* AUTH */}
         <Route
-          path="/admin/login"
-          element={<AdminLogin />}
+          path="/login"
+          element={
+            <PageLayout {...layoutProps}>
+              <Login onLogin={handleLogin} />
+            </PageLayout>
+          }
         />
 
-        {/* ADMIN DASHBOARD */}
         <Route
-          path="/admin/dashboard"
-          element={<AdminDashboard />}
+          path="/signup"
+          element={
+            <PageLayout {...layoutProps}>
+              <Signup />
+            </PageLayout>
+          }
         />
 
-        {/* CATEGORIES */}
         <Route
-          path="/admin/categories"
-          element={<AdminCategories />}
+          path="/forgot-password"
+          element={
+            <PageLayout {...layoutProps}>
+              <ForgotPassword />
+            </PageLayout>
+          }
         />
 
-        {/* SUBCATEGORIES */}
-        <Route
-          path="/admin/subcategories"
-          element={<AdminSubCategories />}
-        />
-
-        {/* PRODUCTS */}
-        <Route
-          path="/admin/products"
-          element={<AdminProducts />}
-        />
-
-        {/* PRODUCT VARIANTS */}
-        <Route
-          path="/admin/product-variants"
-          element={<AdminProductVariants />}
-        />
-
-        {/* INVENTORY */}
-        <Route
-          path="/admin/inventory"
-          element={<AdminInventory />}
-        />
-
-        {/* ORDERS */}
-        <Route
-          path="/admin/orders"
-          element={<AdminOrders />}
-        />
-
-        {/* CUSTOMERS */}
-        <Route
-          path="/admin/customers"
-          element={<AdminCustomers />}
-        />
-
-        {/* COUPONS & OFFERS */}
-        <Route
-          path="/admin/coupons"
-          element={<AdminCoupons />}
-        />
-
-        {/* DELIVERY */}
-        <Route
-          path="/admin/delivery"
-          element={<AdminDelivery />}
-        />
-
-        {/* REVIEWS */}
-        <Route
-          path="/admin/reviews"
-          element={<AdminReviews />}
-        />
-
-        {/* NOTIFICATIONS */}
-        <Route
-          path="/admin/notifications"
-          element={<AdminNotifications />}
-        />
-
-        {/* WEBSITE CMS */}
-        <Route
-          path="/admin/cms"
-          element={<AdminCMS />}
-        />
-
-        {/* REPORTS */}
-        <Route
-          path="/admin/reports"
-          element={<AdminReports />}
-        />
-
-        {/* SETTINGS */}
-        <Route
-          path="/admin/settings"
-          element={<AdminSettings />}
-        />
-
-        {/* ADMIN MANAGEMENT */}
-        <Route
-          path="/admin/admin-management"
-          element={<AdminManagement />}
-        />
-
+        {/* ADMIN CMS */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/categories" element={<AdminCategories />} />
+        <Route path="/admin/subcategories" element={<AdminSubCategories />} />
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/product-variants" element={<AdminProductVariants />} />
+        <Route path="/admin/inventory" element={<AdminInventory />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/customers" element={<AdminCustomers />} />
+        <Route path="/admin/coupons" element={<AdminCoupons />} />
+        <Route path="/admin/delivery" element={<AdminDelivery />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/admin/notifications" element={<AdminNotifications />} />
+        <Route path="/admin/cms" element={<AdminCMS />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/admin-management" element={<AdminManagement />} />
       </Routes>
     </BrowserRouter>
   );

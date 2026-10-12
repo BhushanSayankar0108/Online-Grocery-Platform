@@ -15,24 +15,63 @@ import {
   X,
 } from "lucide-react";
 
-function Account() {
+function Account({ customer, onLogout }) {
   const navigate = useNavigate();
 
-  const [name, setName] = useState("John Doe");
-  const [email, setEmail] = useState("john@example.com");
-  const [mobile, setMobile] = useState("9876543210");
+  const [name, setName] = useState(customer?.name || "");
+  const [email, setEmail] = useState(customer?.email || "");
+  const [mobile, setMobile] = useState(customer?.mobile || "");
   const [editing, setEditing] = useState(false);
 
   const handleSave = (event) => {
     event.preventDefault();
-    setEditing(false);
+
+    const updatedCustomer = {
+      ...customer,
+      name: name.trim(),
+      email: email.trim(),
+      mobile: mobile.trim(),
+    };
+
+    try {
+      localStorage.setItem(
+        "customerSession",
+        JSON.stringify(updatedCustomer)
+      );
+
+      const customers = JSON.parse(
+        localStorage.getItem("demoCustomers") || "[]"
+      );
+
+      const updatedCustomers = customers.map((item) =>
+        item.email?.toLowerCase() === customer?.email?.toLowerCase()
+          ? { ...item, ...updatedCustomer }
+          : item
+      );
+
+      localStorage.setItem(
+        "demoCustomers",
+        JSON.stringify(updatedCustomers)
+      );
+
+      window.location.reload();
+    } catch {
+      alert("Unable to save your details. Please try again.");
+    }
   };
 
   const handleCancel = () => {
+    setName(customer?.name || "");
+    setEmail(customer?.email || "");
+    setMobile(customer?.mobile || "");
     setEditing(false);
   };
 
   const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+
     navigate("/login");
   };
 
@@ -63,6 +102,25 @@ function Account() {
     },
   ];
 
+  if (!customer) {
+    return (
+      <main className="account-page">
+        <div className="account-container">
+          <header className="account-header">
+            <span className="account-eyebrow">YOUR ACCOUNT</span>
+            <h1>Please log in first.</h1>
+            <p className="account-intro">
+              Log in to view and manage your account information.
+            </p>
+            <Link to="/login" className="account-save-button">
+              Login / Sign Up
+            </Link>
+          </header>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="account-page">
       <div className="account-container">
@@ -72,7 +130,6 @@ function Account() {
           </Link>
 
           <p className="account-breadcrumb">Home / Account</p>
-
           <span className="account-eyebrow">ACCOUNT</span>
 
           <h1>Welcome back, {name.split(" ")[0]}.</h1>
@@ -172,7 +229,7 @@ function Account() {
                     <User size={16} />
                     Full Name
                   </span>
-                  <strong>{name}</strong>
+                  <strong>{name || "Not provided"}</strong>
                 </div>
 
                 <div className="account-detail-item">
@@ -180,7 +237,7 @@ function Account() {
                     <Mail size={16} />
                     Email Address
                   </span>
-                  <strong>{email}</strong>
+                  <strong>{email || "Not provided"}</strong>
                 </div>
 
                 <div className="account-detail-item">
@@ -188,7 +245,7 @@ function Account() {
                     <Phone size={16} />
                     Mobile Number
                   </span>
-                  <strong>{mobile}</strong>
+                  <strong>{mobile || "Not provided"}</strong>
                 </div>
               </div>
             )}

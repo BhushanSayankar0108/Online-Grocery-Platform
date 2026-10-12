@@ -14,10 +14,54 @@ import {
   ShoppingBag,
   Tag,
   X,
+  Plus,
+  Home,
+  Briefcase,
+  MapPinned,
 } from "lucide-react";
 
-function Checkout({ cart, setCart }) {
+function getCustomerEmail() {
+  try {
+    const customer = JSON.parse(
+      localStorage.getItem("customerSession") || "null"
+    );
+    return customer?.email?.trim().toLowerCase() || "";
+  } catch {
+    return "";
+  }
+}
+
+function loadSavedAddresses() {
+  const email = getCustomerEmail();
+  if (!email) return [];
+
+  try {
+    const addresses = JSON.parse(
+      localStorage.getItem(`savedAddresses_${email}`) || "[]"
+    );
+    return Array.isArray(addresses) ? addresses : [];
+  } catch {
+    return [];
+  }
+}
+
+function Checkout({ cart = [], setCart }) {
   const navigate = useNavigate();
+
+  const [savedAddresses, setSavedAddresses] = useState(loadSavedAddresses);
+
+  const [selectedAddressId, setSelectedAddressId] = useState(() => {
+    const addresses = loadSavedAddresses();
+    return (
+      addresses.find((address) => address.isDefault)?.id ??
+      addresses[0]?.id ??
+      ""
+    );
+  });
+
+  const [showNewAddressForm, setShowNewAddressForm] = useState(
+    loadSavedAddresses().length === 0
+  );
 
   const [selectedSlot, setSelectedSlot] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("");
@@ -27,16 +71,8 @@ function Checkout({ cart, setCart }) {
   const [promoMessage, setPromoMessage] = useState("");
   const [promoError, setPromoError] = useState(false);
 
-  const [paymentDetails, setPaymentDetails] = useState({
-    upiId: "",
-    cardName: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    bank: "",
-  });
-
   const [address, setAddress] = useState({
+    type: "Home",
     fullName: "",
     mobile: "",
     house: "",
@@ -44,6 +80,15 @@ function Checkout({ cart, setCart }) {
     city: "",
     state: "",
     pinCode: "",
+  });
+
+  const [paymentDetails, setPaymentDetails] = useState({
+    upiId: "",
+    cardName: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: "",
+    bank: "",
   });
 
   const deliverySlots = [
@@ -75,6 +120,11 @@ function Checkout({ cart, setCart }) {
       description: "Pay when your order arrives",
     },
   ];
+
+  const selectedSavedAddress =
+    savedAddresses.find(
+      (item) => String(item.id) === String(selectedAddressId)
+    ) || null;
 
   const cartSubtotal = cart.reduce(
     (total, product) => total + product.price * product.quantity,
@@ -173,6 +223,86 @@ function Checkout({ cart, setCart }) {
     });
   };
 
+  const handleAddressSelection = (event) => {
+    setSelectedAddressId(event.target.value);
+    setShowNewAddressForm(false);
+  };
+
+  const handleSaveNewAddress = () => {
+    const email = getCustomerEmail();
+
+    if (!email) {
+      alert("Please log in before saving an address.");
+      navigate("/login");
+      return;
+    }
+
+    const requiredFields = [
+      address.fullName,
+      address.mobile,
+      address.house,
+      address.street,
+      address.city,
+      address.state,
+      address.pinCode,
+    ];
+
+    if (requiredFields.some((field) => !field.trim())) {
+      alert("Please complete all delivery address fields.");
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(address.mobile.trim())) {
+      alert("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(address.pinCode.trim())) {
+      alert("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+
+    const newAddress = {
+      id: Date.now(),
+      type: address.type,
+      name: address.fullName.trim(),
+      mobile: address.mobile.trim(),
+      address: `${address.house.trim()}, ${address.street.trim()}`,
+      city: address.city.trim(),
+      state: address.state.trim(),
+      pinCode: address.pinCode.trim(),
+      isDefault: savedAddresses.length === 0,
+    };
+
+    const nextAddresses = [...savedAddresses, newAddress];
+
+    try {
+      localStorage.setItem(
+        `savedAddresses_${email}`,
+        JSON.stringify(nextAddresses)
+      );
+
+      setSavedAddresses(nextAddresses);
+      setSelectedAddressId(newAddress.id);
+      setShowNewAddressForm(false);
+
+      setAddress({
+        type: "Home",
+        fullName: "",
+        mobile: "",
+        house: "",
+        street: "",
+        city: "",
+        state: "",
+        pinCode: "",
+      });
+
+      alert("Address saved successfully.");
+    } catch {
+      alert("Unable to save this address. Please try again.");
+    }
+  };
+
   const validatePaymentDetails = () => {
     if (selectedPayment === "UPI" && !paymentDetails.upiId.trim()) {
       alert("Please enter your UPI ID.");
@@ -205,23 +335,45 @@ function Checkout({ cart, setCart }) {
       return;
     }
 
-    const requiredAddressFields = [
-      address.fullName,
-      address.mobile,
-      address.house,
-      address.street,
-      address.city,
-      address.state,
-      address.pinCode,
-    ];
+    let orderAddress;
 
-    const isAddressComplete = requiredAddressFields.every(
-      (field) => field.trim() !== ""
-    );
+    if (!showNewAddressForm && selectedSavedAddress) {
+      orderAddress = selectedSavedAddress;
+    } else {
+      const requiredFields = [
+        address.fullName,
+        address.mobile,
+        address.house,
+        address.street,
+        address.city,
+        address.state,
+        address.pinCode,
+      ];
 
-    if (!isAddressComplete) {
-      alert("Please enter your complete delivery address.");
-      return;
+      if (requiredFields.some((field) => !field.trim())) {
+        alert("Please select a saved address or complete a new address.");
+        return;
+      }
+
+      if (!/^[6-9]\d{9}$/.test(address.mobile.trim())) {
+        alert("Please enter a valid 10-digit Indian mobile number.");
+        return;
+      }
+
+      if (!/^\d{6}$/.test(address.pinCode.trim())) {
+        alert("Please enter a valid 6-digit PIN code.");
+        return;
+      }
+
+      orderAddress = {
+        type: address.type,
+        name: address.fullName.trim(),
+        mobile: address.mobile.trim(),
+        address: `${address.house.trim()}, ${address.street.trim()}`,
+        city: address.city.trim(),
+        state: address.state.trim(),
+        pinCode: address.pinCode.trim(),
+      };
     }
 
     if (!selectedSlot) {
@@ -238,8 +390,44 @@ function Checkout({ cart, setCart }) {
       return;
     }
 
+    // Save demo order details so the confirmation page can use them.
+    try {
+      const order = {
+        id: `ORD-${new Date().getTime()}`,
+        items: cart,
+        address: orderAddress,
+        deliverySlot: selectedSlot,
+        deliveryInstructions,
+        paymentMethod: selectedPayment,
+        subtotal: cartSubtotal,
+        discount,
+        deliveryCharge,
+        total: cartTotal,
+        promoCode: appliedPromo?.code || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      const existingOrders = JSON.parse(
+        localStorage.getItem("demoOrders") || "[]"
+      );
+
+      localStorage.setItem(
+        "demoOrders",
+        JSON.stringify([order, ...existingOrders])
+      );
+    } catch {
+      alert("Unable to save your order. Please try again.");
+      return;
+    }
+
     setCart([]);
     navigate("/order-confirmation");
+  };
+
+  const getAddressIcon = (type) => {
+    if (type === "Work") return <Briefcase size={17} />;
+    if (type === "Other") return <MapPinned size={17} />;
+    return <Home size={17} />;
   };
 
   if (cart.length === 0) {
@@ -255,8 +443,7 @@ function Checkout({ cart, setCart }) {
             <h1>Nothing to checkout yet.</h1>
 
             <p>
-              Add some groceries to your cart before continuing
-              to checkout.
+              Add some groceries to your cart before continuing to checkout.
             </p>
 
             <Link to="/shop" className="checkout-empty-button">
@@ -277,16 +464,13 @@ function Checkout({ cart, setCart }) {
             ← Back to Cart
           </Link>
 
-          <p className="checkout-breadcrumb">
-            Home / Cart / Checkout
-          </p>
+          <p className="checkout-breadcrumb">Home / Cart / Checkout</p>
 
           <span className="checkout-eyebrow">SECURE CHECKOUT</span>
           <h1>Complete your order.</h1>
 
           <p className="checkout-intro">
-            Enter your delivery details, choose a convenient
-            delivery slot and select your payment method.
+            Choose your delivery address, delivery slot and payment method.
           </p>
         </header>
 
@@ -301,103 +485,193 @@ function Checkout({ cart, setCart }) {
                 </div>
               </div>
 
-              <div className="checkout-form">
-                <label>
-                  <span>Full Name</span>
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Enter your full name"
-                    value={address.fullName}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+              {savedAddresses.length > 0 && (
+                <div className="checkout-saved-addresses">
+                  <label>
+                    <span>Select a saved address</span>
+                    <select
+                      value={selectedSavedAddress ? selectedAddressId : ""}
+                      onChange={handleAddressSelection}
+                    >
+                      {savedAddresses.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.type} — {item.name}, {item.city} ({item.pinCode})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <label>
-                  <span>Mobile Number</span>
-                  <input
-                    type="tel"
-                    name="mobile"
-                    placeholder="Enter your mobile number"
-                    value={address.mobile}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+                  {selectedSavedAddress && !showNewAddressForm && (
+                    <div className="checkout-selected-address">
+                      <div className="checkout-selected-address-heading">
+                        {getAddressIcon(selectedSavedAddress.type)}
+                        <strong>{selectedSavedAddress.type} Address</strong>
+                        {selectedSavedAddress.isDefault && (
+                          <span className="default-badge">Default</span>
+                        )}
+                      </div>
 
-                <label className="checkout-field-wide">
-                  <span>House / Flat / Building</span>
-                  <input
-                    type="text"
-                    name="house"
-                    placeholder="House, flat or building"
-                    value={address.house}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+                      <strong>{selectedSavedAddress.name}</strong>
+                      <p>{selectedSavedAddress.mobile}</p>
+                      <p>{selectedSavedAddress.address}</p>
+                      <p>
+                        {selectedSavedAddress.city},{" "}
+                        {selectedSavedAddress.state} -{" "}
+                        {selectedSavedAddress.pinCode}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                <label className="checkout-field-wide">
-                  <span>Street / Area</span>
-                  <input
-                    type="text"
-                    name="street"
-                    placeholder="Street, area or locality"
-                    value={address.street}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+              <button
+                type="button"
+                className="add-address-button"
+                onClick={() => setShowNewAddressForm((current) => !current)}
+              >
+                {showNewAddressForm ? <X size={17} /> : <Plus size={17} />}
+                {showNewAddressForm
+                  ? "Cancel New Address"
+                  : savedAddresses.length > 0
+                    ? "Use a Different Address"
+                    : "Add Delivery Address"}
+              </button>
 
-                <label>
-                  <span>City</span>
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="City"
-                    value={address.city}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+              {showNewAddressForm && (
+                <div className="checkout-new-address">
+                  <h3>Add a new delivery address</h3>
 
-                <label>
-                  <span>State</span>
-                  <input
-                    type="text"
-                    name="state"
-                    placeholder="State"
-                    value={address.state}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+                  <div className="address-type-options">
+                    {["Home", "Work", "Other"].map((type) => (
+                      <label
+                        className={`address-type-option ${
+                          address.type === type ? "active" : ""
+                        }`}
+                        key={type}
+                      >
+                        <input
+                          type="radio"
+                          name="type"
+                          value={type}
+                          checked={address.type === type}
+                          onChange={handleAddressChange}
+                        />
+                        {getAddressIcon(type)}
+                        <span>{type}</span>
+                      </label>
+                    ))}
+                  </div>
 
-                <label>
-                  <span>PIN Code</span>
-                  <input
-                    type="text"
-                    name="pinCode"
-                    placeholder="6-digit PIN"
-                    maxLength="6"
-                    value={address.pinCode}
-                    onChange={handleAddressChange}
-                  />
-                </label>
+                  <div className="checkout-form">
+                    <label>
+                      <span>Full Name</span>
+                      <input
+                        type="text"
+                        name="fullName"
+                        placeholder="Enter your full name"
+                        value={address.fullName}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
 
-                <label className="checkout-field-wide">
-                  <span>Delivery Instructions</span>
-                  <textarea
-                    rows="3"
-                    placeholder="Any instructions for the delivery partner? (Optional)"
-                    value={deliveryInstructions}
-                    onChange={(event) =>
-                      setDeliveryInstructions(event.target.value)
-                    }
-                  />
-                </label>
-              </div>
+                    <label>
+                      <span>Mobile Number</span>
+                      <input
+                        type="tel"
+                        name="mobile"
+                        placeholder="10-digit mobile number"
+                        maxLength={10}
+                        value={address.mobile}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+
+                    <label className="checkout-field-wide">
+                      <span>House / Flat / Building</span>
+                      <input
+                        type="text"
+                        name="house"
+                        placeholder="House, flat or building"
+                        value={address.house}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+
+                    <label className="checkout-field-wide">
+                      <span>Street / Area</span>
+                      <input
+                        type="text"
+                        name="street"
+                        placeholder="Street, area or locality"
+                        value={address.street}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+
+                    <label>
+                      <span>City</span>
+                      <input
+                        type="text"
+                        name="city"
+                        placeholder="City"
+                        value={address.city}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+
+                    <label>
+                      <span>State</span>
+                      <input
+                        type="text"
+                        name="state"
+                        placeholder="State"
+                        value={address.state}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+
+                    <label>
+                      <span>PIN Code</span>
+                      <input
+                        type="text"
+                        name="pinCode"
+                        inputMode="numeric"
+                        placeholder="6-digit PIN"
+                        maxLength={6}
+                        value={address.pinCode}
+                        onChange={handleAddressChange}
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="save-address-button"
+                    onClick={handleSaveNewAddress}
+                  >
+                    <Check size={17} />
+                    Save Address
+                  </button>
+                </div>
+              )}
+
+              <label className="checkout-field-wide checkout-instructions">
+                <span>Delivery Instructions</span>
+                <textarea
+                  rows={3}
+                  placeholder="Any instructions for the delivery partner? (Optional)"
+                  value={deliveryInstructions}
+                  onChange={(event) =>
+                    setDeliveryInstructions(event.target.value)
+                  }
+                />
+              </label>
 
               <div className="checkout-location-note">
                 <MapPin size={17} />
                 <span>
-                  Please make sure your address and PIN code are
-                  correct for successful delivery.
+                  Please make sure your address and PIN code are correct for
+                  successful delivery.
                 </span>
               </div>
             </section>
@@ -452,9 +726,7 @@ function Checkout({ cart, setCart }) {
                     }`}
                     onClick={() => handlePaymentSelection(method.name)}
                   >
-                    <div className="payment-method-icon">
-                      {method.icon}
-                    </div>
+                    <div className="payment-method-icon">{method.icon}</div>
 
                     <div className="payment-method-text">
                       <strong>{method.name}</strong>
@@ -483,9 +755,7 @@ function Checkout({ cart, setCart }) {
                       onChange={handlePaymentChange}
                     />
                   </label>
-                  <small>
-                    Enter the UPI ID linked to your payment app.
-                  </small>
+                  <small>Demo payment form.</small>
                 </div>
               )}
 
@@ -510,7 +780,7 @@ function Checkout({ cart, setCart }) {
                       type="text"
                       name="cardNumber"
                       placeholder="1234 5678 9012 3456"
-                      maxLength="19"
+                      maxLength={19}
                       value={paymentDetails.cardNumber}
                       onChange={handlePaymentChange}
                     />
@@ -523,7 +793,7 @@ function Checkout({ cart, setCart }) {
                         type="text"
                         name="expiry"
                         placeholder="MM / YY"
-                        maxLength="5"
+                        maxLength={5}
                         value={paymentDetails.expiry}
                         onChange={handlePaymentChange}
                       />
@@ -535,7 +805,7 @@ function Checkout({ cart, setCart }) {
                         type="password"
                         name="cvv"
                         placeholder="CVV"
-                        maxLength="4"
+                        maxLength={4}
                         value={paymentDetails.cvv}
                         onChange={handlePaymentChange}
                       />
@@ -575,8 +845,7 @@ function Checkout({ cart, setCart }) {
                   <div>
                     <h3>Cash on Delivery</h3>
                     <p>
-                      Pay in cash when your order is delivered
-                      to your doorstep.
+                      Pay in cash when your order is delivered to your doorstep.
                     </p>
                   </div>
                 </div>
@@ -608,9 +877,7 @@ function Checkout({ cart, setCart }) {
                     </span>
                   </div>
 
-                  <strong>
-                    ₹{product.price * product.quantity}
-                  </strong>
+                  <strong>₹{product.price * product.quantity}</strong>
                 </div>
               ))}
             </div>
@@ -739,11 +1006,11 @@ function Checkout({ cart, setCart }) {
             <div className="checkout-security">
               <div>
                 <LockKeyhole size={16} />
-                <span>Secure checkout</span>
+                <span>Demo checkout</span>
               </div>
               <div>
                 <ShieldCheck size={16} />
-                <span>Your information is protected</span>
+                <span>Your information is stored locally</span>
               </div>
             </div>
           </aside>

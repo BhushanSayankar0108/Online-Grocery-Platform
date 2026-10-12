@@ -10,6 +10,7 @@ import {
   Check,
   X,
   ArrowRight,
+  Pencil,
 } from "lucide-react";
 
 const emptyForm = {
@@ -22,64 +23,140 @@ const emptyForm = {
   pinCode: "",
 };
 
-function Addresses() {
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: "Home",
-      name: "John Doe",
-      mobile: "9876543210",
-      address: "Flat 101, Green Residency, Main Road",
-      city: "Pune",
-      state: "Maharashtra",
-      pinCode: "411001",
-      isDefault: true,
-    },
-  ]);
+function getCustomerEmail() {
+  try {
+    const customer = JSON.parse(
+      localStorage.getItem("customerSession") || "null"
+    );
+    return customer?.email?.trim().toLowerCase() || "";
+  } catch {
+    return "";
+  }
+}
 
+function getStorageKey() {
+  const email = getCustomerEmail();
+  return email ? `savedAddresses_${email}` : null;
+}
+
+function loadAddresses() {
+  const key = getStorageKey();
+  if (!key) return [];
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function Addresses() {
+  const [addresses, setAddresses] = useState(loadAddresses);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [message, setMessage] = useState("");
+
+  const saveAddresses = (nextAddresses) => {
+    const key = getStorageKey();
+
+    if (!key) {
+      setMessage("Please log in before saving an address.");
+      return false;
+    }
+
+    try {
+      localStorage.setItem(key, JSON.stringify(nextAddresses));
+      setAddresses(nextAddresses);
+      setMessage("");
+      return true;
+    } catch {
+      setMessage("Unable to save the address. Please try again.");
+      return false;
+    }
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handleAddAddress = (event) => {
+  const handleOpenForm = (address = null) => {
+    setForm(address ? { ...emptyForm, ...address } : emptyForm);
+    setEditingId(address?.id ?? null);
+    setShowForm(true);
+    setMessage("");
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const handleSaveAddress = (event) => {
     event.preventDefault();
 
-    const newAddress = {
-      id: Date.now(),
+    const pinCode = form.pinCode.trim();
+    const mobile = form.mobile.trim();
+
+    if (!/^\d{6}$/.test(pinCode)) {
+      setMessage("Enter a valid 6-digit PIN code.");
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setMessage("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+
+    const nextAddress = {
       ...form,
-      isDefault: addresses.length === 0,
+      id: editingId ?? Date.now(),
+      name: form.name.trim(),
+      mobile,
+      address: form.address.trim(),
+      city: form.city.trim(),
+      state: form.state.trim(),
+      pinCode,
+      isDefault: editingId
+        ? addresses.find((item) => item.id === editingId)?.isDefault ?? false
+        : addresses.length === 0,
     };
 
-    setAddresses((currentAddresses) => [
-      ...currentAddresses,
-      newAddress,
-    ]);
+    let nextAddresses;
 
-    setForm(emptyForm);
-    setShowForm(false);
+    if (editingId) {
+      nextAddresses = addresses.map((item) =>
+        item.id === editingId ? nextAddress : item
+      );
+    } else {
+      nextAddresses = [...addresses, nextAddress];
+    }
+
+    if (saveAddresses(nextAddresses)) {
+      handleCancelForm();
+    }
   };
 
   const handleDelete = (id) => {
-    setAddresses((currentAddresses) =>
-      currentAddresses.filter((address) => address.id !== id)
-    );
+    const remaining = addresses.filter((item) => item.id !== id);
+
+    if (remaining.length > 0 && !remaining.some((item) => item.isDefault)) {
+      remaining[0] = { ...remaining[0], isDefault: true };
+    }
+
+    saveAddresses(remaining);
   };
 
   const handleSetDefault = (id) => {
-    setAddresses((currentAddresses) =>
-      currentAddresses.map((address) => ({
-        ...address,
-        isDefault: address.id === id,
-      }))
-    );
+    const nextAddresses = addresses.map((item) => ({
+      ...item,
+      isDefault: item.id === id,
+    }));
+
+    saveAddresses(nextAddresses);
   };
 
   const getAddressIcon = (type) => {
@@ -94,6 +171,28 @@ function Addresses() {
     return <Home size={18} strokeWidth={1.8} />;
   };
 
+  if (!getCustomerEmail()) {
+    return (
+      <main className="addresses-page">
+        <div className="addresses-container">
+          <header className="addresses-header">
+            <Link to="/account" className="shop-home-link">
+              ← Back to Account
+            </Link>
+            <span className="addresses-eyebrow">DELIVERY DETAILS</span>
+            <h1>Log in to manage addresses.</h1>
+            <p className="addresses-intro">
+              Your saved delivery addresses belong to your customer account.
+            </p>
+            <Link to="/login" className="add-address-button">
+              Login / Sign Up
+            </Link>
+          </header>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="addresses-page">
       <div className="addresses-container">
@@ -101,20 +200,11 @@ function Addresses() {
           <Link to="/account" className="shop-home-link">
             ← Back to Account
           </Link>
-
-          <p className="addresses-breadcrumb">
-            Home / Account / Addresses
-          </p>
-
-          <span className="addresses-eyebrow">
-            DELIVERY DETAILS
-          </span>
-
+          <p className="addresses-breadcrumb">Home / Account / Addresses</p>
+          <span className="addresses-eyebrow">DELIVERY DETAILS</span>
           <h1>Your saved addresses.</h1>
-
           <p className="addresses-intro">
-            Manage your delivery locations and choose where you want
-            your groceries delivered.
+            Add your address once and select it during checkout.
           </p>
         </header>
 
@@ -128,41 +218,33 @@ function Addresses() {
             <button
               type="button"
               className="add-address-button"
-              onClick={() => setShowForm((current) => !current)}
+              onClick={() =>
+                showForm ? handleCancelForm() : handleOpenForm()
+              }
             >
-              {showForm ? (
-                <>
-                  <X size={17} />
-                  Cancel
-                </>
-              ) : (
-                <>
-                  <Plus size={17} />
-                  Add New Address
-                </>
-              )}
+              {showForm ? <X size={17} /> : <Plus size={17} />}
+              {showForm ? "Cancel" : "Add New Address"}
             </button>
           </div>
 
+          {message && (
+            <p role="status" className="address-message">
+              {message}
+            </p>
+          )}
+
           {showForm && (
-            <form
-              className="address-form"
-              onSubmit={handleAddAddress}
-            >
+            <form className="address-form" onSubmit={handleSaveAddress}>
               <div className="address-form-header">
                 <div>
-                  <span>NEW ADDRESS</span>
-                  <h2>Add delivery address</h2>
+                  <span>{editingId ? "EDIT ADDRESS" : "NEW ADDRESS"}</span>
+                  <h2>{editingId ? "Update address" : "Add delivery address"}</h2>
                 </div>
-
                 <MapPin size={22} />
               </div>
 
               <div className="address-type">
-                <span className="address-field-title">
-                  Address type
-                </span>
-
+                <span className="address-field-title">Address type</span>
                 <div className="address-type-options">
                   {["Home", "Work", "Other"].map((type) => (
                     <label
@@ -178,7 +260,6 @@ function Addresses() {
                         checked={form.type === type}
                         onChange={handleChange}
                       />
-
                       {getAddressIcon(type)}
                       <span>{type}</span>
                     </label>
@@ -202,10 +283,12 @@ function Addresses() {
                   <span>Mobile Number</span>
                   <input
                     name="mobile"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={form.mobile}
                     onChange={handleChange}
-                    placeholder="Enter mobile number"
-                    type="tel"
+                    placeholder="10-digit mobile number"
                     required
                   />
                 </label>
@@ -217,7 +300,7 @@ function Addresses() {
                     value={form.address}
                     onChange={handleChange}
                     placeholder="House / flat, building, street and area"
-                    rows="3"
+                    rows={3}
                     required
                   />
                 </label>
@@ -252,7 +335,7 @@ function Addresses() {
                     onChange={handleChange}
                     placeholder="6-digit PIN"
                     inputMode="numeric"
-                    maxLength="6"
+                    maxLength={6}
                     required
                   />
                 </label>
@@ -261,15 +344,11 @@ function Addresses() {
               <div className="address-form-footer">
                 <p>
                   <MapPin size={15} />
-                  Your PIN code will be used to check delivery
-                  availability.
+                  Your PIN code can be used to check delivery availability.
                 </p>
-
-                <button
-                  type="submit"
-                  className="save-address-button"
-                >
-                  Save Address
+                <button type="submit" className="save-address-button">
+                  <Check size={17} />
+                  {editingId ? "Save Changes" : "Save Address"}
                   <ArrowRight size={17} />
                 </button>
               </div>
@@ -281,19 +360,15 @@ function Addresses() {
               <div className="addresses-empty-icon">
                 <MapPin size={30} />
               </div>
-
               <span>NO SAVED ADDRESSES</span>
-
               <h2>Add your first delivery address</h2>
-
               <p>
-                Save an address to make your next grocery order
-                faster and easier.
+                You don't have any saved addresses yet. Add one to make
+                checkout faster.
               </p>
-
               <button
                 type="button"
-                onClick={() => setShowForm(true)}
+                onClick={() => handleOpenForm()}
                 className="add-address-button"
               >
                 <Plus size={17} />
@@ -314,10 +389,8 @@ function Addresses() {
                       <div className="address-type-icon">
                         {getAddressIcon(address.type)}
                       </div>
-
                       <div>
                         <strong>{address.type}</strong>
-
                         {address.isDefault && (
                           <span className="default-badge">
                             <Check size={13} />
@@ -330,16 +403,10 @@ function Addresses() {
 
                   <div className="address-card-details">
                     <h3>{address.name}</h3>
-
-                    <p className="address-mobile">
-                      {address.mobile}
-                    </p>
-
+                    <p className="address-mobile">{address.mobile}</p>
                     <p>{address.address}</p>
-
                     <p>
-                      {address.city}, {address.state} -{" "}
-                      {address.pinCode}
+                      {address.city}, {address.state} - {address.pinCode}
                     </p>
                   </div>
 
@@ -347,14 +414,20 @@ function Addresses() {
                     {!address.isDefault && (
                       <button
                         type="button"
-                        onClick={() =>
-                          handleSetDefault(address.id)
-                        }
+                        onClick={() => handleSetDefault(address.id)}
                       >
                         <Check size={15} />
                         Set as Default
                       </button>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenForm(address)}
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </button>
 
                     <button
                       type="button"

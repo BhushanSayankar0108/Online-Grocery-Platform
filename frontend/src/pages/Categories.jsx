@@ -102,9 +102,7 @@ function Categories() {
 
               <div className="category-page-content">
                 <h2>{category.name}</h2>
-
                 <p>{category.description}</p>
-
                 <span>{category.items}</span>
               </div>
 
@@ -125,7 +123,10 @@ function Categories() {
             </p>
           </div>
 
-          <Link to="/shop" className="categories-shop-button">
+          <Link
+            to="/shop"
+            className="categories-shop-button"
+          >
             View All Products
             <ArrowRight size={17} />
           </Link>

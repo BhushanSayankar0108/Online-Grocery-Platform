@@ -3,7 +3,6 @@ import {
   FileText,
   UserCheck,
   ShoppingCart,
-  CreditCard,
   AlertCircle,
   ArrowRight,
 } from "lucide-react";

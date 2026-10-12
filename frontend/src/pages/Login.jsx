@@ -7,7 +7,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-function Login() {
+function Login({ onLogin }) {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -17,12 +17,38 @@ function Login() {
   const handleLogin = (event) => {
     event.preventDefault();
 
-    if (!email || !password) {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail || !password) {
       alert("Please enter email and password.");
       return;
     }
 
-    // Temporary frontend login
+    // Temporary frontend-only demo login.
+    const savedCustomers = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("demoCustomers") || "[]");
+      } catch {
+        return [];
+      }
+    })();
+
+    const matchingCustomer = savedCustomers.find(
+      (customer) =>
+        customer.email.toLowerCase() === normalizedEmail.toLowerCase() &&
+        customer.password === password
+    );
+
+    if (!matchingCustomer) {
+      alert("Account not found or password is incorrect. Please sign up first.");
+      return;
+    }
+
+    onLogin?.({
+      name: matchingCustomer.name,
+      email: matchingCustomer.email,
+    });
+
     navigate("/");
   };
 
@@ -31,7 +57,6 @@ function Login() {
       <div className="auth-container">
         <Link to="/" className="auth-logo">
           <span className="auth-logo-mark">OG</span>
-
           <span>
             Online Grocery
             <small>Freshness Delivered</small>
@@ -41,27 +66,23 @@ function Login() {
         <div className="auth-card">
           <div className="auth-heading">
             <span className="auth-eyebrow">WELCOME BACK</span>
-
             <h1>Login to your account.</h1>
-
             <p>
-              Access your orders, saved addresses and grocery
-              preferences.
+              Access your orders, saved addresses and grocery preferences.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="auth-form">
             <label>
               <span>Email Address</span>
-
               <div className="auth-input">
                 <Mail size={17} />
-
                 <input
                   type="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -69,17 +90,14 @@ function Login() {
 
             <label>
               <span>Password</span>
-
               <div className="auth-input">
                 <Lock size={17} />
-
                 <input
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(event) =>
-                    setPassword(event.target.value)
-                  }
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
                   required
                 />
               </div>
@@ -90,17 +108,12 @@ function Login() {
                 <input
                   type="checkbox"
                   checked={rememberMe}
-                  onChange={(event) =>
-                    setRememberMe(event.target.checked)
-                  }
+                  onChange={(event) => setRememberMe(event.target.checked)}
                 />
-
                 <span>Remember me</span>
               </label>
 
-              <Link to="/forgot-password">
-                Forgot Password?
-              </Link>
+              <Link to="/forgot-password">Forgot Password?</Link>
             </div>
 
             <button type="submit" className="auth-button">
@@ -111,15 +124,11 @@ function Login() {
 
           <div className="auth-security">
             <ShieldCheck size={17} />
-
-            <span>
-              Secure access to your grocery account.
-            </span>
+            <span>Sign in to access your grocery account.</span>
           </div>
 
           <p className="auth-footer">
-            Don't have an account?{" "}
-            <Link to="/signup">Create one</Link>
+            Don't have an account? <Link to="/signup">Create one</Link>
           </p>
         </div>
 

@@ -1,144 +1,165 @@
+import { useState } from "react";
 import ProductCard from "./ProductCard";
 import { Link } from "react-router-dom";
+import products from "../data/products";
 
-function FeaturedProducts({ setCart, wishlist, setWishlist }) {
-  const addToCart = (product) => {
+function FeaturedProducts({ setCart, cart, wishlist, setWishlist }) {
+  const [selectedVariants, setSelectedVariants] = useState({});
+
+  const getVariant = (product, variantId) =>
+    product.variants?.find((variant) => variant.id === variantId) ||
+    product.variants?.[0] ||
+    null;
+
+  const getSelectedVariant = (product) =>
+    getVariant(
+      product,
+      selectedVariants[product.id] || product.variants?.[0]?.id
+    );
+
+  const getCartKey = (product, variant) =>
+    `${product.id}-${variant?.id || product.quantity}`;
+
+  const createCartProduct = (product, variant) => ({
+    ...product,
+    quantity: 1,
+    variantId: variant?.id || null,
+    variantLabel: variant?.label || product.quantity,
+    price: variant?.price ?? product.price,
+    mrp: variant?.mrp ?? product.mrp,
+    cartKey: getCartKey(product, variant),
+  });
+
+  const addToCart = (product, variant) => {
+    const cartProduct = createCartProduct(product, variant);
+
     setCart((currentCart) => {
-      const existingProduct = currentCart.find(
-        (item) => item.name === product.name
+      const existing = currentCart.find(
+        (item) =>
+          item.cartKey === cartProduct.cartKey ||
+          (!item.cartKey &&
+            item.id === product.id &&
+            item.variantId === cartProduct.variantId)
       );
 
-      if (existingProduct) {
+      if (existing) {
         return currentCart.map((item) =>
-          item.name === product.name
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
+          item === existing
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
 
-      return [
-        ...currentCart,
-        {
-          ...product,
-          quantity: 1,
-        },
-      ];
+      return [...currentCart, cartProduct];
     });
+  };
+
+  const decreaseQuantity = (product, variant) => {
+    const key = getCartKey(product, variant);
+
+    setCart((currentCart) =>
+      currentCart
+        .map((item) =>
+          (item.cartKey === key ||
+            (!item.cartKey &&
+              item.id === product.id &&
+              item.variantId === (variant?.id || null)))
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const getCartQuantity = (product, variant) => {
+    const key = getCartKey(product, variant);
+
+    return (
+      cart.find(
+        (item) =>
+          item.cartKey === key ||
+          (!item.cartKey &&
+            item.id === product.id &&
+            item.variantId === (variant?.id || null))
+      )?.quantity || 0
+    );
   };
 
   const toggleWishlist = (product) => {
     setWishlist((currentWishlist) => {
-      const alreadyWishlisted = currentWishlist.some(
-        (item) => item.name === product.name
+      const exists = currentWishlist.some(
+        (item) => item.id === product.id
       );
 
-      if (alreadyWishlisted) {
-        return currentWishlist.filter(
-          (item) => item.name !== product.name
-        );
-      }
-
-      return [...currentWishlist, product];
+      return exists
+        ? currentWishlist.filter((item) => item.id !== product.id)
+        : [...currentWishlist, product];
     });
   };
 
-  const isWishlisted = (product) => {
-    return wishlist.some(
-      (item) => item.name === product.name
-    );
-  };
+  const isWishlisted = (product) =>
+    wishlist.some((item) => item.id === product.id);
 
-  const products = [
-    {
-      id: 1,
-      name: "Fresh Apples",
-      quantity: "1 kg",
-      price: 120,
-      mrp: 150,
-      discount: 20,
-      image:
-        "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6",
-    },
-    {
-      id: 2,
-      name: "Fresh Tomatoes",
-      quantity: "1 kg",
-      price: 60,
-      mrp: 80,
-      discount: 25,
-      image:
-        "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
-    },
-    {
-      id: 3,
-      name: "Fresh Milk",
-      quantity: "1 litre",
-      price: 55,
-      mrp: 65,
-      discount: 15,
-      image:
-        "https://images.unsplash.com/photo-1563636619-e9143da7973b",
-    },
-    {
-      id: 4,
-      name: "Whole Wheat Bread",
-      quantity: "400 g",
-      price: 45,
-      mrp: 55,
-      discount: 18,
-      image:
-        "https://images.unsplash.com/photo-1509440159596-0249088772ff",
-    },
-  ];
+  const featuredProducts = products.slice(0, 4);
 
   return (
     <section className="featured-section">
-
       <div className="section-heading featured-heading">
         <div>
           <p>HANDPICKED FOR YOU</p>
           <h2>Featured Products</h2>
         </div>
 
-        <Link
-          to="/shop"
-          className="view-all-link"
-        >
+        <Link to="/shop" className="view-all-link">
           View all products →
         </Link>
       </div>
 
       <div className="product-list">
-        {products.map((product) => (
-          <div
-            className="featured-product-wrapper"
-            key={product.id}
-          >
-            <Link
-              to={`/product/${product.id}`}
-              className="featured-product-link"
-            >
-              <ProductCard
-                name={product.name}
-                quantity={product.quantity}
-                price={product.price}
-                mrp={product.mrp}
-                discount={product.discount}
-                image={product.image}
-                onAddToCart={() => addToCart(product)}
-                onToggleWishlist={() =>
-                  toggleWishlist(product)
-                }
-                isWishlisted={isWishlisted(product)}
-              />
-            </Link>
-          </div>
-        ))}
-      </div>
+        {featuredProducts.map((product, index) => {
+          const variant = getSelectedVariant(product);
 
+          return (
+            <div className="featured-product-wrapper" key={product.id}>
+              <Link
+                to={`/product/${product.id}`}
+                className="featured-product-link"
+              >
+                <ProductCard
+                  product={product}
+                  name={product.name}
+                  quantity={product.quantity}
+                  price={product.price}
+                  mrp={product.mrp}
+                  discount={
+                    product.mrp > 0
+                      ? Math.round(
+                          ((product.mrp - product.price) / product.mrp) * 100
+                        )
+                      : 0
+                  }
+                  image={product.image}
+                  variants={product.variants || []}
+                  selectedVariantId={variant?.id}
+                  onVariantChange={(variantId) =>
+                    setSelectedVariants((current) => ({
+                      ...current,
+                      [product.id]: variantId,
+                    }))
+                  }
+                  imagePriority={index < 2}
+                  cartQuantity={getCartQuantity(product, variant)}
+                  onAddToCart={() => addToCart(product, variant)}
+                  onIncreaseQuantity={() => addToCart(product, variant)}
+                  onDecreaseQuantity={() => decreaseQuantity(product, variant)}
+                  onToggleWishlist={() => toggleWishlist(product)}
+                  isWishlisted={isWishlisted(product)}
+                />
+              </Link>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

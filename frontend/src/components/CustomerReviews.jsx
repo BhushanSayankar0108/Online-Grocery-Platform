@@ -31,21 +31,37 @@ function CustomerReviews() {
         </div>
       </div>
 
+      <div className="reviews-summary">
+        <div className="reviews-average">
+          <strong>4.7</strong>
+          <div>
+            <div className="reviews-summary-stars" aria-label="Average rating">
+              {[...Array(5)].map((_, index) => (
+                <Star key={index} size={15} fill="currentColor" />
+              ))}
+            </div>
+            <span>Customer love</span>
+          </div>
+        </div>
+
+        <span className="reviews-summary-caption">
+          Freshness • Quality • Convenience
+        </span>
+      </div>
+
       <div className="reviews-list">
         {reviews.map((review) => (
           <article className="review-card" key={review.name}>
-
             <div className="review-top">
-              <div className="review-rating">
+              <div
+                className="review-rating"
+                aria-label={`${review.rating} out of 5 stars`}
+              >
                 {[...Array(5)].map((_, index) => (
                   <Star
                     key={index}
                     size={15}
-                    fill={
-                      index < review.rating
-                        ? "currentColor"
-                        : "none"
-                    }
+                    fill={index < review.rating ? "currentColor" : "none"}
                     strokeWidth={1.8}
                   />
                 ))}
@@ -58,9 +74,7 @@ function CustomerReviews() {
               />
             </div>
 
-            <p className="review-text">
-              {review.review}
-            </p>
+            <p className="review-text">{review.review}</p>
 
             <div className="review-customer">
               <div className="review-avatar">
@@ -72,7 +86,6 @@ function CustomerReviews() {
                 <span>Verified customer</span>
               </div>
             </div>
-
           </article>
         ))}
       </div>

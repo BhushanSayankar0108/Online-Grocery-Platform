@@ -45,7 +45,6 @@ function CategorySection() {
             </div>
 
             <h3>{category.name}</h3>
-
             <span>Explore</span>
           </Link>
         ))}
