@@ -16743,3 +16743,12 @@ footer a:hover,
 .footer .footer-column h3 {
   font-weight: 700;
 }
+/* Footer: keep navigation links consistent */
+.footer .footer-column a {
+  font-weight: 400;
+}
+
+/* Keep footer headings bold */
+.footer .footer-column h3 {
+  font-weight: 700;
+}
