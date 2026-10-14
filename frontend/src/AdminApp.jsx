@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import AdminLayout from "./admin/AdminLayout";
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
 import AdminCategories from "./admin/AdminCategories";
@@ -22,28 +23,115 @@ export default function AdminApp() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/admin/login" replace />} />
-        <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
-        <Route path="/admin/subcategories" element={<AdminSubCategories />} />
-        <Route path="/admin/products" element={<AdminProducts />} />
-        <Route path="/admin/product-variants" element={<AdminProductVariants />} />
-        <Route path="/admin/inventory" element={<AdminInventory />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/customers" element={<AdminCustomers />} />
-        <Route path="/admin/coupons" element={<AdminCoupons />} />
-        <Route path="/admin/delivery" element={<AdminDelivery />} />
-        <Route path="/admin/reviews" element={<AdminReviews />} />
-        <Route path="/admin/notifications" element={<AdminNotifications />} />
-        <Route path="/admin/cms" element={<AdminCMS />} />
-        <Route path="/admin/reports" element={<AdminReports />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-        <Route path="/admin/admin-management" element={<AdminManagement />} />
-        <Route path="*" element={<Navigate to="/admin/login" replace />} />
+        {/* Default admin entry */}
+        <Route
+          path="/"
+          element={<Navigate to="/admin/login" replace />}
+        />
+
+        <Route
+          path="/admin"
+          element={<Navigate to="/admin/login" replace />}
+        />
+
+        {/* Login without sidebar */}
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+        {/* Shared admin layout */}
+        <Route
+          path="/admin"
+          element={<AdminLayout />}
+        >
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="categories"
+            element={<AdminCategories />}
+          />
+
+          <Route
+            path="subcategories"
+            element={<AdminSubCategories />}
+          />
+
+          <Route
+            path="products"
+            element={<AdminProducts />}
+          />
+
+          <Route
+            path="product-variants"
+            element={<AdminProductVariants />}
+          />
+
+          <Route
+            path="inventory"
+            element={<AdminInventory />}
+          />
+
+          <Route
+            path="orders"
+            element={<AdminOrders />}
+          />
+
+          <Route
+            path="customers"
+            element={<AdminCustomers />}
+          />
+
+          <Route
+            path="coupons"
+            element={<AdminCoupons />}
+          />
+
+          <Route
+            path="delivery"
+            element={<AdminDelivery />}
+          />
+
+          <Route
+            path="reviews"
+            element={<AdminReviews />}
+          />
+
+          <Route
+            path="notifications"
+            element={<AdminNotifications />}
+          />
+
+          <Route
+            path="cms"
+            element={<AdminCMS />}
+          />
+
+          <Route
+            path="reports"
+            element={<AdminReports />}
+          />
+
+          <Route
+            path="settings"
+            element={<AdminSettings />}
+          />
+
+          <Route
+            path="admin-management"
+            element={<AdminManagement />}
+          />
+        </Route>
+
+        {/* Unknown admin routes */}
+        <Route
+          path="*"
+          element={<Navigate to="/admin/login" replace />}
+        />
       </Routes>
     </HashRouter>
   );
 }
-
