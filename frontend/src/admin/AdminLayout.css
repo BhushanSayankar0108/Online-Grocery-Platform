@@ -1,0 +1,67 @@
+
+/* =========================================================
+   SHARED ADMIN LAYOUT
+========================================================= */
+
+.admin-layout {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  background: #f8fafc;
+}
+
+.admin-layout-main {
+  width: calc(100% - 255px);
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-left: 255px;
+  background: #f8fafc;
+}
+
+.admin-main-content {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 28px;
+  background: #f8fafc;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.admin-main-content > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-main-content img {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .admin-layout-main {
+    width: calc(100% - 220px);
+    margin-left: 220px;
+  }
+
+  .admin-main-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-layout-main {
+    width: calc(100% - 220px);
+    margin-left: 220px;
+  }
+
+  .admin-main-content {
+    padding: 12px;
+  }
+}

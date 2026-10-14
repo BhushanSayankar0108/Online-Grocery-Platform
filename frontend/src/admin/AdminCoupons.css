@@ -5,9 +5,16 @@
 .admin-coupons-page {
     min-height: 100vh;
     width: 100%;
+    padding: 30px;
     background: #f6f8fb;
     color: #172033;
-    padding: 30px;
+    box-sizing: border-box;
+}
+
+.admin-coupons-page *,
+.admin-coupons-page *::before,
+.admin-coupons-page *::after {
+    box-sizing: border-box;
 }
 
 .admin-coupons-container {
@@ -15,37 +22,6 @@
     max-width: 1500px;
     margin: 0 auto;
 }
-
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
-
-.admin-coupons-back-wrapper {
-    margin-bottom: 22px;
-}
-
-.admin-coupons-back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 15px;
-    border: 1px solid #dfe4ec;
-    border-radius: 9px;
-    background: #ffffff;
-    color: #4b5565;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.admin-coupons-back-button:hover {
-    background: #f1f5f9;
-    color: #172033;
-    border-color: #cbd5e1;
-}
-
 
 /* =========================================================
    HEADER
@@ -84,12 +60,12 @@
 }
 
 .admin-coupons-add-button {
+    min-height: 44px;
+    padding: 0 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 44px;
-    padding: 0 18px;
     border: 0;
     border-radius: 9px;
     background: #111827;
@@ -98,7 +74,7 @@
     font-weight: 650;
     cursor: pointer;
     white-space: nowrap;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .admin-coupons-add-button:hover {
@@ -106,9 +82,15 @@
     transform: translateY(-1px);
 }
 
+.admin-coupons-add-button:focus-visible,
+.admin-coupons-modal button:focus-visible,
+.admin-coupons-table button:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline-offset: 2px;
+}
 
 /* =========================================================
-   STATS
+   STATISTICS
 ========================================================= */
 
 .admin-coupons-stats {
@@ -119,11 +101,12 @@
 }
 
 .admin-coupons-stat-card {
+    min-width: 0;
     min-height: 105px;
+    padding: 18px;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 18px;
     border: 1px solid #e5e9ef;
     border-radius: 12px;
     background: #ffffff;
@@ -154,13 +137,12 @@
     display: block;
     color: #111827;
     font-size: 23px;
-    line-height: 1;
+    line-height: 1.2;
     font-weight: 750;
 }
 
-
 /* =========================================================
-   TOOLBAR
+   SEARCH AND FILTERS
 ========================================================= */
 
 .admin-coupons-toolbar {
@@ -175,23 +157,32 @@
     flex: 1;
     min-width: 240px;
     height: 44px;
+    padding: 0 13px;
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 0 13px;
     border: 1px solid #dfe4ec;
     border-radius: 9px;
     background: #ffffff;
     color: #94a3b8;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-coupons-search:focus-within {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
 }
 
 .admin-coupons-search input {
     width: 100%;
+    min-width: 0;
     height: 100%;
+    padding: 0;
     border: 0;
     outline: 0;
     background: transparent;
     color: #172033;
+    font-family: inherit;
     font-size: 14px;
 }
 
@@ -213,8 +204,14 @@
     cursor: pointer;
 }
 
+.admin-coupons-clear-search:hover {
+    background: #e2e8f0;
+    color: #1f2937;
+}
+
 .admin-coupons-filter {
     position: relative;
+    flex-shrink: 0;
     width: 205px;
     height: 44px;
 }
@@ -229,9 +226,16 @@
     outline: 0;
     background: #ffffff;
     color: #374151;
+    font-family: inherit;
     font-size: 13px;
     font-weight: 550;
     cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-coupons-filter select:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
 }
 
 .admin-coupons-filter svg {
@@ -242,7 +246,6 @@
     pointer-events: none;
     color: #64748b;
 }
-
 
 /* =========================================================
    TABLE CARD
@@ -258,10 +261,11 @@
 }
 
 .admin-coupons-table-header {
+    min-height: 76px;
+    padding: 20px 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 22px;
     border-bottom: 1px solid #edf0f4;
 }
 
@@ -278,15 +282,21 @@
     font-size: 12px;
 }
 
+/* =========================================================
+   TABLE
+========================================================= */
+
 .admin-coupons-table-wrapper {
     width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-coupons-table {
     width: 100%;
     min-width: 1150px;
     border-collapse: collapse;
+    text-align: left;
 }
 
 .admin-coupons-table th {
@@ -331,21 +341,21 @@
     font-weight: 600;
 }
 
-
 /* =========================================================
-   COUPON INFO
+   COUPON INFORMATION
 ========================================================= */
 
 .coupon-info-cell {
+    min-width: 190px;
     display: flex;
     flex-direction: column;
     gap: 5px;
-    min-width: 190px;
 }
 
 .coupon-code {
     display: inline-flex;
     width: fit-content;
+    max-width: 100%;
     padding: 5px 8px;
     border-radius: 6px;
     background: #f1f5f9;
@@ -354,6 +364,7 @@
     font-size: 12px;
     font-weight: 750;
     letter-spacing: 0.03em;
+    overflow-wrap: anywhere;
 }
 
 .coupon-info-cell > span {
@@ -364,7 +375,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-
 
 /* =========================================================
    DISCOUNT
@@ -393,7 +403,6 @@
     white-space: nowrap;
 }
 
-
 /* =========================================================
    VALIDITY
 ========================================================= */
@@ -411,7 +420,6 @@
     color: #b0b7c1;
     font-size: 10px;
 }
-
 
 /* =========================================================
    USAGE
@@ -442,8 +450,8 @@
     height: 100%;
     border-radius: inherit;
     background: #64748b;
+    transition: width 0.25s ease;
 }
-
 
 /* =========================================================
    STATUS
@@ -454,10 +462,11 @@
     padding: 6px 9px;
     border: 0;
     border-radius: 999px;
+    font-family: inherit;
     font-size: 10px;
     font-weight: 700;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .coupon-status-button.active {
@@ -478,9 +487,8 @@
     background: #e2e8f0;
 }
 
-
 /* =========================================================
-   ACTIONS
+   ACTION BUTTONS
 ========================================================= */
 
 .coupon-actions {
@@ -493,17 +501,18 @@
 .coupon-delete-button {
     width: 34px;
     height: 34px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid #e2e8f0;
     border-radius: 7px;
+    background: #ffffff;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .coupon-edit-button {
-    background: #ffffff;
     color: #475569;
 }
 
@@ -513,7 +522,6 @@
 }
 
 .coupon-delete-button {
-    background: #ffffff;
     color: #dc2626;
 }
 
@@ -521,7 +529,6 @@
     background: #fef2f2;
     border-color: #fecaca;
 }
-
 
 /* =========================================================
    EMPTY STATE
@@ -552,9 +559,8 @@
     font-size: 12px;
 }
 
-
 /* =========================================================
-   MODAL
+   MODAL OVERLAY
 ========================================================= */
 
 .admin-coupons-modal-overlay {
@@ -565,18 +571,27 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    overflow-y: auto;
     background: rgba(15, 23, 42, 0.52);
     backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
+
+/* =========================================================
+   MODAL
+========================================================= */
 
 .admin-coupons-modal {
     width: 100%;
     max-width: 680px;
     max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    overflow-x: hidden;
     overflow-y: auto;
     border-radius: 14px;
     background: #ffffff;
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
+    overscroll-behavior: contain;
 }
 
 .admin-coupons-modal-header {
@@ -607,6 +622,7 @@
 .admin-coupons-modal-close {
     width: 34px;
     height: 34px;
+    padding: 0;
     display: flex;
     flex-shrink: 0;
     align-items: center;
@@ -616,13 +632,13 @@
     background: #ffffff;
     color: #64748b;
     cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .admin-coupons-modal-close:hover {
     background: #f8fafc;
     color: #111827;
 }
-
 
 /* =========================================================
    FORM
@@ -633,6 +649,7 @@
 }
 
 .admin-coupons-form-group {
+    min-width: 0;
     margin-bottom: 18px;
 }
 
@@ -653,14 +670,15 @@
 .admin-coupons-form-group textarea,
 .admin-coupons-select-wrapper select {
     width: 100%;
+    max-width: 100%;
     border: 1px solid #dce2ea;
     border-radius: 8px;
     outline: 0;
     background: #ffffff;
     color: #1f2937;
+    font-family: inherit;
     font-size: 13px;
-    transition: border-color 0.2s ease,
-        box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .admin-coupons-form-group input {
@@ -696,6 +714,7 @@
 
 .admin-coupons-select-wrapper {
     position: relative;
+    width: 100%;
 }
 
 .admin-coupons-select-wrapper select {
@@ -722,6 +741,7 @@
     border: 1px solid #dce2ea;
     border-radius: 8px;
     background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .coupon-value-input:focus-within {
@@ -732,6 +752,7 @@
 .coupon-value-input > span {
     width: 40px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     align-self: stretch;
@@ -744,13 +765,14 @@
 
 .coupon-value-input input {
     flex: 1;
+    min-width: 0;
     width: auto;
     height: 100%;
     border: 0 !important;
     border-radius: 0 !important;
+    outline: 0;
     box-shadow: none !important;
 }
-
 
 /* =========================================================
    INFORMATION BOX
@@ -778,7 +800,6 @@
     line-height: 1.55;
 }
 
-
 /* =========================================================
    FORM ACTIONS
 ========================================================= */
@@ -793,13 +814,14 @@
 .coupon-cancel-button,
 .coupon-save-button {
     min-width: 115px;
-    height: 42px;
+    min-height: 42px;
     padding: 0 17px;
     border-radius: 8px;
+    font-family: inherit;
     font-size: 13px;
     font-weight: 650;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .coupon-cancel-button {
@@ -813,23 +835,30 @@
 }
 
 .coupon-save-button {
-    border: 0;
+    border: 1px solid #111827;
     background: #111827;
     color: #ffffff;
 }
 
 .coupon-save-button:hover {
+    border-color: #273244;
     background: #273244;
 }
 
+.coupon-cancel-button:disabled,
+.coupon-save-button:disabled,
+.admin-coupons-add-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
 
 /* =========================================================
-   RESPONSIVE
+   RESPONSIVE: TABLETS
 ========================================================= */
 
 @media (max-width: 1100px) {
     .admin-coupons-stats {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .admin-coupons-toolbar {
@@ -843,8 +872,13 @@
     .admin-coupons-filter {
         flex: 1;
         width: auto;
+        min-width: 180px;
     }
 }
+
+/* =========================================================
+   RESPONSIVE: MOBILE
+========================================================= */
 
 @media (max-width: 700px) {
     .admin-coupons-page {
@@ -854,6 +888,7 @@
     .admin-coupons-header {
         align-items: stretch;
         flex-direction: column;
+        gap: 16px;
     }
 
     .admin-coupons-header h1 {
@@ -866,16 +901,27 @@
 
     .admin-coupons-stats {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .admin-coupons-stat-card {
+        min-height: 88px;
     }
 
     .admin-coupons-toolbar {
-        flex-direction: column;
         align-items: stretch;
+        flex-direction: column;
     }
 
     .admin-coupons-search,
     .admin-coupons-filter {
         width: 100%;
+        min-width: 0;
+        flex: auto;
+    }
+
+    .admin-coupons-table-header {
+        padding: 16px;
     }
 
     .coupon-form-two-column {
@@ -884,11 +930,15 @@
     }
 
     .admin-coupons-modal-overlay {
+        align-items: flex-start;
         padding: 12px;
     }
 
     .admin-coupons-modal {
         max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        margin: auto 0;
+        border-radius: 12px;
     }
 
     .admin-coupons-modal-header,
@@ -903,5 +953,37 @@
     .coupon-cancel-button,
     .coupon-save-button {
         width: 100%;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE: SMALL MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+    .admin-coupons-page {
+        padding: 12px;
+    }
+
+    .admin-coupons-header h1 {
+        font-size: 23px;
+    }
+
+    .admin-coupons-stat-card {
+        padding: 14px;
+    }
+
+    .admin-coupons-modal-overlay {
+        padding: 8px;
+    }
+
+    .admin-coupons-modal {
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+    }
+
+    .admin-coupons-modal-header,
+    .admin-coupons-form {
+        padding: 15px;
     }
 }

@@ -5,9 +5,16 @@
 .admin-inventory-page {
     min-height: 100vh;
     width: 100%;
+    padding: 30px;
     background: #f6f8fb;
     color: #172033;
-    padding: 30px;
+    box-sizing: border-box;
+}
+
+.admin-inventory-page *,
+.admin-inventory-page *::before,
+.admin-inventory-page *::after {
+    box-sizing: border-box;
 }
 
 .admin-inventory-container {
@@ -15,37 +22,6 @@
     max-width: 1500px;
     margin: 0 auto;
 }
-
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
-
-.admin-inventory-back-wrapper {
-    margin-bottom: 22px;
-}
-
-.admin-inventory-back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid #dfe4ec;
-    background: #ffffff;
-    color: #4b5565;
-    border-radius: 9px;
-    padding: 10px 15px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s ease;
-}
-
-.admin-inventory-back-button:hover {
-    background: #f1f5f9;
-    color: #172033;
-    border-color: #cbd5e1;
-}
-
 
 /* =========================================================
    HEADER
@@ -70,10 +46,10 @@
 
 .admin-inventory-header h1 {
     margin: 0;
+    color: #111827;
     font-size: 30px;
     line-height: 1.2;
     font-weight: 750;
-    color: #111827;
 }
 
 .admin-inventory-header-text {
@@ -98,7 +74,9 @@
     font-weight: 650;
     cursor: pointer;
     white-space: nowrap;
-    transition: 0.2s ease;
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
 }
 
 .admin-inventory-add-button:hover {
@@ -106,9 +84,13 @@
     transform: translateY(-1px);
 }
 
+.admin-inventory-add-button:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline-offset: 3px;
+}
 
 /* =========================================================
-   STATS
+   STATISTICS
 ========================================================= */
 
 .admin-inventory-stats {
@@ -124,9 +106,9 @@
     align-items: center;
     gap: 14px;
     padding: 18px;
-    background: #ffffff;
     border: 1px solid #e5e9ef;
     border-radius: 12px;
+    background: #ffffff;
     box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
 }
 
@@ -158,7 +140,6 @@
     font-weight: 750;
 }
 
-
 /* =========================================================
    TOOLBAR
 ========================================================= */
@@ -183,11 +164,21 @@
     border-radius: 9px;
     background: #ffffff;
     color: #94a3b8;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-inventory-search:focus-within {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
 }
 
 .admin-inventory-search input {
     width: 100%;
+    min-width: 0;
     height: 100%;
+    padding: 0;
     border: 0;
     outline: 0;
     background: transparent;
@@ -211,12 +202,26 @@
     background: #f1f5f9;
     color: #64748b;
     cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+.admin-inventory-clear-search:hover {
+    background: #e2e8f0;
+    color: #172033;
+}
+
+.admin-inventory-clear-search:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
 }
 
 .admin-inventory-filter {
     position: relative;
     width: 220px;
     height: 44px;
+    flex-shrink: 0;
 }
 
 .admin-inventory-filter select {
@@ -232,6 +237,14 @@
     font-size: 13px;
     font-weight: 550;
     cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.admin-inventory-filter select:focus {
+    border-color: #64748b;
+    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
 }
 
 .admin-inventory-filter svg {
@@ -242,7 +255,6 @@
     pointer-events: none;
     color: #64748b;
 }
-
 
 /* =========================================================
    TABLE CARD
@@ -261,6 +273,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
     padding: 20px 22px;
     border-bottom: 1px solid #edf0f4;
 }
@@ -276,11 +289,13 @@
     margin: 5px 0 0;
     color: #8a94a3;
     font-size: 12px;
+    line-height: 1.5;
 }
 
 .admin-inventory-table-wrapper {
     width: 100%;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
 }
 
 .admin-inventory-table {
@@ -331,6 +346,10 @@
     font-weight: 600;
 }
 
+/* =========================================================
+   PRODUCT INFORMATION
+========================================================= */
+
 .inventory-product-cell {
     display: flex;
     flex-direction: column;
@@ -377,6 +396,7 @@
     font-family: monospace;
     font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .inventory-expiry {
@@ -384,6 +404,10 @@
     white-space: nowrap;
     font-size: 12px !important;
 }
+
+/* =========================================================
+   STOCK STATUS
+========================================================= */
 
 .inventory-status {
     display: inline-flex;
@@ -394,6 +418,7 @@
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 .inventory-status.in-stock {
@@ -410,7 +435,6 @@
     background: #fef2f2;
     color: #dc2626;
 }
-
 
 /* =========================================================
    ACTIONS
@@ -432,7 +456,10 @@
     border: 1px solid #e2e8f0;
     border-radius: 7px;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .inventory-edit-button {
@@ -455,6 +482,11 @@
     border-color: #fecaca;
 }
 
+.inventory-edit-button:focus-visible,
+.inventory-delete-button:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
 
 /* =========================================================
    EMPTY STATE
@@ -463,6 +495,7 @@
 .inventory-empty-state {
     height: 300px !important;
     text-align: center !important;
+    color: #94a3b8 !important;
 }
 
 .inventory-empty-state > div {
@@ -470,7 +503,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #94a3b8;
+    gap: 0;
+    padding: 24px 12px;
+}
+
+.inventory-empty-state > div > svg {
+    color: #cbd5e1;
 }
 
 .inventory-empty-state h3 {
@@ -480,11 +518,16 @@
 }
 
 .inventory-empty-state p {
-    margin: 0;
+    margin: 0 0 14px;
     color: #94a3b8;
     font-size: 12px;
+    line-height: 1.5;
 }
 
+.inventory-empty-state .inventory-cancel-button {
+    min-width: auto;
+    height: 36px;
+}
 
 /* =========================================================
    MODAL
@@ -507,6 +550,7 @@
     max-width: 650px;
     max-height: calc(100vh - 48px);
     overflow-y: auto;
+    overscroll-behavior: contain;
     border-radius: 14px;
     background: #ffffff;
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22);
@@ -535,6 +579,7 @@
     color: #111827;
     font-size: 20px;
     font-weight: 750;
+    line-height: 1.35;
 }
 
 .admin-inventory-modal-close {
@@ -549,6 +594,9 @@
     background: #ffffff;
     color: #64748b;
     cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
 }
 
 .admin-inventory-modal-close:hover {
@@ -556,6 +604,10 @@
     color: #111827;
 }
 
+.admin-inventory-modal-close:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
 
 /* =========================================================
    FORM
@@ -566,6 +618,7 @@
 }
 
 .admin-inventory-form-group {
+    min-width: 0;
     margin-bottom: 18px;
 }
 
@@ -592,7 +645,8 @@
     background: #ffffff;
     color: #1f2937;
     font-size: 13px;
-    transition: border-color 0.2s ease,
+    transition:
+        border-color 0.2s ease,
         box-shadow 0.2s ease;
 }
 
@@ -609,6 +663,17 @@
 .admin-inventory-form-group input::placeholder {
     color: #a1aab7;
 }
+
+.admin-inventory-form-group input:disabled,
+.admin-inventory-select-wrapper select:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+/* =========================================================
+   FORM SELECT
+========================================================= */
 
 .admin-inventory-select-wrapper {
     position: relative;
@@ -634,7 +699,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
 }
-
 
 /* =========================================================
    INFORMATION BOX
@@ -691,7 +755,6 @@
     color: #dc2626;
 }
 
-
 /* =========================================================
    FORM ACTIONS
 ========================================================= */
@@ -706,13 +769,16 @@
 .inventory-cancel-button,
 .inventory-save-button {
     min-width: 115px;
-    height: 42px;
+    min-height: 42px;
     padding: 0 17px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 650;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .inventory-cancel-button {
@@ -735,6 +801,11 @@
     background: #273244;
 }
 
+.inventory-cancel-button:focus-visible,
+.inventory-save-button:focus-visible {
+    outline: 2px solid #64748b;
+    outline-offset: 2px;
+}
 
 /* =========================================================
    RESPONSIVE
@@ -742,7 +813,7 @@
 
 @media (max-width: 1100px) {
     .admin-inventory-stats {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .admin-inventory-toolbar {
@@ -756,6 +827,7 @@
     .admin-inventory-filter {
         flex: 1;
         width: auto;
+        min-width: 0;
     }
 }
 
@@ -767,6 +839,7 @@
     .admin-inventory-header {
         align-items: stretch;
         flex-direction: column;
+        gap: 16px;
     }
 
     .admin-inventory-header h1 {
@@ -779,6 +852,11 @@
 
     .admin-inventory-stats {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .admin-inventory-stat-card {
+        min-height: 90px;
     }
 
     .admin-inventory-toolbar {
@@ -786,12 +864,15 @@
         align-items: stretch;
     }
 
-    .admin-inventory-search {
-        width: 100%;
-    }
-
+    .admin-inventory-search,
     .admin-inventory-filter {
         width: 100%;
+        min-width: 0;
+        flex-basis: auto;
+    }
+
+    .admin-inventory-table-header {
+        padding: 16px;
     }
 
     .inventory-form-two-column {
@@ -805,6 +886,7 @@
 
     .admin-inventory-modal {
         max-height: calc(100vh - 24px);
+        border-radius: 12px;
     }
 
     .admin-inventory-modal-header,
@@ -819,5 +901,24 @@
     .inventory-cancel-button,
     .inventory-save-button {
         width: 100%;
+    }
+}
+
+@media (max-width: 380px) {
+    .admin-inventory-page {
+        padding: 12px;
+    }
+
+    .admin-inventory-header h1 {
+        font-size: 22px;
+    }
+
+    .admin-inventory-stat-card {
+        padding: 14px;
+    }
+
+    .admin-inventory-modal-header,
+    .admin-inventory-form {
+        padding: 15px;
     }
 }

@@ -17,33 +17,6 @@
 }
 
 /* =========================================================
-   BACK BUTTON
-========================================================= */
-
-.settings-top-row {
-  margin-bottom: 20px;
-}
-
-.settings-back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border: none;
-  background: transparent;
-  color: #475569;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.settings-back-button:hover {
-  color: #16a34a;
-  transform: translateX(-2px);
-}
-
-/* =========================================================
    HEADER
 ========================================================= */
 
@@ -59,6 +32,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .settings-title-icon {
@@ -78,12 +52,14 @@
   color: #111827;
   font-size: 28px;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .settings-title-wrapper p {
   margin: 0;
   color: #64748b;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .settings-save-button {
@@ -93,6 +69,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-shrink: 0;
   border: 1px solid #16a34a;
   border-radius: 9px;
   background: #16a34a;
@@ -100,7 +77,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .settings-save-button:hover {
@@ -111,6 +91,53 @@
 .settings-save-button.saved {
   background: #15803d;
   border-color: #15803d;
+}
+
+.settings-save-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   VALIDATION AND SUCCESS MESSAGES
+========================================================= */
+
+.settings-validation-error {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.settings-validation-error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.settings-success-message {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.settings-success-message svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* =========================================================
@@ -143,7 +170,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
   color: #64748b;
@@ -151,7 +178,9 @@
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .settings-sidebar button + button {
@@ -166,6 +195,7 @@
 .settings-sidebar button.active {
   background: #dcfce7;
   color: #15803d;
+  font-weight: 700;
 }
 
 .settings-sidebar button svg {
@@ -215,12 +245,14 @@
   color: #111827;
   font-size: 18px;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .settings-card-header p {
   margin: 0;
   color: #64748b;
   font-size: 12px;
+  line-height: 1.5;
 }
 
 /* =========================================================
@@ -248,12 +280,14 @@
   color: #374151;
   font-size: 13px;
   font-weight: 650;
+  line-height: 1.5;
 }
 
 .settings-form-group input,
 .settings-form-group select,
 .settings-form-group textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid #dbe1e8;
   border-radius: 8px;
   outline: none;
@@ -261,7 +295,9 @@
   color: #1f2937;
   font-family: inherit;
   font-size: 14px;
-  transition: 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .settings-form-group input,
@@ -281,12 +317,20 @@
 .settings-form-group select:focus,
 .settings-form-group textarea:focus {
   border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .settings-form-group input::placeholder,
 .settings-form-group textarea::placeholder {
   color: #94a3b8;
+}
+
+.settings-form-group input:disabled,
+.settings-form-group select:disabled,
+.settings-form-group textarea:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 /* =========================================================
@@ -312,12 +356,14 @@
   color: #1f2937;
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.5;
 }
 
 .settings-section-title p {
   margin: 0;
   color: #64748b;
   font-size: 12px;
+  line-height: 1.6;
 }
 
 /* =========================================================
@@ -352,13 +398,14 @@
   color: #334155;
   font-size: 13px;
   font-weight: 650;
+  line-height: 1.5;
 }
 
 .settings-toggle-row span {
   display: block;
   color: #94a3b8;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* =========================================================
@@ -375,7 +422,7 @@
   border-radius: 999px;
   background: #cbd5e1;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .settings-switch span {
@@ -388,7 +435,7 @@
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
-  transition: 0.2s ease;
+  transition: left 0.2s ease;
 }
 
 .settings-switch.active {
@@ -397,6 +444,15 @@
 
 .settings-switch.active span {
   left: 24px;
+}
+
+.settings-switch:hover {
+  filter: brightness(0.97);
+}
+
+.settings-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* =========================================================
@@ -413,6 +469,10 @@
 
 .settings-toggle-row.warning-row strong {
   color: #9a3412;
+}
+
+.settings-toggle-row.warning-row span {
+  color: #9a6a4b;
 }
 
 /* =========================================================
@@ -441,22 +501,51 @@
   margin-bottom: 4px;
   color: #1e3a8a;
   font-size: 13px;
+  line-height: 1.5;
 }
 
 .settings-security-note p {
   margin: 0;
   color: #64748b;
   font-size: 11px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* =========================================================
-   RESPONSIVE
+   ACCESSIBILITY
 ========================================================= */
+
+.settings-save-button:focus-visible,
+.settings-sidebar button:focus-visible,
+.settings-switch:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, 0.3);
+  outline-offset: 3px;
+}
+
+.settings-form-group input:focus-visible,
+.settings-form-group select:focus-visible,
+.settings-form-group textarea:focus-visible {
+  outline: none;
+}
+
+/* =========================================================
+   RESPONSIVE: TABLETS
+========================================================= */
+
+@media (max-width: 1100px) {
+  .settings-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .settings-form-grid {
+    gap: 16px;
+  }
+}
 
 @media (max-width: 950px) {
   .settings-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .settings-sidebar {
@@ -471,9 +560,14 @@
 
   .settings-sidebar button {
     justify-content: center;
+    padding: 10px;
     text-align: center;
   }
 }
+
+/* =========================================================
+   RESPONSIVE: MOBILE
+========================================================= */
 
 @media (max-width: 750px) {
   .admin-settings-page {
@@ -483,6 +577,7 @@
   .settings-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 16px;
   }
 
   .settings-save-button {
@@ -491,14 +586,18 @@
 
   .settings-sidebar {
     display: flex;
-    overflow-x: auto;
     gap: 4px;
+    overflow-x: auto;
+    padding: 6px;
+    scrollbar-width: thin;
   }
 
   .settings-sidebar button {
     width: auto;
     min-width: max-content;
+    min-height: 42px;
     justify-content: center;
+    padding: 0 13px;
   }
 
   .settings-sidebar button + button {
@@ -506,7 +605,7 @@
   }
 
   .settings-form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .settings-form-group.full-width {
@@ -519,21 +618,36 @@
     padding: 15px;
   }
 
+  .settings-title-wrapper {
+    gap: 11px;
+  }
+
   .settings-title-wrapper h1 {
     font-size: 23px;
+  }
+
+  .settings-title-wrapper p {
+    font-size: 12px;
   }
 
   .settings-title-icon {
     width: 46px;
     height: 46px;
+    border-radius: 12px;
   }
 
   .settings-card-header {
+    min-height: 72px;
     padding: 17px;
+  }
+
+  .settings-card-header h2 {
+    font-size: 16px;
   }
 
   .settings-form-grid {
     padding: 17px;
+    gap: 16px;
   }
 
   .settings-divider {
@@ -550,9 +664,39 @@
 
   .settings-security-note {
     margin: 0 17px 17px;
+    padding: 12px;
   }
 
   .settings-toggle-row {
     align-items: flex-start;
+    gap: 12px;
+  }
+
+  .settings-toggle-row strong {
+    font-size: 12px;
+  }
+
+  .settings-toggle-row span {
+    font-size: 10px;
+  }
+
+  .settings-switch {
+    margin-top: 2px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-save-button,
+  .settings-sidebar button,
+  .settings-form-group input,
+  .settings-form-group select,
+  .settings-form-group textarea,
+  .settings-switch,
+  .settings-switch span {
+    transition: none;
   }
 }

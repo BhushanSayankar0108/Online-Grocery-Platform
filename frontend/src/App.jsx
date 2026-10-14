@@ -62,6 +62,9 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import ReturnPolicy from "./pages/ReturnPolicy";
 
+/* ADMIN LAYOUT */
+import AdminLayout from "./admin/AdminLayout";
+
 /* ADMIN PAGES */
 import AdminLogin from "./admin/AdminLogin";
 import AdminDashboard from "./admin/AdminDashboard";
@@ -120,7 +123,9 @@ function PageLayout({
         customer={customer}
         onLogout={onLogout}
       />
+
       {children}
+
       <Footer />
     </>
   );
@@ -155,7 +160,9 @@ function Home({
       />
 
       <Hero />
+
       <CategorySection />
+
       <PromoBanner />
 
       <FeaturedProducts
@@ -166,24 +173,28 @@ function Home({
       />
 
       <DealOfTheDay />
+
       <WhyChooseUs />
+
       <CustomerReviews />
+
       <Newsletter />
+
       <Footer />
     </>
   );
 }
 
-/* APP */
+/* MAIN APP */
 function App() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
 
   /* SHARED DEMO CUSTOMER LOGIN */
-  /* SHARED DEMO CUSTOMER LOGIN */
   const [customer, setCustomer] = useState(() => {
     try {
       const savedCustomer = localStorage.getItem("customerSession");
+
       return savedCustomer ? JSON.parse(savedCustomer) : null;
     } catch {
       return null;
@@ -215,7 +226,7 @@ function App() {
     try {
       localStorage.removeItem("customerSession");
     } catch {
-      // The logout still works for the current app session.
+      // Logout still works for the current app session.
     }
   };
 
@@ -252,6 +263,7 @@ function App() {
     }
   }, [deliveryPincode]);
 
+  /* CART AND WISHLIST COUNTS */
   const cartCount = cart.reduce(
     (total, item) => total + (item.quantity || 1),
     0
@@ -259,6 +271,7 @@ function App() {
 
   const wishlistCount = wishlist.length;
 
+  /* SHARED PUBLIC LAYOUT PROPS */
   const layoutProps = {
     cartCount,
     wishlistCount,
@@ -275,7 +288,7 @@ function App() {
       <ScrollToTop />
 
       <Routes>
-        {/* HOME */}
+        {/* ==================== PUBLIC HOME ==================== */}
         <Route
           path="/"
           element={
@@ -296,7 +309,7 @@ function App() {
           }
         />
 
-        {/* SHOP */}
+        {/* ==================== SHOP ==================== */}
         <Route
           path="/shop"
           element={
@@ -313,7 +326,7 @@ function App() {
           }
         />
 
-        {/* PRODUCT DETAILS */}
+        {/* ==================== PRODUCT DETAILS ==================== */}
         <Route
           path="/product/:id"
           element={
@@ -329,7 +342,7 @@ function App() {
           }
         />
 
-        {/* CATEGORIES */}
+        {/* ==================== CATEGORIES ==================== */}
         <Route
           path="/categories"
           element={
@@ -339,7 +352,7 @@ function App() {
           }
         />
 
-        {/* OFFERS */}
+        {/* ==================== OFFERS ==================== */}
         <Route
           path="/offers"
           element={
@@ -349,7 +362,7 @@ function App() {
           }
         />
 
-        {/* CART */}
+        {/* ==================== CART ==================== */}
         <Route
           path="/cart"
           element={
@@ -364,7 +377,7 @@ function App() {
           }
         />
 
-        {/* WISHLIST */}
+        {/* ==================== WISHLIST ==================== */}
         <Route
           path="/wishlist"
           element={
@@ -380,7 +393,7 @@ function App() {
           }
         />
 
-        {/* CHECKOUT */}
+        {/* ==================== CHECKOUT ==================== */}
         <Route
           path="/checkout"
           element={
@@ -395,7 +408,7 @@ function App() {
           }
         />
 
-        {/* ORDER CONFIRMATION */}
+        {/* ==================== ORDER CONFIRMATION ==================== */}
         <Route
           path="/order-confirmation"
           element={
@@ -405,7 +418,7 @@ function App() {
           }
         />
 
-        {/* ORDERS */}
+        {/* ==================== ORDERS ==================== */}
         <Route
           path="/orders"
           element={
@@ -415,7 +428,7 @@ function App() {
           }
         />
 
-        {/* RETURNS */}
+        {/* ==================== RETURNS ==================== */}
         <Route
           path="/returns"
           element={
@@ -425,7 +438,7 @@ function App() {
           }
         />
 
-        {/* ORDER TRACKING */}
+        {/* ==================== ORDER TRACKING ==================== */}
         <Route
           path="/order-tracking/:orderId"
           element={
@@ -435,17 +448,20 @@ function App() {
           }
         />
 
-        {/* ACCOUNT */}
-<Route
-  path="/account"
-  element={
-    <PageLayout {...layoutProps}>
-      <Account customer={customer} onLogout={handleLogout} />
-    </PageLayout>
-  }
-/>
+        {/* ==================== ACCOUNT ==================== */}
+        <Route
+          path="/account"
+          element={
+            <PageLayout {...layoutProps}>
+              <Account
+                customer={customer}
+                onLogout={handleLogout}
+              />
+            </PageLayout>
+          }
+        />
 
-        {/* ADDRESSES */}
+        {/* ==================== ADDRESSES ==================== */}
         <Route
           path="/addresses"
           element={
@@ -455,7 +471,7 @@ function App() {
           }
         />
 
-        {/* NOTIFICATIONS */}
+        {/* ==================== NOTIFICATIONS ==================== */}
         <Route
           path="/notifications"
           element={
@@ -465,7 +481,7 @@ function App() {
           }
         />
 
-        {/* SUPPORT */}
+        {/* ==================== SUPPORT ==================== */}
         <Route
           path="/support"
           element={
@@ -475,7 +491,7 @@ function App() {
           }
         />
 
-        {/* ABOUT */}
+        {/* ==================== ABOUT ==================== */}
         <Route
           path="/about"
           element={
@@ -485,7 +501,7 @@ function App() {
           }
         />
 
-        {/* FAQ */}
+        {/* ==================== FAQ ==================== */}
         <Route
           path="/faq"
           element={
@@ -495,7 +511,7 @@ function App() {
           }
         />
 
-        {/* POLICIES */}
+        {/* ==================== POLICIES ==================== */}
         <Route
           path="/shipping-policy"
           element={
@@ -532,7 +548,7 @@ function App() {
           }
         />
 
-        {/* AUTH */}
+        {/* ==================== CUSTOMER AUTHENTICATION ==================== */}
         <Route
           path="/login"
           element={
@@ -560,24 +576,99 @@ function App() {
           }
         />
 
-        {/* ADMIN CMS */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
-        <Route path="/admin/subcategories" element={<AdminSubCategories />} />
-        <Route path="/admin/products" element={<AdminProducts />} />
-        <Route path="/admin/product-variants" element={<AdminProductVariants />} />
-        <Route path="/admin/inventory" element={<AdminInventory />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/customers" element={<AdminCustomers />} />
-        <Route path="/admin/coupons" element={<AdminCoupons />} />
-        <Route path="/admin/delivery" element={<AdminDelivery />} />
-        <Route path="/admin/reviews" element={<AdminReviews />} />
-        <Route path="/admin/notifications" element={<AdminNotifications />} />
-        <Route path="/admin/cms" element={<AdminCMS />} />
-        <Route path="/admin/reports" element={<AdminReports />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-        <Route path="/admin/admin-management" element={<AdminManagement />} />
+        {/* ==================== ADMIN LOGIN ==================== */}
+        {/* Login is outside AdminLayout, so the sidebar is not displayed. */}
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+        {/* ==================== ADMIN CMS ==================== */}
+        {/* All admin pages share the same sidebar and layout. */}
+        <Route
+          path="/admin"
+          element={<AdminLayout />}
+        >
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="categories"
+            element={<AdminCategories />}
+          />
+
+          <Route
+            path="subcategories"
+            element={<AdminSubCategories />}
+          />
+
+          <Route
+            path="products"
+            element={<AdminProducts />}
+          />
+
+          <Route
+            path="product-variants"
+            element={<AdminProductVariants />}
+          />
+
+          <Route
+            path="inventory"
+            element={<AdminInventory />}
+          />
+
+          <Route
+            path="orders"
+            element={<AdminOrders />}
+          />
+
+          <Route
+            path="customers"
+            element={<AdminCustomers />}
+          />
+
+          <Route
+            path="coupons"
+            element={<AdminCoupons />}
+          />
+
+          <Route
+            path="delivery"
+            element={<AdminDelivery />}
+          />
+
+          <Route
+            path="reviews"
+            element={<AdminReviews />}
+          />
+
+          <Route
+            path="notifications"
+            element={<AdminNotifications />}
+          />
+
+          <Route
+            path="cms"
+            element={<AdminCMS />}
+          />
+
+          <Route
+            path="reports"
+            element={<AdminReports />}
+          />
+
+          <Route
+            path="settings"
+            element={<AdminSettings />}
+          />
+
+          <Route
+            path="admin-management"
+            element={<AdminManagement />}
+          />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
