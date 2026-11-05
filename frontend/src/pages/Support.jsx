@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -13,6 +14,13 @@ import {
   MessageCircle,
 } from "lucide-react";
 
+// ==========================================
+// API CONFIGURATION
+// ==========================================
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
 function Support() {
   const [form, setForm] = useState({
     name: "",
@@ -22,25 +30,94 @@ function Support() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(
+    "Your message has been received. Our support team will get back to you shortly."
+  );
+
+  // ==========================================
+  // HANDLE FORM INPUT
+  // ==========================================
 
   const handleChange = (event) => {
+    const { name, value } = event.target;
+
     setForm((currentForm) => ({
       ...currentForm,
-      [event.target.name]: event.target.value,
+      [name]: value,
     }));
+
+    if (error) {
+      setError("");
+    }
   };
 
-  const handleSubmit = (event) => {
+  // ==========================================
+  // SUBMIT SUPPORT QUERY
+  // POST /api/support
+  // ==========================================
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setSubmitted(true);
 
-    setForm({
-      name: "",
-      email: "",
-      subject: "",
-      message: "",
-    });
+    if (loading) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/support`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          subject: form.subject.trim(),
+          message: form.message.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to submit your query. Please try again."
+        );
+      }
+
+      // Show success only after backend confirms submission.
+      setSuccessMessage(
+        data.message ||
+          "Your message has been received. Our support team will get back to you shortly."
+      );
+
+      setSubmitted(true);
+
+      // Reset form after successful submission.
+      setForm({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+    } catch (err) {
+      console.error("Support form submission error:", err);
+
+      setError(
+        err.message ||
+          "Something went wrong. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <main className="support-page">
@@ -65,6 +142,8 @@ function Support() {
             anything else you need along the way.
           </p>
         </header>
+
+        {/* SUPPORT OPTIONS */}
 
         <section className="support-options">
           <Link to="/orders" className="support-card">
@@ -143,6 +222,8 @@ function Support() {
           </div>
         </section>
 
+        {/* CONTACT SECTION */}
+
         <section className="support-contact">
           <div className="support-contact-info">
             <span className="support-label">
@@ -194,6 +275,8 @@ function Support() {
             </div>
           </div>
 
+          {/* SUPPORT FORM */}
+
           <div className="support-form-wrapper">
             {submitted ? (
               <div className="support-success">
@@ -207,14 +290,14 @@ function Support() {
 
                 <h2>Thanks for reaching out.</h2>
 
-                <p>
-                  Your message has been received. Our support
-                  team will get back to you shortly.
-                </p>
+                <p>{successMessage}</p>
 
                 <button
                   type="button"
-                  onClick={() => setSubmitted(false)}
+                  onClick={() => {
+                    setSubmitted(false);
+                    setError("");
+                  }}
                 >
                   Send Another Message
                   <ArrowRight size={16} />
@@ -230,6 +313,24 @@ function Support() {
                   <h2>How can we help?</h2>
                 </div>
 
+                {/* ERROR MESSAGE */}
+
+                {error && (
+                  <div
+                    role="alert"
+                    style={{
+                      padding: "12px 15px",
+                      marginBottom: "16px",
+                      borderRadius: "8px",
+                      background: "#fff1f0",
+                      color: "#c62828",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {error}
+                  </div>
+                )}
+
                 <div className="support-form-grid">
                   <label>
                     <span>Full Name</span>
@@ -240,6 +341,7 @@ function Support() {
                       placeholder="Enter your name"
                       value={form.name}
                       onChange={handleChange}
+                      maxLength={100}
                       required
                     />
                   </label>
@@ -253,6 +355,7 @@ function Support() {
                       placeholder="Enter your email"
                       value={form.email}
                       onChange={handleChange}
+                      maxLength={150}
                       required
                     />
                   </label>
@@ -267,6 +370,7 @@ function Support() {
                     placeholder="What do you need help with?"
                     value={form.subject}
                     onChange={handleChange}
+                    maxLength={150}
                     required
                   />
                 </label>
@@ -280,6 +384,7 @@ function Support() {
                     placeholder="Describe your issue or question..."
                     value={form.message}
                     onChange={handleChange}
+                    maxLength={3000}
                     required
                   />
                 </label>
@@ -287,8 +392,10 @@ function Support() {
                 <button
                   type="submit"
                   className="support-submit-button"
+                  disabled={loading}
                 >
-                  Send Message
+                  {loading ? "Submitting..." : "Send Message"}
+
                   <Send size={16} />
                 </button>
               </form>

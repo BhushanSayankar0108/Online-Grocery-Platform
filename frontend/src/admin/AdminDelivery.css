@@ -1,3 +1,4 @@
+
 /* =========================================================
    ADMIN DELIVERY MANAGEMENT
 ========================================================= */
@@ -68,7 +69,7 @@
     padding: 0 18px;
     border: 0;
     border-radius: 9px;
-    background: #111827;
+    background: #198754;
     color: #ffffff;
     font-size: 14px;
     font-weight: 650;
@@ -79,13 +80,57 @@
         transform 0.2s ease;
 }
 
-.admin-delivery-add-button:hover {
-    background: #273244;
+.admin-delivery-add-button:hover:not(:disabled) {
+    background: #157347;
     transform: translateY(-1px);
 }
 
 .admin-delivery-add-button:focus-visible {
-    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline: 3px solid rgba(25, 135, 84, 0.3);
+    outline-offset: 3px;
+}
+
+.admin-delivery-add-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Refresh button */
+
+.admin-delivery-refresh-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    border: 1px solid #b7e4ca;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #198754;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.admin-delivery-refresh-button:hover:not(:disabled) {
+    background: #eaf7f0;
+    border-color: #198754;
+    color: #157347;
+}
+
+.admin-delivery-refresh-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.admin-delivery-refresh-button:focus-visible {
+    outline: 3px solid rgba(25, 135, 84, 0.3);
     outline-offset: 3px;
 }
 
@@ -120,8 +165,8 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: #f1f5f9;
-    color: #334155;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .admin-delivery-stat-card span {
@@ -178,17 +223,17 @@
 }
 
 .admin-delivery-tabs button:hover {
-    background: #f8fafc;
-    color: #334155;
+    background: #eaf7f0;
+    color: #157347;
 }
 
 .admin-delivery-tabs button.active {
-    background: #111827;
+    background: #198754;
     color: #ffffff;
 }
 
 .admin-delivery-tabs button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 
@@ -221,8 +266,8 @@
 }
 
 .admin-delivery-search:focus-within {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-delivery-search input {
@@ -262,8 +307,8 @@
 }
 
 .admin-delivery-clear-search:hover {
-    background: #e2e8f0;
-    color: #1f2937;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .admin-delivery-filter {
@@ -292,8 +337,8 @@
 }
 
 .admin-delivery-filter select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-delivery-filter svg {
@@ -420,8 +465,8 @@
     align-items: center;
     justify-content: center;
     border-radius: 9px;
-    background: #f1f5f9;
-    color: #475569;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .delivery-area-text {
@@ -498,12 +543,12 @@
 }
 
 .delivery-status-button.active {
-    background: #ecfdf3;
-    color: #15803d;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .delivery-status-button.active:hover {
-    background: #dcfce7;
+    background: #d6f0e1;
 }
 
 .delivery-status-button.inactive {
@@ -516,7 +561,7 @@
 }
 
 .delivery-status-button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 
@@ -547,13 +592,15 @@
 }
 
 .delivery-edit-button {
-    background: #ffffff;
-    color: #475569;
+    background: #eaf7f0;
+    border-color: #c5e8d3;
+    color: #198754;
 }
 
 .delivery-edit-button:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: #d6f0e1;
+    border-color: #198754;
+    color: #157347;
 }
 
 .delivery-delete-button {
@@ -566,9 +613,13 @@
     border-color: #fecaca;
 }
 
-.delivery-edit-button:focus-visible,
+.delivery-edit-button:focus-visible {
+    outline: 2px solid #198754;
+    outline-offset: 2px;
+}
+
 .delivery-delete-button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #dc2626;
     outline-offset: 2px;
 }
 
@@ -677,7 +728,7 @@
 }
 
 .admin-delivery-modal-close:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 
@@ -738,8 +789,8 @@
 .delivery-form-group input:focus,
 .delivery-form-group textarea:focus,
 .delivery-select-wrapper select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .delivery-form-group input::placeholder,
@@ -776,8 +827,8 @@
 }
 
 .delivery-input-prefix:focus-within {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .delivery-input-prefix > span {
@@ -835,21 +886,21 @@
 .delivery-info-box {
     margin: 2px 0 22px;
     padding: 15px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #c5e8d3;
     border-radius: 9px;
-    background: #f8fafc;
+    background: #eaf7f0;
 }
 
 .delivery-info-box strong {
     display: block;
     margin-bottom: 5px;
-    color: #334155;
+    color: #157347;
     font-size: 13px;
 }
 
 .delivery-info-box p {
     margin: 0;
-    color: #7b8796;
+    color: #527563;
     font-size: 12px;
     line-height: 1.55;
 }
@@ -886,23 +937,23 @@
     color: #475569;
 }
 
-.delivery-cancel-button:hover {
+.delivery-cancel-button:hover:not(:disabled) {
     background: #f8fafc;
 }
 
 .delivery-save-button {
     border: 0;
-    background: #111827;
+    background: #198754;
     color: #ffffff;
 }
 
-.delivery-save-button:hover {
-    background: #273244;
+.delivery-save-button:hover:not(:disabled) {
+    background: #157347;
 }
 
 .delivery-cancel-button:focus-visible,
 .delivery-save-button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 

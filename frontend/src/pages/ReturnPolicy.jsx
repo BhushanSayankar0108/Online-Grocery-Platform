@@ -1,3 +1,5 @@
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   RotateCcw,
@@ -7,7 +9,86 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+
+function parsePolicyContent(content = "") {
+  const sections = [];
+  let currentSection = null;
+
+  content.split("\n").forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) return;
+
+    const headingMatch = trimmedLine.match(/^##\s*(.*?)\s*\|\s*(.+)$/);
+
+    if (headingMatch) {
+      currentSection = {
+        number: headingMatch[1],
+        title: headingMatch[2],
+        paragraphs: [],
+      };
+
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.paragraphs.push(trimmedLine);
+    }
+  });
+
+  return sections;
+}
+
 function ReturnPolicy() {
+  const [policy, setPolicy] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchPolicy = async () => {
+      try {
+        const response = await fetch(CMS_PUBLIC_API, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load Return & Refund Policy.");
+        }
+
+        const result = await response.json();
+
+        const contentItems = Array.isArray(result.data?.contentItems)
+          ? result.data.contentItems
+          : [];
+
+        const activePolicy = contentItems.find(
+          (item) =>
+            item.title?.trim().toLowerCase() ===
+              "return & refund policy" &&
+            item.status?.toLowerCase() === "active"
+        );
+
+        setPolicy(activePolicy || null);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Return Policy error:", err);
+          setError(err.message || "Something went wrong.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPolicy();
+
+    return () => controller.abort();
+  }, []);
+
+  const policySections = parsePolicyContent(policy?.content || "");
+
   return (
     <main className="info-page policy-page">
       <div className="info-container">
@@ -17,7 +98,7 @@ function ReturnPolicy() {
           </Link>
 
           <p className="info-breadcrumb">
-            Home / Return & Refund
+            <Link to="/">Home</Link> / Return & Refund
           </p>
 
           <span className="info-eyebrow">RETURNS & REFUNDS</span>
@@ -25,8 +106,8 @@ function ReturnPolicy() {
           <h1>Return & Refund Policy</h1>
 
           <p className="info-intro">
-            Information about eligible returns, refund requests and what to
-            do when there is an issue with your order.
+            {policy?.intro ||
+              "Information about eligible returns, refund requests and what to do when there is an issue with your order."}
           </p>
         </div>
 
@@ -51,78 +132,38 @@ function ReturnPolicy() {
         </section>
 
         <section className="policy-content">
-          <div className="policy-section">
-            <span className="policy-number">01</span>
-            <div>
-              <h2>Eligible Return Reasons</h2>
-              <p>
-                Depending on the product and order, return or refund requests
-                may be submitted for issues such as damaged products,
-                incorrect products, missing products, expired products or
-                quality-related concerns.
-              </p>
-            </div>
-          </div>
+          {loading ? (
+            <p className="policy-message">
+              Loading Return & Refund Policy...
+            </p>
+          ) : error ? (
+            <p className="policy-message" role="alert">
+              {error}
+            </p>
+          ) : policySections.length > 0 ? (
+            policySections.map((section, index) => (
+              <div
+                className="policy-section"
+                key={`${section.number}-${index}`}
+              >
+                <span className="policy-number">
+                  {section.number}
+                </span>
 
-          <div className="policy-section">
-            <span className="policy-number">02</span>
-            <div>
-              <h2>Submitting a Request</h2>
-              <p>
-                Customers can select the relevant delivered order and submit
-                a return or refund request with the appropriate reason and
-                supporting details.
-              </p>
-            </div>
-          </div>
+                <div>
+                  <h2>{section.title}</h2>
 
-          <div className="policy-section">
-            <span className="policy-number">03</span>
-            <div>
-              <h2>Product Condition</h2>
-              <p>
-                Where applicable, products should be kept in suitable
-                condition until the request has been reviewed. Additional
-                information or evidence may be requested for certain cases.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">04</span>
-            <div>
-              <h2>Review & Approval</h2>
-              <p>
-                Return and refund requests may be reviewed before approval.
-                The outcome can depend on the reason for the request, product
-                type and available order information.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">05</span>
-            <div>
-              <h2>Refunds</h2>
-              <p>
-                Once an eligible refund is approved, the refund process
-                depends on the original payment method and applicable payment
-                processing procedures.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">06</span>
-            <div>
-              <h2>Non-Eligible Requests</h2>
-              <p>
-                Requests that do not meet the applicable return requirements
-                may be rejected. Customers will be informed when additional
-                information is required.
-              </p>
-            </div>
-          </div>
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <p key={paragraphIndex}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="policy-message">
+              Return & Refund Policy content is currently unavailable.
+            </p>
+          )}
         </section>
 
         <section className="policy-warning">

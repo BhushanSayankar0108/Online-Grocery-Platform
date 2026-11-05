@@ -1,1303 +1,899 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-    ChevronDown,
-    Edit,
-    ImagePlus,
-    Plus,
-    Search,
-    Trash2,
-    X,
-} from "lucide-react";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ChevronDown,
+  Edit,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import "./AdminProductVariants.css";
 
-const MAX_IMAGES = 10;
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-
-const PRODUCT_OPTIONS = [
-    {
-        id: "product-1",
-        name: "Fresh Red Apples",
-        category: "Fruits & Vegetables",
-        subcategory: "Fresh Fruits",
-    },
-    {
-        id: "product-2",
-        name: "Fresh Full Cream Milk",
-        category: "Dairy & Bakery",
-        subcategory: "Milk & Dairy",
-    },
-    {
-        id: "product-3",
-        name: "Basmati Rice",
-        category: "Staples & Grains",
-        subcategory: "Rice & Grains",
-    },
-    {
-        id: "product-4",
-        name: "Butter Cookies",
-        category: "Snacks & Beverages",
-        subcategory: "Biscuits & Snacks",
-    },
-];
-
-const UNIT_OPTIONS = ["g", "kg", "ml", "L", "piece", "pack", "box"];
-
-const INITIAL_VARIANTS = [
-    {
-        id: 1,
-        productId: "product-1",
-        productName: "Fresh Red Apples",
-        variantName: "500 g",
-        sku: "APP-500G",
-        unit: "g",
-        quantity: "500",
-        price: "120",
-        discountPrice: "99",
-        image: "",
-        images: [],
-        imageSize: "medium",
-        status: "active",
-        createdAt: "02 Oct 2026",
-    },
-    {
-        id: 2,
-        productId: "product-1",
-        productName: "Fresh Red Apples",
-        variantName: "1 kg",
-        sku: "APP-1KG",
-        unit: "kg",
-        quantity: "1",
-        price: "220",
-        discountPrice: "189",
-        image: "",
-        images: [],
-        imageSize: "medium",
-        status: "active",
-        createdAt: "02 Oct 2026",
-    },
-    {
-        id: 3,
-        productId: "product-2",
-        productName: "Fresh Full Cream Milk",
-        variantName: "1 L",
-        sku: "MILK-1L",
-        unit: "L",
-        quantity: "1",
-        price: "70",
-        discountPrice: "68",
-        image: "",
-        images: [],
-        imageSize: "medium",
-        status: "active",
-        createdAt: "02 Oct 2026",
-    },
-    {
-        id: 4,
-        productId: "product-3",
-        productName: "Basmati Rice",
-        variantName: "5 kg Pack",
-        sku: "RICE-5KG",
-        unit: "kg",
-        quantity: "5",
-        price: "650",
-        discountPrice: "599",
-        image: "",
-        images: [],
-        imageSize: "medium",
-        status: "inactive",
-        createdAt: "02 Oct 2026",
-    },
-];
+const API_BASE_URL = "http://localhost:5000";
+const PRODUCTS_API = `${API_BASE_URL}/api/products`;
 
 const EMPTY_FORM = {
-    productId: "",
-    variantName: "",
-    sku: "",
-    unit: "",
-    quantity: "",
-    price: "",
-    discountPrice: "",
-    images: [],
-    imageSize: "medium",
-    status: "active",
+  productId: "",
+  variantName: "",
+  sku: "",
+  quantity: "",
+  unit: "g",
+  mrp: "",
+  sellingPrice: "",
+  stockQuantity: "0",
+  status: "active",
 };
 
-const getVariantImages = (variant) => {
-    if (Array.isArray(variant.images) && variant.images.length > 0) {
-        return variant.images;
+const getToken = () => localStorage.getItem("adminToken");
+const getId = (item) => String(item?._id ?? item?.id ?? "");
+
+const getRecords = (data) => {
+  let current = data;
+  for (let depth = 0; depth < 4 && current; depth += 1) {
+    if (Array.isArray(current)) return current;
+    for (const key of ["products", "items", "results", "records"]) {
+      if (Array.isArray(current[key])) return current[key];
     }
-
-    return variant.image ? [variant.image] : [];
+    current = current.data ?? current.result ?? current.payload ?? null;
+  }
+  return [];
 };
 
-const formatDate = () =>
-    new Date().toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+const getErrorMessage = async (response) => {
+  try {
+    const data = await response.json();
+    return data.message || data.error || "The request could not be completed.";
+  } catch {
+    return "The server returned an unexpected response.";
+  }
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatMoney = (value) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0);
+
+const toVariantForm = (product, variant = {}) => ({
+  productId: getId(product),
+  variantName: variant.label ?? "",
+  sku: variant.sku ?? "",
+  quantity: String(variant.quantityValue ?? ""),
+  unit: variant.quantityUnit ?? "g",
+  mrp: String(variant.mrp ?? ""),
+  sellingPrice: String(variant.sellingPrice ?? ""),
+  stockQuantity: String(variant.stockQuantity ?? 0),
+  status: variant.status ?? "active",
+});
 
 const AdminProductVariants = () => {
-    const fileInputRef = useRef(null);
-    const objectUrlsRef = useRef(new Set());
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProductFilter, setSelectedProductFilter] = useState("all");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
 
-    const [variants, setVariants] = useState(INITIAL_VARIANTS);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedProductFilter, setSelectedProductFilter] =
-        useState("all");
-    const [selectedStatusFilter, setSelectedStatusFilter] =
-        useState("all");
+  useEffect(() => {
+    let cancelled = false;
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState(EMPTY_FORM);
-    const [originalFormData, setOriginalFormData] = useState(null);
-    const [formError, setFormError] = useState("");
-
-    useEffect(() => {
-        const objectUrls = objectUrlsRef.current;
-
-        return () => {
-            objectUrls.forEach((url) => URL.revokeObjectURL(url));
-            objectUrls.clear();
-        };
-    }, []);
-
-    const filteredVariants = useMemo(() => {
-        const search = searchTerm.trim().toLowerCase();
-
-        return variants.filter((variant) => {
-            const matchesSearch =
-                !search ||
-                variant.variantName.toLowerCase().includes(search) ||
-                variant.productName.toLowerCase().includes(search) ||
-                variant.sku.toLowerCase().includes(search);
-
-            const matchesProduct =
-                selectedProductFilter === "all" ||
-                variant.productId === selectedProductFilter;
-
-            const matchesStatus =
-                selectedStatusFilter === "all" ||
-                variant.status === selectedStatusFilter;
-
-            return matchesSearch && matchesProduct && matchesStatus;
-        });
-    }, [
-        variants,
-        searchTerm,
-        selectedProductFilter,
-        selectedStatusFilter,
-    ]);
-
-    const revokePreviewUrl = (url) => {
-        if (objectUrlsRef.current.has(url)) {
-            URL.revokeObjectURL(url);
-            objectUrlsRef.current.delete(url);
+    const fetchProducts = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          throw new Error("Your admin session has expired. Please log in again.");
         }
-    };
 
-    const releaseFormImages = (images = []) => {
-        images.forEach((image) => {
-            if (image.isLocal && image.url) {
-                revokePreviewUrl(image.url);
-            }
-        });
-    };
-
-    const resetForm = () => {
-        releaseFormImages(formData.images);
-
-        setFormData({
-            ...EMPTY_FORM,
-            images: [],
-        });
-        setOriginalFormData(null);
-        setEditingId(null);
-        setFormError("");
-
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-
-    const openAddModal = () => {
-        resetForm();
-
-        setOriginalFormData({
-            ...EMPTY_FORM,
-            images: [],
-        });
-
-        setIsModalOpen(true);
-    };
-
-    const openEditModal = (variant) => {
-        resetForm();
-
-        const images = getVariantImages(variant).map((url, index) => ({
-            id: `existing-${variant.id}-${index}`,
-            url,
-            name: `Variant image ${index + 1}`,
-            isLocal: false,
-        }));
-
-        const nextForm = {
-            productId: variant.productId,
-            variantName: variant.variantName,
-            sku: variant.sku,
-            unit: variant.unit,
-            quantity: variant.quantity,
-            price: variant.price,
-            discountPrice: variant.discountPrice || "",
-            images,
-            imageSize: variant.imageSize || "medium",
-            status: variant.status,
-        };
-
-        setEditingId(variant.id);
-        setFormData(nextForm);
-        setOriginalFormData({
-            ...nextForm,
-            images: images.map((image) => ({ ...image })),
-        });
-        setIsModalOpen(true);
-    };
-
-    const hasFormChanged = () => {
-        if (!originalFormData) return false;
-
-        const scalarFields = [
-            "productId",
-            "variantName",
-            "sku",
-            "unit",
-            "quantity",
-            "price",
-            "discountPrice",
-            "imageSize",
-            "status",
-        ];
-
-        const scalarChanged = scalarFields.some(
-            (field) => formData[field] !== originalFormData[field]
+        const response = await fetch(
+          `${PRODUCTS_API}/admin/all?page=1&limit=100`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const currentImages = formData.images.map((image) => image.url);
-        const originalImages = originalFormData.images.map(
-            (image) => image.url
-        );
+        if (!response.ok) throw new Error(await getErrorMessage(response));
+        const data = await response.json();
 
-        return (
-            scalarChanged ||
-            currentImages.length !== originalImages.length ||
-            currentImages.some(
-                (url, index) => url !== originalImages[index]
-            )
-        );
+        if (!cancelled) {
+          setProducts(getRecords(data));
+          setPageError("");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Unable to load product variants:", error);
+          setPageError(error.message || "Unable to load product variants.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
-    const closeModal = () => {
-        if (
-            hasFormChanged() &&
-            !window.confirm(
-                "You have unsaved changes. Are you sure you want to discard them?"
-            )
-        ) {
-            return;
-        }
-
-        setIsModalOpen(false);
-        resetForm();
+    void fetchProducts();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    const handleInputChange = (event) => {
-        const { name, value } = event.target;
+  const loadProducts = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        throw new Error("Your admin session has expired. Please log in again.");
+      }
 
-        setFormData((previous) => ({
-            ...previous,
-            [name]: value,
-        }));
+      const response = await fetch(
+        `${PRODUCTS_API}/admin/all?page=1&limit=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        setFormError("");
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      const data = await response.json();
+      setProducts(getRecords(data));
+      setPageError("");
+    } catch (error) {
+      console.error("Unable to load product variants:", error);
+      setPageError(error.message || "Unable to load product variants.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshProducts = async () => {
+    setLoading(true);
+    setPageError("");
+    await loadProducts();
+  };
+
+  const variants = useMemo(
+    () =>
+      products.flatMap((product) =>
+        (Array.isArray(product.variants) ? product.variants : []).map((variant) => ({
+          ...variant,
+          id: String(variant._id ?? variant.id ?? ""),
+          productId: getId(product),
+          productName: product.name || "Unnamed product",
+          createdAt: variant.createdAt || product.createdAt,
+        }))
+      ),
+    [products]
+  );
+
+  const filteredVariants = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+    return variants.filter((variant) => {
+      const matchesSearch =
+        !search ||
+        String(variant.label || "").toLowerCase().includes(search) ||
+        String(variant.productName || "").toLowerCase().includes(search) ||
+        String(variant.sku || "").toLowerCase().includes(search);
+      const matchesProduct =
+        selectedProductFilter === "all" ||
+        variant.productId === selectedProductFilter;
+      const matchesStatus =
+        selectedStatusFilter === "all" ||
+        variant.status === selectedStatusFilter;
+      return matchesSearch && matchesProduct && matchesStatus;
+    });
+  }, [variants, searchTerm, selectedProductFilter, selectedStatusFilter]);
+
+  const resetForm = () => {
+    setFormData({ ...EMPTY_FORM });
+    setEditing(null);
+    setFormError("");
+  };
+
+  const openAddModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (variant) => {
+    const product = products.find((item) => getId(item) === variant.productId);
+    if (!product) {
+      setFormError("The parent product could not be found. Refresh and try again.");
+      return;
+    }
+
+    setEditing({ productId: variant.productId, variantId: variant.id });
+    setFormData(toVariantForm(product, variant));
+    setFormError("");
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    if (saving) return;
+    setIsModalOpen(false);
+    resetForm();
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
+    setFormError("");
+  };
+
+  const buildVariant = () => {
+    const label = formData.variantName.trim();
+    const sku = formData.sku.trim().toUpperCase();
+    const quantityValue = Number(formData.quantity);
+    const mrp = Number(formData.mrp);
+    const sellingPrice = Number(formData.sellingPrice);
+    const stockQuantity = Number(formData.stockQuantity || 0);
+
+    if (!formData.productId) throw new Error("Please select a product.");
+    if (!label) throw new Error("Please enter a variant name, such as 500 g or 1 kg.");
+    if (!sku) throw new Error("Please enter a SKU for this variant.");
+    if (!formData.unit) throw new Error("Please select a quantity unit.");
+    if (!formData.quantity || !Number.isFinite(quantityValue) || quantityValue <= 0) {
+      throw new Error("Quantity must be greater than zero.");
+    }
+    if (formData.mrp === "" || !Number.isFinite(mrp) || mrp < 0) {
+      throw new Error("Please enter a valid non-negative MRP.");
+    }
+    if (
+      formData.sellingPrice === "" ||
+      !Number.isFinite(sellingPrice) ||
+      sellingPrice < 0
+    ) {
+      throw new Error("Please enter a valid non-negative selling price.");
+    }
+    if (sellingPrice > mrp) throw new Error("Selling price cannot exceed MRP.");
+    if (!Number.isFinite(stockQuantity) || stockQuantity < 0) {
+      throw new Error("Stock quantity cannot be negative.");
+    }
+
+    return {
+      ...(editing?.variantId ? { _id: editing.variantId } : {}),
+      label,
+      quantityValue,
+      quantityUnit: formData.unit,
+      mrp,
+      sellingPrice,
+      stockQuantity,
+      sku,
+      status: formData.status,
     };
+  };
 
-    const handleImageChange = (event) => {
-        const files = Array.from(event.target.files || []);
+  const saveVariant = async (event) => {
+    event.preventDefault();
+    setFormError("");
 
-        if (files.length === 0) return;
+    let variantToSave;
+    try {
+      variantToSave = buildVariant();
+    } catch (error) {
+      setFormError(error.message);
+      return;
+    }
 
-        const remainingSlots = MAX_IMAGES - formData.images.length;
+    const product = products.find((item) => getId(item) === formData.productId);
+    if (!product) {
+      setFormError("Please select a valid product.");
+      return;
+    }
 
-        if (remainingSlots <= 0) {
-            setFormError(
-                `You can upload a maximum of ${MAX_IMAGES} images.`
-            );
-            event.target.value = "";
-            return;
+    const currentVariants = Array.isArray(product.variants) ? product.variants : [];
+    const editingId = String(editing?.variantId ?? "");
+    const duplicateLabel = currentVariants.some(
+      (item) =>
+        String(item._id ?? item.id ?? "") !== editingId &&
+        String(item.label || "").trim().toLowerCase() ===
+          variantToSave.label.toLowerCase()
+    );
+
+    if (duplicateLabel) {
+      setFormError("This product already has a variant with that size label.");
+      return;
+    }
+
+    const duplicateSku = products.some((item) =>
+      (Array.isArray(item.variants) ? item.variants : []).some(
+        (variant) =>
+          String(variant._id ?? variant.id ?? "") !== editingId &&
+          String(variant.sku || "").trim().toUpperCase() === variantToSave.sku
+      )
+    );
+
+    if (duplicateSku) {
+      setFormError("This SKU is already assigned to another variant.");
+      return;
+    }
+
+    const nextVariants = editing
+      ? currentVariants.map((item) =>
+          String(item._id ?? item.id ?? "") === editingId
+            ? { ...item, ...variantToSave }
+            : item
+        )
+      : [...currentVariants, variantToSave];
+
+    const token = getToken();
+    if (!token) {
+      setFormError("Your admin session has expired. Please log in again.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `${PRODUCTS_API}/${encodeURIComponent(getId(product))}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ variants: nextVariants }),
         }
+      );
 
-        const acceptedImages = [];
-        let validationMessage = "";
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      await loadProducts();
+      setIsModalOpen(false);
+      resetForm();
+      window.alert(
+        editing
+          ? "Product variant updated successfully."
+          : "Product variant added successfully."
+      );
+    } catch (error) {
+      console.error("Unable to save variant:", error);
+      setFormError(error.message || "Unable to save this variant.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-        files.slice(0, remainingSlots).forEach((file) => {
-            if (!file.type.startsWith("image/")) {
-                validationMessage = "Please select valid image files only.";
-                return;
-            }
+  const updateVariant = async (variant, patch, confirmation) => {
+    if (confirmation && !window.confirm(confirmation)) return;
 
-            if (file.size > MAX_IMAGE_SIZE) {
-                validationMessage = `${file.name} exceeds the 5 MB image limit.`;
-                return;
-            }
+    const product = products.find((item) => getId(item) === variant.productId);
+    if (!product) {
+      window.alert("The parent product could not be found. Refresh and try again.");
+      return;
+    }
 
-            const url = URL.createObjectURL(file);
-            objectUrlsRef.current.add(url);
+    const currentVariants = Array.isArray(product.variants) ? product.variants : [];
+    const nextVariants = currentVariants.map((item) =>
+      String(item._id ?? item.id ?? "") === variant.id
+        ? { ...item, ...patch }
+        : item
+    );
 
-            acceptedImages.push({
-                id: `${Date.now()}-${Math.random()
-                    .toString(36)
-                    .slice(2)}`,
-                url,
-                name: file.name,
-                isLocal: true,
-                file,
-            });
-        });
+    const token = getToken();
+    if (!token) {
+      window.alert("Your admin session has expired. Please log in again.");
+      return;
+    }
 
-        if (files.length > remainingSlots) {
-            validationMessage =
-                `Only ${remainingSlots} additional image(s) can be added.`;
+    try {
+      const response = await fetch(
+        `${PRODUCTS_API}/${encodeURIComponent(variant.productId)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ variants: nextVariants }),
         }
+      );
 
-        if (acceptedImages.length > 0) {
-            setFormData((previous) => ({
-                ...previous,
-                images: [...previous.images, ...acceptedImages],
-            }));
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      await loadProducts();
+    } catch (error) {
+      console.error("Unable to update variant:", error);
+      window.alert(error.message || "Unable to update variant.");
+    }
+  };
+
+  const handleDelete = async (variant) => {
+    const product = products.find((item) => getId(item) === variant.productId);
+    if (!product) {
+      window.alert("The parent product could not be found.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Delete "${variant.productName} - ${variant.label}" permanently?`
+      )
+    ) {
+      return;
+    }
+
+    const currentVariants = Array.isArray(product.variants) ? product.variants : [];
+    const nextVariants = currentVariants.filter(
+      (item) => String(item._id ?? item.id ?? "") !== variant.id
+    );
+    const token = getToken();
+
+    if (!token) {
+      window.alert("Your admin session has expired. Please log in again.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${PRODUCTS_API}/${encodeURIComponent(variant.productId)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ variants: nextVariants }),
         }
+      );
 
-        setFormError(validationMessage);
-        event.target.value = "";
-    };
+      if (!response.ok) throw new Error(await getErrorMessage(response));
+      await loadProducts();
+      window.alert("Product variant deleted successfully.");
+    } catch (error) {
+      console.error("Unable to delete variant:", error);
+      window.alert(error.message || "Unable to delete variant.");
+    }
+  };
 
-    const removeImage = (imageId) => {
-        const image = formData.images.find(
-            (item) => item.id === imageId
-        );
+  const activeCount = variants.filter((item) => item.status === "active").length;
+  const inactiveCount = variants.filter((item) => item.status === "inactive").length;
+  const productsWithVariants = new Set(variants.map((item) => item.productId)).size;
 
-        if (!image) return;
+  return (
+    <div className="admin-product-variants-page">
+      <div className="admin-product-variants-container">
+        <div className="admin-product-variants-header">
+          <div>
+            <p className="admin-product-variants-eyebrow">Catalogue Management</p>
+            <h1>Product Variants</h1>
+            <p className="admin-product-variants-header-text">
+              Manage product sizes, quantities, pricing and SKUs.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="admin-product-variants-refresh-button"
+              onClick={refreshProducts}
+              disabled={loading}
+            >
+              <RefreshCw size={17} />
+              <span>{loading ? "Loading..." : "Refresh"}</span>
+            </button>
+            <button
+              type="button"
+              className="admin-product-variants-add-button"
+              onClick={openAddModal}
+            >
+              <Plus size={18} />
+              <span>Add Variant</span>
+            </button>
+          </div>
+        </div>
 
-        if (
-            !window.confirm(
-                `Remove "${image.name}" from this variant?`
-            )
-        ) {
-            return;
-        }
+        <div className="admin-product-variants-stats">
+          <div className="admin-product-variants-stat-card">
+            <span>Total Variants</span><strong>{variants.length}</strong>
+          </div>
+          <div className="admin-product-variants-stat-card">
+            <span>Active</span><strong>{activeCount}</strong>
+          </div>
+          <div className="admin-product-variants-stat-card">
+            <span>Inactive</span><strong>{inactiveCount}</strong>
+          </div>
+          <div className="admin-product-variants-stat-card">
+            <span>Products With Variants</span><strong>{productsWithVariants}</strong>
+          </div>
+        </div>
 
-        if (image.isLocal) {
-            revokePreviewUrl(image.url);
-        }
+        {pageError && (
+          <div className="admin-product-variants-form-error" role="alert">
+            {pageError}{" "}
+            <button type="button" onClick={refreshProducts}>Retry</button>
+          </div>
+        )}
 
-        setFormData((previous) => ({
-            ...previous,
-            images: previous.images.filter(
-                (item) => item.id !== imageId
-            ),
-        }));
+        <div className="admin-product-variants-toolbar">
+          <div className="admin-product-variants-search">
+            <Search size={18} />
+            <input
+              type="search"
+              aria-label="Search variants, products or SKU"
+              placeholder="Search variants, products or SKU..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className="admin-product-variants-clear-search"
+                aria-label="Clear search"
+                onClick={() => setSearchTerm("")}
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
 
-        setFormError("");
-    };
+          <div className="admin-product-variants-filter">
+            <select
+              aria-label="Filter by product"
+              value={selectedProductFilter}
+              onChange={(event) => setSelectedProductFilter(event.target.value)}
+            >
+              <option value="all">All Products</option>
+              {products.map((product) => (
+                <option key={getId(product)} value={getId(product)}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={17} />
+          </div>
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        setFormError("");
+          <div className="admin-product-variants-filter">
+            <select
+              aria-label="Filter by status"
+              value={selectedStatusFilter}
+              onChange={(event) => setSelectedStatusFilter(event.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <ChevronDown size={17} />
+          </div>
+        </div>
 
-        const variantName = formData.variantName.trim();
-        const sku = formData.sku.trim().toUpperCase();
-        const quantity = Number(formData.quantity);
-        const price = Number(formData.price);
-        const discountPrice =
-            formData.discountPrice === ""
-                ? null
-                : Number(formData.discountPrice);
+        <div className="admin-product-variants-table-card">
+          <div className="admin-product-variants-table-header">
+            <div>
+              <h2>Variant List</h2>
+              <p>
+                {filteredVariants.length} variant
+                {filteredVariants.length !== 1 ? "s" : ""} found
+              </p>
+            </div>
+          </div>
 
-        if (!formData.productId) {
-            setFormError("Please select a product.");
-            return;
-        }
-
-        if (!variantName) {
-            setFormError("Please enter the variant name.");
-            return;
-        }
-
-        if (!sku) {
-            setFormError("Please enter the SKU.");
-            return;
-        }
-
-        if (!formData.unit) {
-            setFormError("Please select a unit.");
-            return;
-        }
-
-        if (
-            formData.quantity === "" ||
-            !Number.isFinite(quantity) ||
-            quantity <= 0
-        ) {
-            setFormError("Quantity must be greater than zero.");
-            return;
-        }
-
-        if (
-            formData.price === "" ||
-            !Number.isFinite(price) ||
-            price < 0
-        ) {
-            setFormError("Please enter a valid, non-negative price.");
-            return;
-        }
-
-        if (
-            discountPrice !== null &&
-            (!Number.isFinite(discountPrice) ||
-                discountPrice < 0 ||
-                discountPrice > price)
-        ) {
-            setFormError(
-                "Discount price must be non-negative and cannot exceed the original price."
-            );
-            return;
-        }
-
-        if (formData.images.length > MAX_IMAGES) {
-            setFormError(
-                `A maximum of ${MAX_IMAGES} images is allowed.`
-            );
-            return;
-        }
-
-        const product = PRODUCT_OPTIONS.find(
-            (item) => item.id === formData.productId
-        );
-
-        if (!product) {
-            setFormError("Please select a valid product.");
-            return;
-        }
-
-        const duplicateSku = variants.some(
-            (variant) =>
-                variant.id !== editingId &&
-                variant.sku.trim().toUpperCase() === sku
-        );
-
-        if (duplicateSku) {
-            setFormError("This SKU is already assigned to another variant.");
-            return;
-        }
-
-        if (
-            !window.confirm(
-                `Are you sure you want to ${
-                    editingId !== null ? "update" : "add"
-                } the variant "${product.name} - ${variantName}"?`
-            )
-        ) {
-            return;
-        }
-
-        const imageUrls = formData.images.map((image) => image.url);
-
-        const variantData = {
-            productId: product.id,
-            productName: product.name,
-            variantName,
-            sku,
-            unit: formData.unit,
-            quantity: String(quantity),
-            price: String(price),
-            discountPrice:
-                discountPrice === null ? "" : String(discountPrice),
-            images: imageUrls,
-            image: imageUrls[0] || "",
-            imageSize: formData.imageSize,
-            status: formData.status,
-        };
-
-        if (editingId !== null) {
-            setVariants((previous) =>
-                previous.map((variant) =>
-                    variant.id === editingId
-                        ? { ...variant, ...variantData }
-                        : variant
-                )
-            );
-        } else {
-            setVariants((previous) => [
-                {
-                    id: Date.now(),
-                    ...variantData,
-                    createdAt: formatDate(),
-                },
-                ...previous,
-            ]);
-        }
-
-        setIsModalOpen(false);
-        resetForm();
-
-        window.alert(
-            editingId !== null
-                ? "Product variant updated successfully."
-                : "Product variant added successfully."
-        );
-    };
-
-    const handleDelete = (id) => {
-        const variant = variants.find((item) => item.id === id);
-
-        if (!variant) return;
-
-        if (
-            !window.confirm(
-                `Are you sure you want to delete "${variant.productName} - ${variant.variantName}"? This action cannot be undone.`
-            )
-        ) {
-            return;
-        }
-
-        setVariants((previous) =>
-            previous.filter((item) => item.id !== id)
-        );
-
-        window.alert("Product variant deleted successfully.");
-    };
-
-    const handleStatusChange = (variant) => {
-        const nextStatus =
-            variant.status === "active" ? "inactive" : "active";
-
-        if (
-            !window.confirm(
-                `Are you sure you want to mark "${variant.productName} - ${variant.variantName}" as ${nextStatus}?`
-            )
-        ) {
-            return;
-        }
-
-        setVariants((previous) =>
-            previous.map((item) =>
-                item.id === variant.id
-                    ? { ...item, status: nextStatus }
-                    : item
-            )
-        );
-    };
-
-    const getImageSizeClass = (size) => {
-        if (size === "small") return "variant-image-small";
-        if (size === "large") return "variant-image-large";
-        return "variant-image-medium";
-    };
-
-    return (
-        <div className="admin-product-variants-page">
-            <div className="admin-product-variants-container">
-                <div className="admin-product-variants-header">
-                    <div>
-                        <p className="admin-product-variants-eyebrow">
-                            Catalogue Management
-                        </p>
-
-                        <h1>Product Variants</h1>
-
-                        <p className="admin-product-variants-header-text">
-                            Manage product sizes, quantities, pricing and SKUs.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="admin-product-variants-add-button"
-                        onClick={openAddModal}
-                    >
-                        <Plus size={18} />
-                        <span>Add Variant</span>
-                    </button>
-                </div>
-
-                <div className="admin-product-variants-stats">
-                    <div className="admin-product-variants-stat-card">
-                        <span>Total Variants</span>
-                        <strong>{variants.length}</strong>
-                    </div>
-
-                    <div className="admin-product-variants-stat-card">
-                        <span>Active</span>
-                        <strong>
-                            {
-                                variants.filter(
-                                    (item) => item.status === "active"
-                                ).length
-                            }
-                        </strong>
-                    </div>
-
-                    <div className="admin-product-variants-stat-card">
-                        <span>Inactive</span>
-                        <strong>
-                            {
-                                variants.filter(
-                                    (item) => item.status === "inactive"
-                                ).length
-                            }
-                        </strong>
-                    </div>
-
-                    <div className="admin-product-variants-stat-card">
-                        <span>Products With Variants</span>
-                        <strong>
-                            {
-                                new Set(
-                                    variants.map((item) => item.productId)
-                                ).size
-                            }
-                        </strong>
-                    </div>
-                </div>
-
-                <div className="admin-product-variants-toolbar">
-                    <div className="admin-product-variants-search">
-                        <Search size={18} />
-
-                        <input
-                            type="search"
-                            aria-label="Search variants, products or SKU"
-                            placeholder="Search variants, products or SKU..."
-                            value={searchTerm}
-                            onChange={(event) =>
-                                setSearchTerm(event.target.value)
-                            }
-                        />
-
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                className="admin-product-variants-clear-search"
-                                aria-label="Clear search"
-                                onClick={() => setSearchTerm("")}
-                            >
-                                <X size={15} />
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="admin-product-variants-filter">
-                        <select
-                            aria-label="Filter by product"
-                            value={selectedProductFilter}
-                            onChange={(event) =>
-                                setSelectedProductFilter(event.target.value)
-                            }
-                        >
-                            <option value="all">All Products</option>
-                            {PRODUCT_OPTIONS.map((product) => (
-                                <option key={product.id} value={product.id}>
-                                    {product.name}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown size={17} />
-                    </div>
-
-                    <div className="admin-product-variants-filter">
-                        <select
-                            aria-label="Filter by status"
-                            value={selectedStatusFilter}
-                            onChange={(event) =>
-                                setSelectedStatusFilter(event.target.value)
-                            }
-                        >
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                        <ChevronDown size={17} />
-                    </div>
-                </div>
-
-                <div className="admin-product-variants-table-card">
-                    <div className="admin-product-variants-table-header">
-                        <div>
-                            <h2>Variant List</h2>
-                            <p>
-                                {filteredVariants.length} variant
-                                {filteredVariants.length !== 1 ? "s" : ""} found
-                            </p>
+          <div className="admin-product-variants-table-wrapper">
+            <table className="admin-product-variants-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Product</th><th>Variant</th><th>SKU</th>
+                  <th>Quantity</th><th>MRP</th><th>Selling Price</th><th>Stock</th>
+                  <th>Status</th><th>Created</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={11}>Loading variants from database...</td></tr>
+                ) : filteredVariants.length ? (
+                  filteredVariants.map((variant, index) => (
+                    <tr key={`${variant.productId}-${variant.id || index}`}>
+                      <td className="variant-number">{index + 1}</td>
+                      <td>
+                        <div className="variant-product-cell">
+                          <strong>{variant.productName}</strong>
                         </div>
-                    </div>
+                      </td>
+                      <td><span className="variant-name-badge">{variant.label}</span></td>
+                      <td><span className="variant-sku">{variant.sku || "—"}</span></td>
+                      <td>
+                        <span className="variant-quantity">
+                          {variant.quantityValue} {variant.quantityUnit}
+                        </span>
+                      </td>
+                      <td>{formatMoney(variant.mrp)}</td>
+                      <td>
+                        <div className="variant-price-cell">
+                          <strong>{formatMoney(variant.sellingPrice)}</strong>
+                          {Number(variant.mrp) > Number(variant.sellingPrice) && (
+                            <span>{formatMoney(variant.mrp)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>{variant.stockQuantity ?? 0}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={`variant-status ${
+                            variant.status === "active" ? "active" : "inactive"
+                          }`}
+                          onClick={() =>
+                            updateVariant(
+                              variant,
+                              {
+                                status:
+                                  variant.status === "active" ? "inactive" : "active",
+                              },
+                              `Change "${variant.label}" status?`
+                            )
+                          }
+                        >
+                          {variant.status === "active" ? "Active" : "Inactive"}
+                        </button>
+                      </td>
+                      <td className="variant-date">{formatDate(variant.createdAt)}</td>
+                      <td>
+                        <div className="variant-actions">
+                          <button
+                            type="button"
+                            className="variant-edit-button"
+                            title="Edit variant"
+                            aria-label={`Edit ${variant.productName} ${variant.label}`}
+                            onClick={() => openEditModal(variant)}
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="variant-delete-button"
+                            title="Delete variant"
+                            aria-label={`Delete ${variant.productName} ${variant.label}`}
+                            onClick={() => handleDelete(variant)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={11} className="variant-empty-state">
+                      <div>
+                        <h3>No variants found</h3>
+                        <p>Add a variant or change your search and filters.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-                    <div className="admin-product-variants-table-wrapper">
-                        <table className="admin-product-variants-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Image</th>
-                                    <th>Product</th>
-                                    <th>Variant</th>
-                                    <th>SKU</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {filteredVariants.length > 0 ? (
-                                    filteredVariants.map((variant, index) => {
-                                        const images = getVariantImages(variant);
-
-                                        return (
-                                            <tr key={variant.id}>
-                                                <td className="variant-number">
-                                                    {index + 1}
-                                                </td>
-
-                                                <td>
-                                                    <div
-                                                        className={`variant-table-image ${getImageSizeClass(
-                                                            variant.imageSize
-                                                        )}`}
-                                                    >
-                                                        {images.length > 0 ? (
-                                                            <>
-                                                                <img
-                                                                    src={images[0]}
-                                                                    alt={variant.variantName}
-                                                                />
-                                                                {images.length > 1 && (
-                                                                    <span
-                                                                        className="variant-image-count"
-                                                                        title={`${images.length} images`}
-                                                                    >
-                                                                        +{images.length - 1}
-                                                                    </span>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <ImagePlus size={20} />
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                <td>
-                                                    <div className="variant-product-cell">
-                                                        <strong>
-                                                            {variant.productName}
-                                                        </strong>
-                                                    </div>
-                                                </td>
-
-                                                <td>
-                                                    <span className="variant-name-badge">
-                                                        {variant.variantName}
-                                                    </span>
-                                                </td>
-
-                                                <td>
-                                                    <span className="variant-sku">
-                                                        {variant.sku}
-                                                    </span>
-                                                </td>
-
-                                                <td>
-                                                    <span className="variant-quantity">
-                                                        {variant.quantity} {variant.unit}
-                                                    </span>
-                                                </td>
-
-                                                <td>
-                                                    <div className="variant-price-cell">
-                                                        {variant.discountPrice !== "" &&
-                                                        variant.discountPrice != null ? (
-                                                            <>
-                                                                <strong>
-                                                                    ₹{variant.discountPrice}
-                                                                </strong>
-                                                                <span>
-                                                                    ₹{variant.price}
-                                                                </span>
-                                                            </>
-                                                        ) : (
-                                                            <strong>₹{variant.price}</strong>
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                <td>
-                                                    <button
-                                                        type="button"
-                                                        className={`variant-status ${
-                                                            variant.status === "active"
-                                                                ? "active"
-                                                                : "inactive"
-                                                        }`}
-                                                        aria-label={`Change ${variant.variantName} status`}
-                                                        onClick={() =>
-                                                            handleStatusChange(variant)
-                                                        }
-                                                    >
-                                                        {variant.status === "active"
-                                                            ? "Active"
-                                                            : "Inactive"}
-                                                    </button>
-                                                </td>
-
-                                                <td className="variant-date">
-                                                    {variant.createdAt}
-                                                </td>
-
-                                                <td>
-                                                    <div className="variant-actions">
-                                                        <button
-                                                            type="button"
-                                                            className="variant-edit-button"
-                                                            title="Edit variant"
-                                                            aria-label={`Edit ${variant.productName} ${variant.variantName}`}
-                                                            onClick={() =>
-                                                                openEditModal(variant)
-                                                            }
-                                                        >
-                                                            <Edit size={16} />
-                                                        </button>
-
-                                                        <button
-                                                            type="button"
-                                                            className="variant-delete-button"
-                                                            title="Delete variant"
-                                                            aria-label={`Delete ${variant.productName} ${variant.variantName}`}
-                                                            onClick={() =>
-                                                                handleDelete(variant.id)
-                                                            }
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={10}
-                                            className="variant-empty-state"
-                                        >
-                                            <div>
-                                                <ImagePlus size={32} />
-                                                <h3>No variants found</h3>
-                                                <p>
-                                                    Try changing your search or filters.
-                                                </p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+      {isModalOpen && (
+        <div
+          className="admin-product-variants-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <div
+            className="admin-product-variants-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="variant-modal-title"
+          >
+            <div className="admin-product-variants-modal-header">
+              <div>
+                <p>Catalogue Management</p>
+                <h2 id="variant-modal-title">
+                  {editing ? "Edit Product Variant" : "Add Product Variant"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                className="admin-product-variants-modal-close"
+                aria-label="Close variant form"
+                onClick={closeModal}
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            {isModalOpen && (
-                <div
-                    className="admin-product-variants-modal-overlay"
-                    onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) {
-                            closeModal();
-                        }
-                    }}
-                >
-                    <div
-                        className="admin-product-variants-modal"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="variant-modal-title"
-                    >
-                        <div className="admin-product-variants-modal-header">
-                            <div>
-                                <p>Catalogue Management</p>
-                                <h2 id="variant-modal-title">
-                                    {editingId !== null
-                                        ? "Edit Product Variant"
-                                        : "Add Product Variant"}
-                                </h2>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="admin-product-variants-modal-close"
-                                aria-label="Close variant form"
-                                onClick={closeModal}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <form
-                            className="admin-product-variants-form"
-                            onSubmit={handleSubmit}
-                        >
-                            {formError && (
-                                <div
-                                    className="admin-product-variants-form-error"
-                                    role="alert"
-                                >
-                                    {formError}
-                                </div>
-                            )}
-
-                            <div className="admin-product-variants-form-group">
-                                <label htmlFor="variant-product">
-                                    Product <span>*</span>
-                                </label>
-
-                                <div className="admin-product-variants-select-wrapper">
-                                    <select
-                                        id="variant-product"
-                                        name="productId"
-                                        value={formData.productId}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="">Select product</option>
-                                        {PRODUCT_OPTIONS.map((product) => (
-                                            <option
-                                                key={product.id}
-                                                value={product.id}
-                                            >
-                                                {product.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown size={17} />
-                                </div>
-                            </div>
-
-                            <div className="admin-product-variants-form-group">
-                                <label htmlFor="variant-name">
-                                    Variant Name <span>*</span>
-                                </label>
-                                <input
-                                    id="variant-name"
-                                    name="variantName"
-                                    type="text"
-                                    maxLength={100}
-                                    placeholder="Example: 500 g, 1 kg, 1 L"
-                                    value={formData.variantName}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="admin-product-variants-form-group">
-                                <label htmlFor="variant-sku">
-                                    SKU <span>*</span>
-                                </label>
-                                <input
-                                    id="variant-sku"
-                                    name="sku"
-                                    type="text"
-                                    maxLength={60}
-                                    placeholder="Example: APP-500G"
-                                    value={formData.sku}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="variant-form-two-column">
-                                <div className="admin-product-variants-form-group">
-                                    <label htmlFor="variant-quantity">
-                                        Quantity <span>*</span>
-                                    </label>
-                                    <input
-                                        id="variant-quantity"
-                                        name="quantity"
-                                        type="number"
-                                        min="0.01"
-                                        step="any"
-                                        placeholder="Example: 500"
-                                        value={formData.quantity}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="admin-product-variants-form-group">
-                                    <label htmlFor="variant-unit">
-                                        Unit <span>*</span>
-                                    </label>
-                                    <div className="admin-product-variants-select-wrapper">
-                                        <select
-                                            id="variant-unit"
-                                            name="unit"
-                                            value={formData.unit}
-                                            onChange={handleInputChange}
-                                            required
-                                        >
-                                            <option value="">Select unit</option>
-                                            {UNIT_OPTIONS.map((unit) => (
-                                                <option key={unit} value={unit}>
-                                                    {unit}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown size={17} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="variant-form-two-column">
-                                <div className="admin-product-variants-form-group">
-                                    <label htmlFor="variant-price">
-                                        Price (₹) <span>*</span>
-                                    </label>
-                                    <div className="variant-price-input">
-                                        <span>₹</span>
-                                        <input
-                                            id="variant-price"
-                                            name="price"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={formData.price}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="admin-product-variants-form-group">
-                                    <label htmlFor="variant-discount-price">
-                                        Discount Price (₹)
-                                    </label>
-                                    <div className="variant-price-input">
-                                        <span>₹</span>
-                                        <input
-                                            id="variant-discount-price"
-                                            name="discountPrice"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            placeholder="Optional"
-                                            value={formData.discountPrice}
-                                            onChange={handleInputChange}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="admin-product-variants-form-group">
-                                <label>Status</label>
-                                <div className="variant-status-options">
-                                    {["active", "inactive"].map((status) => (
-                                        <label
-                                            key={status}
-                                            className={`variant-status-option ${
-                                                formData.status === status
-                                                    ? "selected"
-                                                    : ""
-                                            }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="status"
-                                                value={status}
-                                                checked={formData.status === status}
-                                                onChange={handleInputChange}
-                                            />
-                                            <span>
-                                                {status === "active"
-                                                    ? "Active"
-                                                    : "Inactive"}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="admin-product-variants-form-group">
-                                <label>Variant Images</label>
-                                <p className="variant-size-note">
-                                    Upload up to {MAX_IMAGES} images. Each image
-                                    must be 5 MB or smaller. The first image is
-                                    the primary image.
-                                </p>
-
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleImageChange}
-                                    className="variant-file-input"
-                                    aria-label="Choose variant images"
-                                />
-
-                                <div className="variant-upload-area">
-                                    {formData.images.length < MAX_IMAGES && (
-                                        <button
-                                            type="button"
-                                            className="variant-upload-button"
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
-                                            }
-                                        >
-                                            <ImagePlus size={22} />
-                                            <div>
-                                                <strong>
-                                                    Upload Variant Images
-                                                </strong>
-                                                <span>
-                                                    Select multiple images from
-                                                    your device
-                                                </span>
-                                            </div>
-                                        </button>
-                                    )}
-
-                                    {formData.images.length > 0 && (
-                                        <div className="variant-multiple-preview-grid">
-                                            {formData.images.map((image, index) => (
-                                                <div
-                                                    className="variant-multiple-preview-item"
-                                                    key={image.id}
-                                                >
-                                                    <img
-                                                        src={image.url}
-                                                        alt={image.name}
-                                                    />
-
-                                                    {index === 0 && (
-                                                        <span className="variant-primary-image-label">
-                                                            Primary
-                                                        </span>
-                                                    )}
-
-                                                    <button
-                                                        type="button"
-                                                        className="variant-remove-image-button"
-                                                        aria-label={`Remove ${image.name}`}
-                                                        title="Remove image"
-                                                        onClick={() =>
-                                                            removeImage(image.id)
-                                                        }
-                                                    >
-                                                        <X size={15} />
-                                                    </button>
-
-                                                    <span
-                                                        className="variant-preview-image-name"
-                                                        title={image.name}
-                                                    >
-                                                        {image.name}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <p className="variant-size-note">
-                                        {formData.images.length} of {MAX_IMAGES}{" "}
-                                        images selected
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="admin-product-variants-form-group">
-                                <label>Image Display Size</label>
-                                <div className="variant-size-options">
-                                    {[
-                                        {
-                                            value: "small",
-                                            title: "Small",
-                                            subtitle: "Small display",
-                                        },
-                                        {
-                                            value: "medium",
-                                            title: "Medium",
-                                            subtitle: "Medium display",
-                                        },
-                                        {
-                                            value: "large",
-                                            title: "Large",
-                                            subtitle: "Large display",
-                                        },
-                                    ].map((option) => (
-                                        <label
-                                            key={option.value}
-                                            className={`variant-size-option ${
-                                                formData.imageSize === option.value
-                                                    ? "selected"
-                                                    : ""
-                                            }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="imageSize"
-                                                value={option.value}
-                                                checked={
-                                                    formData.imageSize ===
-                                                    option.value
-                                                }
-                                                onChange={handleInputChange}
-                                            />
-                                            <div>
-                                                <strong>{option.title}</strong>
-                                                <span>{option.subtitle}</span>
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                                <p className="variant-size-note">
-                                    These options control the image display size
-                                    in the frontend UI.
-                                </p>
-                            </div>
-
-                            <div className="admin-product-variants-form-actions">
-                                <button
-                                    type="button"
-                                    className="variant-cancel-button"
-                                    onClick={closeModal}
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    className="variant-save-button"
-                                >
-                                    {editingId !== null
-                                        ? "Update Variant"
-                                        : "Save Variant"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <form className="admin-product-variants-form" onSubmit={saveVariant}>
+              {formError && (
+                <div className="admin-product-variants-form-error" role="alert">
+                  {formError}
                 </div>
-            )}
+              )}
+
+              <div className="admin-product-variants-form-group">
+                <label htmlFor="variant-product">Product <span>*</span></label>
+                <div className="admin-product-variants-select-wrapper">
+                  <select
+                    id="variant-product"
+                    name="productId"
+                    value={formData.productId}
+                    onChange={handleInputChange}
+                    required
+                    disabled={Boolean(editing)}
+                  >
+                    <option value="">Select product</option>
+                    {products.map((product) => (
+                      <option key={getId(product)} value={getId(product)}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={17} />
+                </div>
+              </div>
+
+              <div className="admin-product-variants-form-group">
+                <label htmlFor="variant-name">Variant Name / Size <span>*</span></label>
+                <input
+                  id="variant-name"
+                  name="variantName"
+                  type="text"
+                  maxLength={50}
+                  placeholder="Example: 250 g, 500 g, 1 kg"
+                  value={formData.variantName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="admin-product-variants-form-group">
+                <label htmlFor="variant-sku">Variant SKU <span>*</span></label>
+                <input
+                  id="variant-sku"
+                  name="sku"
+                  type="text"
+                  maxLength={60}
+                  placeholder="Example: APP-500G"
+                  value={formData.sku}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="variant-form-two-column">
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-quantity">Quantity <span>*</span></label>
+                  <input
+                    id="variant-quantity"
+                    name="quantity"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    placeholder="Example: 500"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-unit">Quantity Unit <span>*</span></label>
+                  <div className="admin-product-variants-select-wrapper">
+                    <select
+                      id="variant-unit"
+                      name="unit"
+                      value={formData.unit}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {["g", "kg", "ml", "L", "piece", "pack", "box"].map((unit) => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={17} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="variant-form-two-column">
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-mrp">MRP (₹) <span>*</span></label>
+                  <div className="variant-price-input">
+                    <span>₹</span>
+                    <input
+                      id="variant-mrp"
+                      name="mrp"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.mrp}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-selling-price">
+                    Selling Price (₹) <span>*</span>
+                  </label>
+                  <div className="variant-price-input">
+                    <span>₹</span>
+                    <input
+                      id="variant-selling-price"
+                      name="sellingPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.sellingPrice}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="variant-form-two-column">
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-stock">Stock Quantity</label>
+                  <input
+                    id="variant-stock"
+                    name="stockQuantity"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.stockQuantity}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="admin-product-variants-form-group">
+                  <label htmlFor="variant-status">Status</label>
+                  <div className="admin-product-variants-select-wrapper">
+                    <select
+                      id="variant-status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                    <ChevronDown size={17} />
+                  </div>
+                </div>
+              </div>
+
+              <p className="variant-size-note">
+                Variants are saved inside the selected product's MongoDB document.
+                Variant-specific images are not saved in this version because the
+                current backend variant schema does not define an image field.
+              </p>
+
+              <div className="admin-product-variants-form-actions">
+                <button
+                  type="button"
+                  className="variant-cancel-button"
+                  onClick={closeModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="variant-save-button"
+                  disabled={saving}
+                >
+                  {saving
+                    ? "Saving..."
+                    : editing
+                    ? "Update Variant"
+                    : "Save Variant"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default AdminProductVariants;

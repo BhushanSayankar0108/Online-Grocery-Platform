@@ -1,3 +1,4 @@
+
 /* =========================================================
    PAGE
 ========================================================= */
@@ -56,18 +57,19 @@
     gap: 8px;
     min-height: 44px;
     padding: 0 17px;
-    border: 0;
+    border: 1px solid #198754;
     border-radius: 8px;
-    background: #2563eb;
+    background: #198754;
     color: #ffffff;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.admin-product-variants-add-button:hover {
-    background: #1d4ed8;
+.admin-product-variants-add-button:hover:not(:disabled) {
+    border-color: #157347;
+    background: #157347;
     transform: translateY(-1px);
 }
 
@@ -146,8 +148,8 @@
 }
 
 .admin-product-variants-search input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-product-variants-clear-search {
@@ -196,8 +198,8 @@
 
 .admin-product-variants-filter select:focus,
 .admin-product-variants-select-wrapper select:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-product-variants-filter > svg,
@@ -413,6 +415,10 @@
     white-space: nowrap;
 }
 
+/* =========================================================
+   STATUS
+========================================================= */
+
 .variant-status {
     display: inline-flex;
     align-items: center;
@@ -475,13 +481,14 @@
 }
 
 .variant-edit-button {
-    border: 1px solid #dbeafe;
-    background: #eff6ff;
-    color: #2563eb;
+    border: 1px solid #ccebd9;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .variant-edit-button:hover {
-    background: #dbeafe;
+    border-color: #a8d9bd;
+    background: #d8f0e2;
 }
 
 .variant-delete-button {
@@ -491,6 +498,7 @@
 }
 
 .variant-delete-button:hover {
+    border-color: #fecaca;
     background: #fee2e2;
 }
 
@@ -642,8 +650,8 @@
 
 .admin-product-variants-form-group input:focus,
 .admin-product-variants-select-wrapper select:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-product-variants-select-wrapper {
@@ -730,13 +738,13 @@
 }
 
 .variant-status-option.selected {
-    border-color: #2563eb;
-    background: #eff6ff;
-    color: #1d4ed8;
+    border-color: #198754;
+    background: #eaf7f0;
+    color: #157347;
 }
 
 .variant-status-option input {
-    accent-color: #2563eb;
+    accent-color: #198754;
 }
 
 /* =========================================================
@@ -761,15 +769,15 @@
     border: 1.5px dashed #cbd5e1;
     border-radius: 9px;
     background: #f8fafc;
-    color: #2563eb;
+    color: #198754;
     text-align: left;
     cursor: pointer;
     transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .variant-upload-button:hover {
-    border-color: #2563eb;
-    background: #eff6ff;
+    border-color: #198754;
+    background: #eaf7f0;
 }
 
 .variant-upload-button > svg {
@@ -827,7 +835,7 @@
     padding: 4px 7px;
     overflow: hidden;
     border-radius: 5px;
-    background: #2563eb;
+    background: #198754;
     color: #ffffff;
     font-size: 10px;
     font-weight: 700;
@@ -941,13 +949,13 @@
 }
 
 .variant-size-option.selected {
-    border-color: #2563eb;
-    background: #eff6ff;
+    border-color: #198754;
+    background: #eaf7f0;
 }
 
 .variant-size-option input {
     flex-shrink: 0;
-    accent-color: #2563eb;
+    accent-color: #198754;
 }
 
 .variant-size-option div {
@@ -1004,19 +1012,20 @@
     color: #475569;
 }
 
-.variant-cancel-button:hover {
+.variant-cancel-button:hover:not(:disabled) {
+    border-color: #cbd5e1;
     background: #f8fafc;
 }
 
 .variant-save-button {
-    border: 1px solid #2563eb;
-    background: #2563eb;
+    border: 1px solid #198754;
+    background: #198754;
     color: #ffffff;
 }
 
-.variant-save-button:hover {
-    border-color: #1d4ed8;
-    background: #1d4ed8;
+.variant-save-button:hover:not(:disabled) {
+    border-color: #157347;
+    background: #157347;
 }
 
 /* =========================================================
@@ -1026,7 +1035,7 @@
 .admin-product-variants-page button:focus-visible,
 .admin-product-variants-page input:focus-visible,
 .admin-product-variants-page select:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 3px solid rgba(25, 135, 84, 0.3);
     outline-offset: 2px;
 }
 
@@ -1218,4 +1227,31 @@
         width: 24px;
         height: 24px;
     }
+}
+.admin-product-variants-refresh-button {
+  min-height: 42px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #b7e4ca;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #198754;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-product-variants-refresh-button:hover:not(:disabled) {
+  border-color: #198754;
+  background: #eaf7f0;
+  color: #157347;
+}
+
+.admin-product-variants-refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

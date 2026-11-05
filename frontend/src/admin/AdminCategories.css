@@ -382,10 +382,10 @@
     gap: 8px;
     height: 44px;
     padding: 0 15px;
-    border: 1px solid #dce2e8;
+    border: 1px solid #b7e4ca;
     border-radius: 8px;
     background: #ffffff;
-    color: #344054;
+    color: #198754;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -397,8 +397,13 @@
 
 .admin-categories-refresh-button:hover {
     border-color: #198754;
-    background: #f0faf5;
+    background: #eaf7f0;
     color: #157347;
+}
+
+.admin-categories-refresh-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .admin-categories-refreshing {

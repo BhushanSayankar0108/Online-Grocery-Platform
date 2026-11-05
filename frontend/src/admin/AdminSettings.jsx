@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
   Bell,
   Check,
@@ -11,6 +12,10 @@ import {
 } from "lucide-react";
 
 import "./AdminSettings.css";
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
 
 const INITIAL_STORE_SETTINGS = {
   storeName: "Fresh Grocery",
@@ -46,95 +51,285 @@ const INITIAL_WEBSITE_SETTINGS = {
   customerRegistration: true,
   showReviews: true,
   showWishlist: true,
+
+  socialLinks: {
+    instagram: "",
+    facebook: "",
+    x: "",
+  },
+
+  businessHours: "Mon - Sun, 9 AM - 9 PM",
+};
+
+const DEFAULT_SETTINGS = {
+  store: INITIAL_STORE_SETTINGS,
+  orders: INITIAL_ORDER_SETTINGS,
+  notifications: INITIAL_NOTIFICATION_SETTINGS,
+  website: INITIAL_WEBSITE_SETTINGS,
+};
+
+// Merge server data with defaults
+const mergeSettings = (data = {}) => ({
+  store: {
+    ...INITIAL_STORE_SETTINGS,
+    ...(data.store || {}),
+  },
+
+  orders: {
+    ...INITIAL_ORDER_SETTINGS,
+    ...(data.orders || {}),
+  },
+
+  notifications: {
+    ...INITIAL_NOTIFICATION_SETTINGS,
+    ...(data.notifications || {}),
+  },
+
+  website: {
+    ...INITIAL_WEBSITE_SETTINGS,
+    ...(data.website || {}),
+
+    socialLinks: {
+      ...INITIAL_WEBSITE_SETTINGS.socialLinks,
+      ...(data.website?.socialLinks || {}),
+    },
+  },
+});
+
+// Get admin authentication token
+const getAdminToken = () => {
+  const directToken = localStorage.getItem("adminToken");
+
+  if (directToken) {
+    try {
+      const parsed = JSON.parse(directToken);
+
+      if (typeof parsed === "string") {
+        return parsed;
+      }
+
+      return (
+        parsed?.token ||
+        parsed?.accessToken ||
+        directToken
+      );
+    } catch {
+      return directToken;
+    }
+  }
+
+  const possibleKeys = [
+    "adminSession",
+    "adminUser",
+    "admin",
+  ];
+
+  for (const key of possibleKeys) {
+    try {
+      const parsed = JSON.parse(
+        localStorage.getItem(key) || "null"
+      );
+
+      const token =
+        parsed?.token ||
+        parsed?.accessToken ||
+        parsed?.adminToken ||
+        parsed?.data?.token ||
+        parsed?.admin?.token;
+
+      if (token) return token;
+    } catch {
+      // Ignore invalid localStorage data
+    }
+  }
+
+  return "";
 };
 
 function AdminSettings() {
   const [activeTab, setActiveTab] = useState("store");
+
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
   const [validationError, setValidationError] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState(null);
 
-  const [storeSettings, setStoreSettings] = useState(
-    INITIAL_STORE_SETTINGS
-  );
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  const [orderSettings, setOrderSettings] = useState(
-    INITIAL_ORDER_SETTINGS
-  );
+  const {
+    store: storeSettings,
+    orders: orderSettings,
+    notifications: notificationSettings,
+    website: websiteSettings,
+  } = settings;
 
-  const [notificationSettings, setNotificationSettings] =
-    useState(INITIAL_NOTIFICATION_SETTINGS);
+  // Fetch settings from backend
+  useEffect(() => {
+    const controller = new AbortController();
 
-  const [websiteSettings, setWebsiteSettings] = useState(
-    INITIAL_WEBSITE_SETTINGS
-  );
+    const fetchSettings = async () => {
+      try {
+        const token = getAdminToken();
 
-  const updateStore = (field, value) => {
-    setStoreSettings((previous) => ({
+        if (!token) {
+          throw new Error(
+            "Admin login token was not found. Please log in again."
+          );
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/settings/admin`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result?.success) {
+          throw new Error(
+            result?.message ||
+              "Unable to load settings from the server."
+          );
+        }
+
+        if (!controller.signal.aborted) {
+          setSettings(mergeSettings(result.settings));
+          setValidationError("");
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Fetch settings error:", error);
+
+          if (!controller.signal.aborted) {
+            setValidationError(
+              error.message || "Unable to load settings."
+            );
+          }
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingSettings(false);
+        }
+      }
+    };
+
+    fetchSettings();
+
+    return () => controller.abort();
+  }, []);
+
+  // Hide success message after 4 seconds
+  useEffect(() => {
+    if (!saved) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setSaved(false);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [saved]);
+
+  // Generic settings updater
+  const updateSetting = (section, field, value) => {
+    setSettings((previous) => ({
       ...previous,
-      [field]: value,
+
+      [section]: {
+        ...previous[section],
+        [field]: value,
+      },
     }));
+
     setSaved(false);
     setValidationError("");
   };
 
-  const updateOrder = (field, value) => {
-    setOrderSettings((previous) => ({
+  const updateStore = (field, value) =>
+    updateSetting("store", field, value);
+
+  const updateOrder = (field, value) =>
+    updateSetting("orders", field, value);
+
+  const updateNotification = (field, value) =>
+    updateSetting("notifications", field, value);
+
+  const updateWebsite = (field, value) =>
+    updateSetting("website", field, value);
+
+  // Update nested social links
+  const updateSocialLink = (field, value) => {
+    setSettings((previous) => ({
       ...previous,
-      [field]: value,
+
+      website: {
+        ...previous.website,
+
+        socialLinks: {
+          ...previous.website.socialLinks,
+          [field]: value,
+        },
+      },
     }));
+
     setSaved(false);
     setValidationError("");
   };
 
-  const updateNotification = (field, value) => {
-    setNotificationSettings((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-    setSaved(false);
-    setValidationError("");
-  };
-
-  const updateWebsite = (field, value) => {
-    setWebsiteSettings((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-    setSaved(false);
-    setValidationError("");
-  };
-
+  // Validate settings before saving
   const validateSettings = () => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneDigits = storeSettings.phone.replace(/\D/g, "");
 
-    if (!storeSettings.storeName.trim()) {
+    const phoneDigits = String(
+      storeSettings.phone || ""
+    ).replace(/\D/g, "");
+
+    if (!String(storeSettings.storeName || "").trim()) {
       setActiveTab("store");
       return "Please enter a store name.";
     }
 
-    if (!emailPattern.test(storeSettings.email.trim())) {
+    if (
+      !emailPattern.test(
+        String(storeSettings.email || "").trim()
+      )
+    ) {
       setActiveTab("store");
       return "Please enter a valid support email address.";
     }
 
-    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+    if (
+      phoneDigits.length < 10 ||
+      phoneDigits.length > 15
+    ) {
       setActiveTab("store");
-      return "Please enter a valid phone number containing 10 to 15 digits.";
+
+      return (
+        "Please enter a valid phone number containing " +
+        "10 to 15 digits."
+      );
     }
 
-    if (!storeSettings.address.trim()) {
+    if (!String(storeSettings.address || "").trim()) {
       setActiveTab("store");
       return "Please enter the store address.";
     }
 
     const minimumOrder = Number(orderSettings.minimumOrder);
     const deliveryCharge = Number(orderSettings.deliveryCharge);
-    const freeDeliveryAbove = Number(orderSettings.freeDeliveryAbove);
+    const freeDeliveryAbove = Number(
+      orderSettings.freeDeliveryAbove
+    );
 
     if (
-      orderSettings.minimumOrder.trim() === "" ||
+      String(orderSettings.minimumOrder).trim() === "" ||
       !Number.isFinite(minimumOrder) ||
       minimumOrder < 0
     ) {
@@ -143,7 +338,7 @@ function AdminSettings() {
     }
 
     if (
-      orderSettings.deliveryCharge.trim() === "" ||
+      String(orderSettings.deliveryCharge).trim() === "" ||
       !Number.isFinite(deliveryCharge) ||
       deliveryCharge < 0
     ) {
@@ -152,7 +347,7 @@ function AdminSettings() {
     }
 
     if (
-      orderSettings.freeDeliveryAbove.trim() === "" ||
+      String(orderSettings.freeDeliveryAbove).trim() === "" ||
       !Number.isFinite(freeDeliveryAbove) ||
       freeDeliveryAbove < 0
     ) {
@@ -160,25 +355,63 @@ function AdminSettings() {
       return "Free delivery threshold must be zero or greater.";
     }
 
-    if (!orderSettings.codEnabled && !orderSettings.onlinePaymentEnabled) {
+    if (
+      !orderSettings.codEnabled &&
+      !orderSettings.onlinePaymentEnabled
+    ) {
       setActiveTab("orders");
       return "Enable at least one payment method.";
     }
 
-    if (!websiteSettings.websiteName.trim()) {
+    if (!String(websiteSettings.websiteName || "").trim()) {
       setActiveTab("website");
       return "Please enter a website name.";
     }
 
-    if (!emailPattern.test(websiteSettings.websiteEmail.trim())) {
+    if (
+      !emailPattern.test(
+        String(websiteSettings.websiteEmail || "").trim()
+      )
+    ) {
       setActiveTab("website");
       return "Please enter a valid website email address.";
+    }
+
+    if (
+      String(websiteSettings.businessHours || "").length > 100
+    ) {
+      setActiveTab("website");
+      return "Business hours cannot exceed 100 characters.";
+    }
+
+    // Validate social profile URLs
+    const socialLinks = websiteSettings.socialLinks || {};
+
+    for (const [platform, value] of Object.entries(socialLinks)) {
+      const url = String(value || "").trim();
+
+      if (!url) continue;
+
+      try {
+        const parsedUrl = new URL(url);
+
+        if (
+          !["http:", "https:"].includes(parsedUrl.protocol)
+        ) {
+          throw new Error("Invalid URL");
+        }
+      } catch {
+        setActiveTab("website");
+
+        return `Please enter a valid ${platform} profile URL.`;
+      }
     }
 
     return "";
   };
 
-  const handleSave = () => {
+  // Save settings
+  const handleSave = async () => {
     const error = validateSettings();
 
     if (error) {
@@ -187,48 +420,68 @@ function AdminSettings() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to save these settings?"
-    );
+    if (saving || loadingSettings) return;
 
-    if (!confirmed) {
-      return;
-    }
+    const token = getAdminToken();
 
-    // Frontend demonstration only.
-    // Persistent saving will be implemented with the backend later.
-    setValidationError("");
-    setSaved(true);
-    setLastSavedAt(new Date());
+    if (!token) {
+      setValidationError(
+        "Admin login token was not found. Please log in again."
+      );
 
-    window.setTimeout(() => {
       setSaved(false);
-    }, 3000);
-  };
-
-  const handleTabChange = (nextTab) => {
-    if (nextTab === activeTab) {
       return;
     }
 
-    setActiveTab(nextTab);
+    setSaving(true);
+    setSaved(false);
     setValidationError("");
-  };
 
-  const handleToggle = (label, currentValue, onChange) => {
-    const nextValue = !currentValue;
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/settings`,
+        {
+          method: "PUT",
 
-    const confirmed = window.confirm(
-      nextValue
-        ? `Are you sure you want to enable ${label}?`
-        : `Are you sure you want to disable ${label}?`
-    );
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
 
-    if (confirmed) {
-      onChange(nextValue);
+          body: JSON.stringify(settings),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(
+          result?.message || "Unable to save settings."
+        );
+      }
+
+      setSettings(mergeSettings(result.settings));
+      setLastSavedAt(new Date());
+      setSaved(true);
+    } catch (error) {
+      console.error("Save settings error:", error);
+
+      setValidationError(
+        error.message || "Unable to save settings."
+      );
+
+      setSaved(false);
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setValidationError("");
+  };
+
+  // Reusable toggle switch
   const renderSwitch = (label, checked, onChange) => (
     <button
       type="button"
@@ -236,15 +489,34 @@ function AdminSettings() {
       aria-checked={checked}
       aria-label={label}
       className={`settings-switch ${checked ? "active" : ""}`}
-      onClick={() => handleToggle(label, checked, onChange)}
+      onClick={() => onChange(!checked)}
     >
       <span />
     </button>
   );
 
+  // Reusable toggle row
+  const renderToggleRow = (
+    title,
+    description,
+    checked,
+    onChange,
+    extraClass = ""
+  ) => (
+    <div className={`settings-toggle-row ${extraClass}`}>
+      <div>
+        <strong>{title}</strong>
+        <span>{description}</span>
+      </div>
+
+      {renderSwitch(title, checked, onChange)}
+    </div>
+  );
+
   return (
     <div className="admin-settings-page">
       <div className="settings-container">
+
         {/* Header */}
         <div className="settings-header">
           <div className="settings-title-wrapper">
@@ -254,6 +526,7 @@ function AdminSettings() {
 
             <div>
               <h1>Settings</h1>
+
               <p>
                 Configure store, order, notification and website settings.
               </p>
@@ -264,41 +537,63 @@ function AdminSettings() {
             type="button"
             className={`settings-save-button ${saved ? "saved" : ""}`}
             onClick={handleSave}
+            disabled={saving || loadingSettings}
           >
             {saved ? <Check size={18} /> : <Save size={18} />}
-            {saved ? "Saved" : "Save Changes"}
+
+            {loadingSettings
+              ? "Loading..."
+              : saving
+                ? "Saving..."
+                : saved
+                  ? "Saved"
+                  : "Save Changes"}
           </button>
         </div>
 
+        {loadingSettings && (
+          <div className="settings-success-message" role="status">
+            Loading settings from server...
+          </div>
+        )}
+
+        {/* Validation Message */}
         {validationError && (
           <div className="settings-validation-error" role="alert">
-            <strong>Unable to save settings</strong>
+            <strong>Unable to process settings</strong>
             <p>{validationError}</p>
           </div>
         )}
 
+        {/* Success Message */}
         {saved && (
           <div className="settings-success-message" role="status">
             <Check size={17} />
+
             <div>
-              <strong>Settings saved in the current session.</strong>
+              <strong>Settings saved successfully!</strong>
+
               <p>
                 {lastSavedAt
-                  ? `Confirmed at ${lastSavedAt.toLocaleTimeString("en-IN")}.`
+                  ? `Saved at ${lastSavedAt.toLocaleTimeString("en-IN")}.`
                   : ""}
-                {" "}These changes are not yet stored in the database.
+                {" "}
+                Settings are saved in the database.
               </p>
             </div>
           </div>
         )}
 
         <div className="settings-layout">
-          {/* Settings Navigation */}
-          <aside className="settings-sidebar" aria-label="Settings sections">
+
+          {/* Sidebar */}
+          <aside
+            className="settings-sidebar"
+            aria-label="Settings sections"
+          >
             <button
               type="button"
               className={activeTab === "store" ? "active" : ""}
-              aria-current={activeTab === "store" ? "page" : undefined}
               onClick={() => handleTabChange("store")}
             >
               <Store size={18} />
@@ -308,7 +603,6 @@ function AdminSettings() {
             <button
               type="button"
               className={activeTab === "orders" ? "active" : ""}
-              aria-current={activeTab === "orders" ? "page" : undefined}
               onClick={() => handleTabChange("orders")}
             >
               <ShoppingCart size={18} />
@@ -318,9 +612,6 @@ function AdminSettings() {
             <button
               type="button"
               className={activeTab === "notifications" ? "active" : ""}
-              aria-current={
-                activeTab === "notifications" ? "page" : undefined
-              }
               onClick={() => handleTabChange("notifications")}
             >
               <Bell size={18} />
@@ -330,7 +621,6 @@ function AdminSettings() {
             <button
               type="button"
               className={activeTab === "website" ? "active" : ""}
-              aria-current={activeTab === "website" ? "page" : undefined}
               onClick={() => handleTabChange("website")}
             >
               <Globe size={18} />
@@ -339,7 +629,8 @@ function AdminSettings() {
           </aside>
 
           <main className="settings-content">
-            {/* Store Settings */}
+
+            {/* STORE SETTINGS */}
             {activeTab === "store" && (
               <section className="settings-card">
                 <div className="settings-card-header">
@@ -356,12 +647,13 @@ function AdminSettings() {
                 <div className="settings-form-grid">
                   <div className="settings-form-group">
                     <label htmlFor="storeName">Store Name</label>
+
                     <input
                       id="storeName"
                       type="text"
                       value={storeSettings.storeName}
-                      onChange={(event) =>
-                        updateStore("storeName", event.target.value)
+                      onChange={(e) =>
+                        updateStore("storeName", e.target.value)
                       }
                       placeholder="Enter store name"
                       maxLength={100}
@@ -370,12 +662,13 @@ function AdminSettings() {
 
                   <div className="settings-form-group">
                     <label htmlFor="storeEmail">Support Email</label>
+
                     <input
                       id="storeEmail"
                       type="email"
                       value={storeSettings.email}
-                      onChange={(event) =>
-                        updateStore("email", event.target.value)
+                      onChange={(e) =>
+                        updateStore("email", e.target.value)
                       }
                       placeholder="Enter support email"
                       maxLength={254}
@@ -384,12 +677,13 @@ function AdminSettings() {
 
                   <div className="settings-form-group">
                     <label htmlFor="storePhone">Phone Number</label>
+
                     <input
                       id="storePhone"
                       type="tel"
                       value={storeSettings.phone}
-                      onChange={(event) =>
-                        updateStore("phone", event.target.value)
+                      onChange={(e) =>
+                        updateStore("phone", e.target.value)
                       }
                       placeholder="Enter phone number"
                       maxLength={20}
@@ -398,11 +692,12 @@ function AdminSettings() {
 
                   <div className="settings-form-group">
                     <label htmlFor="storeCurrency">Currency</label>
+
                     <select
                       id="storeCurrency"
                       value={storeSettings.currency}
-                      onChange={(event) =>
-                        updateStore("currency", event.target.value)
+                      onChange={(e) =>
+                        updateStore("currency", e.target.value)
                       }
                     >
                       <option value="INR">INR - Indian Rupee</option>
@@ -413,11 +708,12 @@ function AdminSettings() {
 
                   <div className="settings-form-group full-width">
                     <label htmlFor="storeAddress">Store Address</label>
+
                     <textarea
                       id="storeAddress"
                       value={storeSettings.address}
-                      onChange={(event) =>
-                        updateStore("address", event.target.value)
+                      onChange={(e) =>
+                        updateStore("address", e.target.value)
                       }
                       placeholder="Enter store address"
                       rows={4}
@@ -427,11 +723,12 @@ function AdminSettings() {
 
                   <div className="settings-form-group">
                     <label htmlFor="storeTimezone">Timezone</label>
+
                     <select
                       id="storeTimezone"
                       value={storeSettings.timezone}
-                      onChange={(event) =>
-                        updateStore("timezone", event.target.value)
+                      onChange={(e) =>
+                        updateStore("timezone", e.target.value)
                       }
                     >
                       <option value="Asia/Kolkata">
@@ -447,7 +744,7 @@ function AdminSettings() {
               </section>
             )}
 
-            {/* Order Settings */}
+            {/* ORDER SETTINGS */}
             {activeTab === "orders" && (
               <section className="settings-card">
                 <div className="settings-card-header">
@@ -468,14 +765,15 @@ function AdminSettings() {
                     <label htmlFor="minimumOrder">
                       Minimum Order Amount (₹)
                     </label>
+
                     <input
                       id="minimumOrder"
                       type="number"
                       min="0"
                       step="0.01"
                       value={orderSettings.minimumOrder}
-                      onChange={(event) =>
-                        updateOrder("minimumOrder", event.target.value)
+                      onChange={(e) =>
+                        updateOrder("minimumOrder", e.target.value)
                       }
                     />
                   </div>
@@ -484,14 +782,15 @@ function AdminSettings() {
                     <label htmlFor="deliveryCharge">
                       Delivery Charge (₹)
                     </label>
+
                     <input
                       id="deliveryCharge"
                       type="number"
                       min="0"
                       step="0.01"
                       value={orderSettings.deliveryCharge}
-                      onChange={(event) =>
-                        updateOrder("deliveryCharge", event.target.value)
+                      onChange={(e) =>
+                        updateOrder("deliveryCharge", e.target.value)
                       }
                     />
                   </div>
@@ -500,17 +799,15 @@ function AdminSettings() {
                     <label htmlFor="freeDeliveryAbove">
                       Free Delivery Above (₹)
                     </label>
+
                     <input
                       id="freeDeliveryAbove"
                       type="number"
                       min="0"
                       step="0.01"
                       value={orderSettings.freeDeliveryAbove}
-                      onChange={(event) =>
-                        updateOrder(
-                          "freeDeliveryAbove",
-                          event.target.value
-                        )
+                      onChange={(e) =>
+                        updateOrder("freeDeliveryAbove", e.target.value)
                       }
                     />
                   </div>
@@ -524,57 +821,33 @@ function AdminSettings() {
                 </div>
 
                 <div className="settings-toggle-list">
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Cash on Delivery</strong>
-                      <span>
-                        Allow customers to pay when their order is delivered.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "Cash on Delivery",
+                    "Allow customers to pay when their order is delivered.",
+                    orderSettings.codEnabled,
+                    (value) => updateOrder("codEnabled", value)
+                  )}
 
-                    {renderSwitch(
-                      "Cash on Delivery",
-                      orderSettings.codEnabled,
-                      (value) => updateOrder("codEnabled", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Online Payments",
+                    "Allow customers to pay using online payment methods.",
+                    orderSettings.onlinePaymentEnabled,
+                    (value) =>
+                      updateOrder("onlinePaymentEnabled", value)
+                  )}
 
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Online Payments</strong>
-                      <span>
-                        Allow customers to pay using online payment methods.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Online Payments",
-                      orderSettings.onlinePaymentEnabled,
-                      (value) =>
-                        updateOrder("onlinePaymentEnabled", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Auto Confirm Orders</strong>
-                      <span>
-                        Automatically confirm newly placed orders.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Auto Confirm Orders",
-                      orderSettings.autoConfirmOrders,
-                      (value) =>
-                        updateOrder("autoConfirmOrders", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Auto Confirm Orders",
+                    "Automatically confirm newly placed orders.",
+                    orderSettings.autoConfirmOrders,
+                    (value) =>
+                      updateOrder("autoConfirmOrders", value)
+                  )}
                 </div>
               </section>
             )}
 
-            {/* Notification Settings */}
+            {/* NOTIFICATION SETTINGS */}
             {activeTab === "notifications" && (
               <section className="settings-card">
                 <div className="settings-card-header">
@@ -585,110 +858,64 @@ function AdminSettings() {
                   <div>
                     <h2>Notification Settings</h2>
                     <p>
-                      Choose which events should generate admin
-                      notifications.
+                      Choose which events should generate admin notifications.
                     </p>
                   </div>
                 </div>
 
                 <div className="settings-toggle-list">
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>New Order</strong>
-                      <span>
-                        Notify admin when a new order is received.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "New Order",
+                    "Notify admin when a new order is received.",
+                    notificationSettings.newOrder,
+                    (value) =>
+                      updateNotification("newOrder", value)
+                  )}
 
-                    {renderSwitch(
-                      "New Order Notifications",
-                      notificationSettings.newOrder,
-                      (value) => updateNotification("newOrder", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Low Stock Alert",
+                    "Notify admin when product inventory reaches the minimum level.",
+                    notificationSettings.lowStock,
+                    (value) =>
+                      updateNotification("lowStock", value)
+                  )}
 
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Low Stock Alert</strong>
-                      <span>
-                        Notify admin when product inventory reaches the
-                        minimum level.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "New Customer",
+                    "Notify admin when a new customer registers.",
+                    notificationSettings.newCustomer,
+                    (value) =>
+                      updateNotification("newCustomer", value)
+                  )}
 
-                    {renderSwitch(
-                      "Low Stock Notifications",
-                      notificationSettings.lowStock,
-                      (value) => updateNotification("lowStock", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "New Review",
+                    "Notify admin when a customer submits a review.",
+                    notificationSettings.newReview,
+                    (value) =>
+                      updateNotification("newReview", value)
+                  )}
 
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>New Customer</strong>
-                      <span>
-                        Notify admin when a new customer registers.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "Payment Notification",
+                    "Notify admin about successful or failed payments.",
+                    notificationSettings.paymentNotification,
+                    (value) =>
+                      updateNotification("paymentNotification", value)
+                  )}
 
-                    {renderSwitch(
-                      "New Customer Notifications",
-                      notificationSettings.newCustomer,
-                      (value) => updateNotification("newCustomer", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>New Review</strong>
-                      <span>
-                        Notify admin when a customer submits a review.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "New Review Notifications",
-                      notificationSettings.newReview,
-                      (value) => updateNotification("newReview", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Payment Notification</strong>
-                      <span>
-                        Notify admin about successful or failed payments.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Payment Notifications",
-                      notificationSettings.paymentNotification,
-                      (value) =>
-                        updateNotification("paymentNotification", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Delivery Notification</strong>
-                      <span>
-                        Notify admin when delivery status changes.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Delivery Notifications",
-                      notificationSettings.deliveryNotification,
-                      (value) =>
-                        updateNotification("deliveryNotification", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Delivery Notification",
+                    "Notify admin when delivery status changes.",
+                    notificationSettings.deliveryNotification,
+                    (value) =>
+                      updateNotification("deliveryNotification", value)
+                  )}
                 </div>
               </section>
             )}
 
-            {/* Website Settings */}
+            {/* WEBSITE SETTINGS */}
             {activeTab === "website" && (
               <section className="settings-card">
                 <div className="settings-card-header">
@@ -704,15 +931,17 @@ function AdminSettings() {
                   </div>
                 </div>
 
+                {/* Website name and email */}
                 <div className="settings-form-grid">
                   <div className="settings-form-group">
                     <label htmlFor="websiteName">Website Name</label>
+
                     <input
                       id="websiteName"
                       type="text"
                       value={websiteSettings.websiteName}
-                      onChange={(event) =>
-                        updateWebsite("websiteName", event.target.value)
+                      onChange={(e) =>
+                        updateWebsite("websiteName", e.target.value)
                       }
                       placeholder="Enter website name"
                       maxLength={100}
@@ -721,12 +950,13 @@ function AdminSettings() {
 
                   <div className="settings-form-group">
                     <label htmlFor="websiteEmail">Website Email</label>
+
                     <input
                       id="websiteEmail"
                       type="email"
                       value={websiteSettings.websiteEmail}
-                      onChange={(event) =>
-                        updateWebsite("websiteEmail", event.target.value)
+                      onChange={(e) =>
+                        updateWebsite("websiteEmail", e.target.value)
                       }
                       placeholder="Enter website email"
                       maxLength={254}
@@ -736,87 +966,153 @@ function AdminSettings() {
 
                 <div className="settings-divider" />
 
+                {/* Social media links */}
+                <div className="settings-section-title">
+                  <h3>Social Media Links</h3>
+                  <p>
+                    Add your official social media profile URLs.
+                    Leave a field empty to hide its icon from the Footer.
+                  </p>
+                </div>
+
+                <div className="settings-form-grid">
+                  <div className="settings-form-group">
+                    <label htmlFor="instagram">
+                      Instagram URL
+                    </label>
+
+                    <input
+                      id="instagram"
+                      type="url"
+                      value={
+                        websiteSettings.socialLinks?.instagram || ""
+                      }
+                      onChange={(e) =>
+                        updateSocialLink("instagram", e.target.value)
+                      }
+                      placeholder="https://www.instagram.com/yourpage"
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label htmlFor="facebook">
+                      Facebook URL
+                    </label>
+
+                    <input
+                      id="facebook"
+                      type="url"
+                      value={
+                        websiteSettings.socialLinks?.facebook || ""
+                      }
+                      onChange={(e) =>
+                        updateSocialLink("facebook", e.target.value)
+                      }
+                      placeholder="https://www.facebook.com/yourpage"
+                    />
+                  </div>
+
+                  <div className="settings-form-group">
+                    <label htmlFor="xProfile">
+                      X (Twitter) URL
+                    </label>
+
+                    <input
+                      id="xProfile"
+                      type="url"
+                      value={websiteSettings.socialLinks?.x || ""}
+                      onChange={(e) =>
+                        updateSocialLink("x", e.target.value)
+                      }
+                      placeholder="https://x.com/yourpage"
+                    />
+                  </div>
+                </div>
+
+                <div className="settings-divider" />
+
+                {/* Business hours */}
+                <div className="settings-section-title">
+                  <h3>Business Hours</h3>
+                  <p>
+                    Set the business hours displayed in the public website Footer.
+                  </p>
+                </div>
+
+                <div className="settings-form-grid">
+                  <div className="settings-form-group full-width">
+                    <label htmlFor="businessHours">
+                      Business Hours
+                    </label>
+
+                    <input
+                      id="businessHours"
+                      type="text"
+                      value={websiteSettings.businessHours || ""}
+                      onChange={(e) =>
+                        updateWebsite("businessHours", e.target.value)
+                      }
+                      placeholder="Mon - Sun, 9 AM - 9 PM"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="settings-divider" />
+
+                {/* Website controls */}
                 <div className="settings-section-title">
                   <h3>Website Controls</h3>
                   <p>
-                    Control the visibility and functionality of public
-                    website features.
+                    Control the visibility and functionality of public website features.
                   </p>
                 </div>
 
                 <div className="settings-toggle-list">
-                  <div className="settings-toggle-row warning-row">
-                    <div>
-                      <strong>Maintenance Mode</strong>
-                      <span>
-                        Temporarily disable the public website for
-                        maintenance. This setting requires backend
-                        integration to affect visitors.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "Maintenance Mode",
+                    "Temporarily disable the public website for maintenance.",
+                    websiteSettings.maintenanceMode,
+                    (value) =>
+                      updateWebsite("maintenanceMode", value),
+                    "warning-row"
+                  )}
 
-                    {renderSwitch(
-                      "Maintenance Mode",
-                      websiteSettings.maintenanceMode,
-                      (value) => updateWebsite("maintenanceMode", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Customer Registration",
+                    "Allow new customers to create accounts.",
+                    websiteSettings.customerRegistration,
+                    (value) =>
+                      updateWebsite("customerRegistration", value)
+                  )}
 
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Customer Registration</strong>
-                      <span>
-                        Allow new customers to create accounts.
-                      </span>
-                    </div>
+                  {renderToggleRow(
+                    "Product Reviews",
+                    "Display customer product reviews on the website.",
+                    websiteSettings.showReviews,
+                    (value) =>
+                      updateWebsite("showReviews", value)
+                  )}
 
-                    {renderSwitch(
-                      "Customer Registration",
-                      websiteSettings.customerRegistration,
-                      (value) =>
-                        updateWebsite("customerRegistration", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Product Reviews</strong>
-                      <span>
-                        Display customer product reviews on the website.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Product Reviews",
-                      websiteSettings.showReviews,
-                      (value) => updateWebsite("showReviews", value)
-                    )}
-                  </div>
-
-                  <div className="settings-toggle-row">
-                    <div>
-                      <strong>Wishlist</strong>
-                      <span>
-                        Allow customers to use the wishlist feature.
-                      </span>
-                    </div>
-
-                    {renderSwitch(
-                      "Wishlist",
-                      websiteSettings.showWishlist,
-                      (value) => updateWebsite("showWishlist", value)
-                    )}
-                  </div>
+                  {renderToggleRow(
+                    "Wishlist",
+                    "Allow customers to use the wishlist feature.",
+                    websiteSettings.showWishlist,
+                    (value) =>
+                      updateWebsite("showWishlist", value)
+                  )}
                 </div>
 
+                {/* Security note */}
                 <div className="settings-security-note">
                   <Lock size={18} />
 
                   <div>
                     <strong>Admin Security</strong>
+
                     <p>
-                      Security credentials and password management are
-                      handled through the Admin Management section.
+                      Security credentials and password management are handled
+                      through the Admin Management section.
                     </p>
                   </div>
                 </div>

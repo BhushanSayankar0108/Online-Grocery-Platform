@@ -907,3 +907,217 @@
         padding: 15px;
     }
 }
+
+
+/* =========================================
+   CUSTOMER NOTIFICATION BROADCAST
+========================================= */
+
+.admin-notifications-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-broadcast-open-btn,
+.admin-broadcast-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #16834b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.admin-broadcast-open-btn:hover,
+.admin-broadcast-submit:hover {
+  background: #10683b;
+}
+
+.admin-broadcast-card {
+  margin: 24px 0;
+  padding: 24px;
+  border: 1px solid #e2e8e5;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.admin-broadcast-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-broadcast-card-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 7px;
+  font-size: 20px;
+  color: #183b2b;
+}
+
+.admin-broadcast-card-header p {
+  margin: 0;
+  color: #718078;
+  font-size: 14px;
+}
+
+.admin-broadcast-card-header > button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 7px;
+  background: #f1f5f3;
+  color: #42534a;
+  cursor: pointer;
+}
+
+.admin-broadcast-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 19px;
+}
+
+.admin-broadcast-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #263b30;
+}
+
+.admin-broadcast-field input,
+.admin-broadcast-field textarea,
+.admin-broadcast-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dce5df;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: #263b30;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.admin-broadcast-field input:focus,
+.admin-broadcast-field textarea:focus,
+.admin-broadcast-field select:focus {
+  border-color: #16834b;
+  box-shadow: 0 0 0 3px rgba(22, 131, 75, 0.09);
+}
+
+.admin-broadcast-field textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-broadcast-field small {
+  align-self: flex-end;
+  color: #89968e;
+  font-size: 12px;
+}
+
+.admin-broadcast-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 18px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f0f7f2;
+  color: #34714e;
+  font-size: 13px;
+}
+
+.admin-broadcast-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.admin-broadcast-cancel {
+  padding: 11px 18px;
+  border: 1px solid #dce5df;
+  border-radius: 8px;
+  background: #fff;
+  color: #46564d;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-broadcast-submit:disabled,
+.admin-broadcast-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-broadcast-error,
+.admin-broadcast-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.admin-broadcast-error {
+  background: #fff1f0;
+  color: #b42318;
+}
+
+.admin-broadcast-success {
+  background: #edf8f0;
+  color: #187442;
+}
+
+.admin-broadcast-success button {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .admin-notifications-header-actions {
+    width: 100%;
+  }
+
+  .admin-broadcast-open-btn,
+  .admin-notifications-mark-all {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .admin-broadcast-card {
+    padding: 16px;
+  }
+
+  .admin-broadcast-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-broadcast-actions button {
+    width: 100%;
+  }
+}

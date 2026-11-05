@@ -1,3 +1,4 @@
+
 /* =========================================================
    ADMIN COUPONS & OFFERS PAGE
 ========================================================= */
@@ -66,26 +67,28 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border: 0;
+    border: 1px solid #198754;
     border-radius: 9px;
-    background: #111827;
+    background: #198754;
     color: #ffffff;
     font-size: 14px;
     font-weight: 650;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease,
+        transform 0.2s ease;
 }
 
-.admin-coupons-add-button:hover {
-    background: #273244;
+.admin-coupons-add-button:hover:not(:disabled) {
+    background: #157347;
+    border-color: #157347;
     transform: translateY(-1px);
 }
 
 .admin-coupons-add-button:focus-visible,
 .admin-coupons-modal button:focus-visible,
 .admin-coupons-table button:focus-visible {
-    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline: 3px solid rgba(25, 135, 84, 0.3);
     outline-offset: 2px;
 }
 
@@ -121,8 +124,8 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: #f1f5f9;
-    color: #334155;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .admin-coupons-stat-card span {
@@ -169,8 +172,8 @@
 }
 
 .admin-coupons-search:focus-within {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-coupons-search input {
@@ -205,8 +208,8 @@
 }
 
 .admin-coupons-clear-search:hover {
-    background: #e2e8f0;
-    color: #1f2937;
+    background: #eaf7f0;
+    color: #157347;
 }
 
 .admin-coupons-filter {
@@ -234,8 +237,8 @@
 }
 
 .admin-coupons-filter select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-coupons-filter svg {
@@ -449,7 +452,7 @@
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: #64748b;
+    background: #198754;
     transition: width 0.25s ease;
 }
 
@@ -470,12 +473,12 @@
 }
 
 .coupon-status-button.active {
-    background: #ecfdf3;
-    color: #15803d;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .coupon-status-button.active:hover {
-    background: #dcfce7;
+    background: #d5f0e0;
 }
 
 .coupon-status-button.inactive {
@@ -509,16 +512,20 @@
     border-radius: 7px;
     background: #ffffff;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .coupon-edit-button {
-    color: #475569;
+    border-color: #b7e4ca;
+    background: #eaf7f0;
+    color: #198754;
 }
 
 .coupon-edit-button:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: #d5f0e0;
+    border-color: #198754;
+    color: #157347;
 }
 
 .coupon-delete-button {
@@ -697,8 +704,8 @@
 .admin-coupons-form-group input:focus,
 .admin-coupons-form-group textarea:focus,
 .admin-coupons-select-wrapper select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-coupons-form-group input::placeholder,
@@ -745,8 +752,8 @@
 }
 
 .coupon-value-input:focus-within {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .coupon-value-input > span {
@@ -781,15 +788,15 @@
 .coupon-info-box {
     margin: 2px 0 22px;
     padding: 15px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #b7e4ca;
     border-radius: 9px;
-    background: #f8fafc;
+    background: #f4fbf7;
 }
 
 .coupon-info-box strong {
     display: block;
     margin-bottom: 5px;
-    color: #334155;
+    color: #157347;
     font-size: 13px;
 }
 
@@ -835,14 +842,14 @@
 }
 
 .coupon-save-button {
-    border: 1px solid #111827;
-    background: #111827;
+    border: 1px solid #198754;
+    background: #198754;
     color: #ffffff;
 }
 
-.coupon-save-button:hover {
-    border-color: #273244;
-    background: #273244;
+.coupon-save-button:hover:not(:disabled) {
+    border-color: #157347;
+    background: #157347;
 }
 
 .coupon-cancel-button:disabled,

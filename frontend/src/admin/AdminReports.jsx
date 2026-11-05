@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+
+
+
+import { useEffect, useState } from "react";
 import {
     ArrowDownRight,
     ArrowUpRight,
@@ -15,136 +18,27 @@ import {
 
 import "./AdminReports.css";
 
-const salesData = {
-    today: {
-        revenue: 18450,
-        orders: 42,
-        customers: 31,
-        productsSold: 126,
-        previousRevenue: 16200,
-        previousOrders: 38,
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
+const EMPTY_REPORT = {
+    summary: {
+        revenue: 0,
+        orders: 0,
+        customers: 0,
+        productsSold: 0,
+        previousRevenue: 0,
+        previousOrders: 0,
+        revenueChange: 0,
+        orderChange: 0,
     },
-    week: {
-        revenue: 128750,
-        orders: 286,
-        customers: 198,
-        productsSold: 914,
-        previousRevenue: 117400,
-        previousOrders: 261,
-    },
-    month: {
-        revenue: 486920,
-        orders: 1128,
-        customers: 734,
-        productsSold: 3865,
-        previousRevenue: 449600,
-        previousOrders: 1034,
-    },
-    year: {
-        revenue: 5842500,
-        orders: 13640,
-        customers: 8245,
-        productsSold: 45280,
-        previousRevenue: 5218000,
-        previousOrders: 12180,
-    },
+    monthlySales: [],
+    topProducts: [],
+    categorySales: [],
+    paymentData: [],
+    orderStatusData: [],
+    deliveryMetrics: [],
 };
-
-const monthlySales = [
-    { month: "Jan", revenue: 318000, orders: 742 },
-    { month: "Feb", revenue: 342000, orders: 798 },
-    { month: "Mar", revenue: 376000, orders: 856 },
-    { month: "Apr", revenue: 401000, orders: 924 },
-    { month: "May", revenue: 438000, orders: 1006 },
-    { month: "Jun", revenue: 462000, orders: 1078 },
-    { month: "Jul", revenue: 481000, orders: 1124 },
-    { month: "Aug", revenue: 498000, orders: 1168 },
-    { month: "Sep", revenue: 452000, orders: 1052 },
-    { month: "Oct", revenue: 486920, orders: 1128 },
-];
-
-const topProducts = [
-    {
-        id: 1,
-        name: "Fresh Organic Apples",
-        category: "Fruits",
-        units: 428,
-        revenue: 64200,
-    },
-    {
-        id: 2,
-        name: "Full Cream Milk",
-        category: "Dairy",
-        units: 386,
-        revenue: 23160,
-    },
-    {
-        id: 3,
-        name: "Basmati Rice 5kg",
-        category: "Staples",
-        units: 214,
-        revenue: 29960,
-    },
-    {
-        id: 4,
-        name: "Fresh Tomatoes",
-        category: "Vegetables",
-        units: 198,
-        revenue: 15840,
-    },
-    {
-        id: 5,
-        name: "Whole Wheat Bread",
-        category: "Bakery",
-        units: 176,
-        revenue: 8800,
-    },
-];
-
-const categorySales = [
-    { name: "Fruits", orders: 284, revenue: 112450, percentage: 23 },
-    { name: "Vegetables", orders: 248, revenue: 98400, percentage: 20 },
-    { name: "Dairy", orders: 216, revenue: 82650, percentage: 17 },
-    { name: "Staples", orders: 182, revenue: 76800, percentage: 16 },
-    { name: "Bakery", orders: 124, revenue: 48200, percentage: 10 },
-    { name: "Beverages", orders: 74, revenue: 31420, percentage: 6 },
-    { name: "Other", orders: 56, revenue: 36980, percentage: 8 },
-];
-
-const paymentData = [
-    { method: "UPI", orders: 482, amount: 198450, percentage: 41 },
-    {
-        method: "Credit / Debit Card",
-        orders: 284,
-        amount: 126780,
-        percentage: 26,
-    },
-    {
-        method: "Cash on Delivery",
-        orders: 238,
-        amount: 98450,
-        percentage: 20,
-    },
-    { method: "Net Banking", orders: 82, amount: 35620, percentage: 7 },
-    { method: "Wallet", orders: 42, amount: 18620, percentage: 4 },
-];
-
-const orderStatusData = [
-    { status: "Delivered", count: 742, percentage: 66 },
-    { status: "Out for Delivery", count: 126, percentage: 11 },
-    { status: "Packed", count: 82, percentage: 7 },
-    { status: "Picking", count: 64, percentage: 6 },
-    { status: "Confirmed", count: 58, percentage: 5 },
-    { status: "Pending", count: 34, percentage: 3 },
-    { status: "Cancelled", count: 22, percentage: 2 },
-];
-
-const DELIVERY_METRICS = [
-    { label: "Delivered", value: 742 },
-    { label: "Out for Delivery", value: 126 },
-    { label: "Delayed", value: 18 },
-    { label: "Cancelled", value: 22 },
-];
 
 const PERIOD_OPTIONS = [
     { value: "today", label: "Today" },
@@ -158,6 +52,31 @@ const formatCurrency = (value) =>
 
 const formatNumber = (value) =>
     Number(value || 0).toLocaleString("en-IN");
+
+// Convert backend payment method/type values into readable labels.
+const getPaymentLabel = (payment) => {
+    const type = String(payment?.paymentType || "").trim().toLowerCase();
+    const method = String(payment?.method || "").trim().toLowerCase();
+
+    if (type === "cod" || method === "cod" || method.includes("cash on delivery")) {
+        return "Cash on Delivery";
+    }
+
+    const labels = {
+        card: "Credit / Debit Card",
+        upi_id: "UPI",
+        upi: "UPI",
+        qr_code: "QR Code",
+        netbanking: "Net Banking",
+        net_banking: "Net Banking",
+        wallet: "Wallet",
+    };
+
+    if (labels[type]) return labels[type];
+    if (type === "online" || method === "online") return "Online Payment";
+
+    return payment?.method || "Other";
+};
 
 const formatDateForDisplay = (value) => {
     if (!value) return "";
@@ -215,36 +134,124 @@ function AdminReports() {
     const initialDates = getInitialDates();
 
     const [period, setPeriod] = useState("month");
-    const [startDate, setStartDate] = useState(
-        initialDates.startDate
-    );
+    const [startDate, setStartDate] = useState(initialDates.startDate);
     const [endDate, setEndDate] = useState(initialDates.endDate);
     const [dateError, setDateError] = useState("");
 
-    const currentData = salesData[period];
+    const [report, setReport] = useState(EMPTY_REPORT);
+    const [loading, setLoading] = useState(true);
+    const [apiError, setApiError] = useState("");
 
-    const revenueChange = useMemo(() => {
-        if (!currentData.previousRevenue) return 0;
+    const currentData = report.summary;
+    const monthlySales = report.monthlySales;
+    const topProducts = report.topProducts;
+    const categorySales = report.categorySales;
+    const paymentData = report.paymentData;
+    const orderStatusData = report.orderStatusData;
+    const deliveryMetrics = report.deliveryMetrics;
 
-        return (
-            ((currentData.revenue - currentData.previousRevenue) /
-                currentData.previousRevenue) *
-            100
-        ).toFixed(1);
-    }, [currentData]);
-
-    const orderChange = useMemo(() => {
-        if (!currentData.previousOrders) return 0;
-
-        return (
-            ((currentData.orders - currentData.previousOrders) /
-                currentData.previousOrders) *
-            100
-        ).toFixed(1);
-    }, [currentData]);
+    const revenueChange = Number(currentData.revenueChange || 0).toFixed(1);
+    const orderChange = Number(currentData.orderChange || 0).toFixed(1);
 
     const revenueIsPositive = Number(revenueChange) >= 0;
     const ordersArePositive = Number(orderChange) >= 0;
+
+    useEffect(() => {
+        if (!startDate || !endDate || startDate > endDate) {
+            return undefined;
+        }
+
+        const controller = new AbortController();
+
+        const loadReports = async () => {
+            setLoading(true);
+            setApiError("");
+
+            try {
+                const token = localStorage.getItem("adminToken");
+
+                if (!token) {
+                    throw new Error(
+                        "Admin session not found. Please log in again."
+                    );
+                }
+
+                const query = new URLSearchParams({ startDate, endDate });
+                const response = await fetch(
+                    `${API_BASE_URL}/api/reports?${query.toString()}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message || "Unable to load reports."
+                    );
+                }
+
+                const data = result.data || {};
+
+                setReport({
+                    summary: {
+                        ...EMPTY_REPORT.summary,
+                        ...(data.summary || {}),
+                    },
+                    monthlySales: (data.monthlySales || []).map((item) => ({
+                        ...item,
+                        month: item.month
+                            ? new Date(`${item.month}-01T00:00:00`).toLocaleDateString(
+                                  "en-IN",
+                                  { month: "short", year: "2-digit" }
+                              )
+                            : "",
+                    })),
+                    topProducts: (data.topProducts || []).map(
+                        (item, index) => ({
+                            ...item,
+                            id: item.productId || item._id || index,
+                            category: item.category || "—",
+                        })
+                    ),
+                    categorySales: data.categorySales || [],
+                    paymentData: (data.paymentData || []).map((item) => ({
+                        ...item,
+                        method: getPaymentLabel(item),
+                    })),
+                    orderStatusData: (data.orderStatusData || []).map(
+                        (item) => ({
+                            ...item,
+                            status: String(item.status || "")
+                                .replace(/_/g, " ")
+                                .replace(/\b\w/g, (char) =>
+                                    char.toUpperCase()
+                                ),
+                        })
+                    ),
+                    deliveryMetrics: data.deliveryMetrics || [],
+                });
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    setReport(EMPTY_REPORT);
+                    setApiError(error.message || "Failed to load reports.");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadReports();
+
+        return () => controller.abort();
+    }, [startDate, endDate]);
 
     const validateDateRange = (start, end) => {
         if (!start || !end) {
@@ -305,6 +312,16 @@ function AdminReports() {
     };
 
     const handleExport = () => {
+        if (loading) {
+            window.alert("Please wait until the report finishes loading.");
+            return;
+        }
+
+        if (apiError) {
+            window.alert("The report could not be loaded. Please fix the error before exporting.");
+            return;
+        }
+
         const error = validateDateRange(startDate, endDate);
 
         if (error) {
@@ -315,7 +332,7 @@ function AdminReports() {
 
         if (
             !window.confirm(
-                `Export the current demonstration report for ${formatDateForDisplay(
+                `Export the report for ${formatDateForDisplay(
                     startDate
                 )} to ${formatDateForDisplay(
                     endDate
@@ -378,7 +395,7 @@ function AdminReports() {
             [],
             [
                 "Note",
-                "This file contains frontend demonstration data, not live database records.",
+                "Report generated from the backend reports API.",
             ],
         ];
 
@@ -399,8 +416,63 @@ function AdminReports() {
         );
     };
 
+    // Dynamic Sales Chart Scale
+const maxMonthlyRevenue = Math.max(
+    0,
+    ...monthlySales.map((item) => Number(item.revenue) || 0)
+);
+
+const getNiceChartMax = (value) => {
+    if (value <= 0) return 100;
+
+    const roughStep = (value * 1.1) / 5;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+
+    let niceStep;
+
+    if (normalized <= 1) niceStep = 1;
+    else if (normalized <= 2) niceStep = 2;
+    else if (normalized <= 5) niceStep = 5;
+    else niceStep = 10;
+
+    return niceStep * magnitude * 5;
+};
+
+const chartMax = getNiceChartMax(maxMonthlyRevenue);
+
+const chartYAxisLabels = Array.from(
+    { length: 6 },
+    (_, index) => {
+        const value = chartMax - (chartMax / 5) * index;
+
+        if (value >= 100000) {
+            return `₹${(value / 100000).toFixed(1)}L`;
+        }
+
+        if (value >= 1000) {
+            return `₹${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K`;
+        }
+
+        return `₹${Math.round(value)}`;
+    }
+);
+
     return (
         <div className="admin-reports-page">
+            <style>{`
+                .reports-empty-state {
+                    padding: 22px 12px;
+                    margin: 0;
+                    color: #8290a5;
+                    text-align: center;
+                    font-size: 13px;
+                }
+                .reports-export-button:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+            `}</style>
             <div className="reports-container">
                 <div className="reports-header">
                     <div className="reports-title-wrapper">
@@ -421,6 +493,7 @@ function AdminReports() {
                         type="button"
                         className="reports-export-button"
                         onClick={handleExport}
+                        disabled={loading || Boolean(apiError)}
                     >
                         <Download size={18} />
                         Export Report
@@ -486,10 +559,26 @@ function AdminReports() {
 
                     <p className="reports-data-note">
                         Selected range: {formatDateForDisplay(startDate)} –{" "}
-                        {formatDateForDisplay(endDate)}. Metrics currently use
-                        demonstration data.
+                        {formatDateForDisplay(endDate)}.{" "}
+                        {loading
+                            ? "Loading live report data..."
+                            : apiError
+                              ? "Unable to load live report data."
+                              : "Report data loaded from the backend."}
                     </p>
                 </div>
+
+                {apiError && (
+                    <div className="reports-date-error" role="alert">
+                        {apiError}
+                    </div>
+                )}
+
+                {loading && (
+                    <p role="status" aria-live="polite">
+                        Loading reports from the database...
+                    </p>
+                )}
 
                 <div className="reports-stats-grid">
                     <div className="reports-stat-card">
@@ -575,12 +664,9 @@ function AdminReports() {
                             aria-label="Monthly revenue bar chart"
                         >
                             <div className="reports-chart-y-axis">
-                                <span>₹500K</span>
-                                <span>₹400K</span>
-                                <span>₹300K</span>
-                                <span>₹200K</span>
-                                <span>₹100K</span>
-                                <span>₹0</span>
+                                {chartYAxisLabels.map((label, index) => (
+                                    <span key={index}>{label}</span>
+                                ))}
                             </div>
 
                             <div className="reports-chart-area">
@@ -591,32 +677,33 @@ function AdminReports() {
                                 </div>
 
                                 <div className="reports-bars">
-                                    {monthlySales.map((item) => {
-                                        const height = Math.max(
-                                            10,
-                                            (item.revenue / 500000) * 100
-                                        );
+                                    {monthlySales.length === 0 ? (
+                                        <p className="reports-empty-state">
+                                            No sales data found for this date range.
+                                        </p>
+                                    ) : monthlySales.map((item) => {
+                                        const revenue = Number(item.revenue) || 0;
+                                        const height =
+                                            revenue > 0
+                                                ? Math.max(3, (revenue / chartMax) * 100)
+                                                : 0;
 
                                         return (
                                             <div
                                                 className="reports-bar-column"
                                                 key={item.month}
                                                 title={`${item.month}: ${formatCurrency(
-                                                    item.revenue
-                                                )}, ${formatNumber(
-                                                    item.orders
-                                                )} orders`}
+                                                    revenue
+                                                )}, ${formatNumber(item.orders)} orders`}
                                             >
                                                 <div className="reports-bar-value">
-                                                    {formatCurrency(item.revenue)}
+                                                    {formatCurrency(revenue)}
                                                 </div>
 
                                                 <div className="reports-bar-wrapper">
                                                     <div
                                                         className="reports-bar"
-                                                        style={{
-                                                            height: `${height}%`,
-                                                        }}
+                                                        style={{ height: `${height}%` }}
                                                     />
                                                 </div>
 
@@ -633,12 +720,16 @@ function AdminReports() {
                         <div className="reports-panel-header">
                             <div>
                                 <h2>Order Status</h2>
-                                <p>Order distribution in the sample data.</p>
+                                <p>Order distribution for the selected period.</p>
                             </div>
                         </div>
 
                         <div className="order-status-list">
-                            {orderStatusData.map((item) => (
+                            {orderStatusData.length === 0 ? (
+                                <p className="reports-empty-state">
+                                    No orders found for this date range.
+                                </p>
+                            ) : orderStatusData.map((item) => (
                                 <div
                                     className="order-status-item"
                                     key={item.status}
@@ -676,11 +767,14 @@ function AdminReports() {
                         </div>
 
                         <div className="reports-product-list">
-                            {topProducts.map((product, index) => (
-                                <div
-                                    className="reports-product-item"
-                                    key={product.id}
-                                >
+                            {topProducts.length === 0 ? (
+                                <p className="reports-empty-state">
+                                    No product sales found for this date range.
+                                </p>
+                            ) : topProducts.map((product, index) => (
+    <div
+        key={`${product.id || product.productId}-${product.name}-${index}`}
+    >
                                     <div className="reports-product-rank">
                                         #{index + 1}
                                     </div>
@@ -712,7 +806,11 @@ function AdminReports() {
                         </div>
 
                         <div className="category-sales-list">
-                            {categorySales.map((category) => (
+                            {categorySales.length === 0 ? (
+                                <p className="reports-empty-state">
+                                    No category sales found for this date range.
+                                </p>
+                            ) : categorySales.map((category) => (
                                 <div
                                     className="category-sales-item"
                                     key={category.name}
@@ -753,10 +851,14 @@ function AdminReports() {
                         </div>
 
                         <div className="reports-payment-list">
-                            {paymentData.map((payment) => (
+                            {paymentData.length === 0 ? (
+                                <p className="reports-empty-state">
+                                    No payment records found for this date range.
+                                </p>
+                            ) : paymentData.map((payment) => (
                                 <div
                                     className="reports-payment-item"
-                                    key={payment.method}
+                                    key={`${payment.method}-${payment.paymentType || "unknown"}`}
                                 >
                                     <div className="reports-payment-icon">
                                         <CreditCard size={18} />
@@ -790,12 +892,12 @@ function AdminReports() {
 
                         <div className="delivery-overview">
                             <div className="delivery-big-number">
-                                <strong>94.2%</strong>
-                                <span>On-time delivery rate</span>
+                                <strong>—</strong>
+                                <span>On-time delivery rate unavailable</span>
                             </div>
 
                             <div className="delivery-metrics">
-                                {DELIVERY_METRICS.map((metric) => (
+                                {deliveryMetrics.map((metric) => (
                                     <div key={metric.label}>
                                         <span>{metric.label}</span>
                                         <strong>{metric.value}</strong>
@@ -814,11 +916,10 @@ function AdminReports() {
                     <div>
                         <h3>Report Summary</h3>
                         <p>
-                            This report currently displays frontend demonstration
-                            data. Sales, orders, customer, payment and delivery
-                            figures are not live database records. Backend
-                            integration can be added when backend development
-                            begins.
+                            Reports are generated from order records for the
+                            selected date range. Revenue and payment totals
+                            depend on the payment and order statuses recorded
+                            in the database.
                         </p>
                     </div>
                 </div>

@@ -1,52 +1,70 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
 
-const faqs = [
-  {
-    question: "How do I place an order?",
-    answer:
-      "Browse the products you need, add them to your cart, and continue to checkout. Enter your delivery details, select a delivery slot and payment method, then place your order.",
-  },
-  {
-    question: "Can I change my delivery address?",
-    answer:
-      "Yes. You can manage your saved delivery addresses from the Addresses section of your account. Select the appropriate address before completing checkout.",
-  },
-  {
-    question: "What payment methods are available?",
-    answer:
-      "The platform supports payment options such as UPI, cards, net banking and Cash on Delivery, depending on availability.",
-  },
-  {
-    question: "How can I track my order?",
-    answer:
-      "After placing an order, you can open My Orders and select the relevant order to view its current delivery status.",
-  },
-  {
-    question: "Can I cancel my order?",
-    answer:
-      "Order cancellation depends on the current order status. If cancellation is available, the option will be shown for the relevant order.",
-  },
-  {
-    question: "What if I receive a damaged or incorrect product?",
-    answer:
-      "You can submit a return or refund request from the relevant delivered order. Select the appropriate reason and provide the required details.",
-  },
-  {
-    question: "How does delivery work?",
-    answer:
-      "Delivery availability depends on your location and the delivery zones supported by the platform. Available delivery slots are shown during checkout.",
-  },
-  {
-    question: "How can I contact customer support?",
-    answer:
-      "Visit the Help & Support section to find available support options and submit your request.",
-  },
-];
+const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
 
 function FAQ() {
+  const [faqs, setFaqs] = useState([]);
   const [openIndex, setOpenIndex] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const faqId = useId();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchFAQs = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(CMS_PUBLIC_API, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to fetch FAQs. Please try again later.");
+        }
+
+        const result = await response.json();
+
+        const contentItems = Array.isArray(result.data?.contentItems)
+          ? result.data.contentItems
+          : [];
+
+        const activeFAQs = contentItems
+          .filter(
+            (item) =>
+              item.type === "faq" &&
+              item.status?.toLowerCase() === "active" &&
+              item.title?.trim() &&
+              item.content?.trim()
+          )
+          .sort((a, b) => {
+            const orderA = Number(a.order) || 0;
+            const orderB = Number(b.order) || 0;
+            return orderA - orderB;
+          });
+
+        setFaqs(activeFAQs);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("FAQ loading error:", err);
+          setError(err.message || "Something went wrong while loading FAQs.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchFAQs();
+
+    return () => controller.abort();
+  }, []);
 
   const toggleFAQ = (index) => {
     setOpenIndex((current) => (current === index ? null : index));
@@ -60,48 +78,78 @@ function FAQ() {
             ← Back to Home
           </Link>
 
-          <p className="info-breadcrumb">Home / FAQ</p>
+          <p className="info-breadcrumb">
+            <Link to="/">Home</Link> / FAQ
+          </p>
 
           <span className="info-eyebrow">HELP CENTER</span>
 
           <h1>Frequently asked questions.</h1>
 
           <p className="info-intro">
-            Find quick answers to common questions about shopping, orders,
-            delivery, payments and returns.
+            Find quick answers to common questions about shopping,
+            orders, delivery, payments and customer support.
           </p>
         </div>
 
-        <section className="faq-list">
-          {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
+        <section
+          className="faq-list"
+          aria-label="Frequently asked questions"
+        >
+          {loading ? (
+            <div className="faq-message">
+              Loading frequently asked questions...
+            </div>
+          ) : error ? (
+            <div className="faq-message faq-error" role="alert">
+              {error}
+            </div>
+          ) : faqs.length === 0 ? (
+            <div className="faq-message">
+              No frequently asked questions are available right now.
+            </div>
+          ) : (
+            faqs.map((faq, index) => {
+              const isOpen = openIndex === index;
+              const questionId = `${faqId}-question-${index}`;
+              const answerId = `${faqId}-answer-${index}`;
 
-            return (
-              <article
-                className={`faq-item ${isOpen ? "open" : ""}`}
-                key={faq.question}
-              >
-                <button
-                  type="button"
-                  className="faq-question"
-                  onClick={() => toggleFAQ(index)}
-                  aria-expanded={isOpen}
+              return (
+                <article
+                  className={`faq-item ${isOpen ? "open" : ""}`}
+                  key={faq._id || faq.id || index}
                 >
-                  <span>{faq.question}</span>
-                  <ChevronDown
-                    size={20}
-                    className="faq-chevron"
-                  />
-                </button>
+                  <button
+                    id={questionId}
+                    type="button"
+                    className="faq-question"
+                    onClick={() => toggleFAQ(index)}
+                    aria-expanded={isOpen}
+                    aria-controls={answerId}
+                  >
+                    <span>{faq.title}</span>
 
-                {isOpen && (
-                  <div className="faq-answer">
-                    <p>{faq.answer}</p>
-                  </div>
-                )}
-              </article>
-            );
-          })}
+                    <ChevronDown
+                      size={20}
+                      className="faq-chevron"
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div
+                      id={answerId}
+                      className="faq-answer"
+                      role="region"
+                      aria-labelledby={questionId}
+                    >
+                      <p>{faq.content}</p>
+                    </div>
+                  )}
+                </article>
+              );
+            })
+          )}
         </section>
 
         <section className="info-bottom-cta">
@@ -109,13 +157,14 @@ function FAQ() {
             <span className="info-eyebrow">STILL NEED HELP?</span>
             <h2>We're here to help.</h2>
             <p>
-              If you couldn't find your answer, contact our support team.
+              Couldn't find the answer you were looking for?
+              Get in touch with our support team.
             </p>
           </div>
 
           <Link to="/support" className="info-cta-button">
             Contact Support
-            <ArrowRight size={17} />
+            <ArrowRight size={17} aria-hidden="true" />
           </Link>
         </section>
       </div>

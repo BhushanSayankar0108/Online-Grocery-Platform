@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   Bell,
   Check,
@@ -7,79 +9,15 @@ import {
   Search,
   Trash2,
   X,
+  Send,
+  Megaphone,
 } from "lucide-react";
 
 import "./AdminNotifications.css";
 
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: "New Order Received",
-    message: "Order #ORD-1006 has been placed by Rahul Sharma.",
-    type: "order",
-    audience: "Admin",
-    date: "2026-10-03T10:30:00",
-    status: "unread",
-  },
-  {
-    id: 2,
-    title: "Low Stock Alert",
-    message: "Basmati Rice 5kg is running low on inventory.",
-    type: "inventory",
-    audience: "Admin",
-    date: "2026-10-03T09:45:00",
-    status: "unread",
-  },
-  {
-    id: 3,
-    title: "New Customer Registration",
-    message: "A new customer account has been registered.",
-    type: "customer",
-    audience: "Admin",
-    date: "2026-10-02T18:20:00",
-    status: "read",
-  },
-  {
-    id: 4,
-    title: "Payment Successful",
-    message:
-      "Payment for order #ORD-1003 was successfully completed.",
-    type: "payment",
-    audience: "Admin",
-    date: "2026-10-02T16:10:00",
-    status: "read",
-  },
-  {
-    id: 5,
-    title: "New Product Review",
-    message:
-      "A new customer review has been submitted for Fresh Organic Apples.",
-    type: "review",
-    audience: "Admin",
-    date: "2026-10-02T14:35:00",
-    status: "unread",
-  },
-  {
-    id: 6,
-    title: "Delivery Update",
-    message:
-      "Order #ORD-1001 has been marked as out for delivery.",
-    type: "delivery",
-    audience: "Admin",
-    date: "2026-10-01T17:15:00",
-    status: "read",
-  },
-  {
-    id: 7,
-    title: "System Maintenance",
-    message:
-      "Scheduled maintenance reminder for the platform.",
-    type: "system",
-    audience: "Admin",
-    date: "2026-10-01T11:00:00",
-    status: "read",
-  },
-];
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
 
 const TYPE_LABELS = {
   order: "Order",
@@ -88,149 +26,326 @@ const TYPE_LABELS = {
   payment: "Payment",
   review: "Review",
   delivery: "Delivery",
+  marketing: "Marketing",
   system: "System",
 };
 
+// =====================================================
+// API HELPERS
+// =====================================================
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("adminToken");
+
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+};
+
+const apiRequest = async (url, options = {}) => {
+  const token = localStorage.getItem("adminToken");
+
+  if (!token) {
+    throw new Error("Admin session not found. Please log in again.");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.success === false) {
+    throw new Error(
+      data.message || `Request failed with status ${response.status}.`
+    );
+  }
+
+  return data;
+};
+
+// =====================================================
+// NORMALIZE NOTIFICATION
+// =====================================================
+
+const normalizeNotification = (item) => ({
+  ...item,
+  id: String(item._id || item.id),
+  title: item.title || "Notification",
+  message: item.message || "",
+  type: item.notificationType || item.type || "system",
+  audience: "Admin",
+  date: item.created_at || item.createdAt || item.date,
+  status: item.isRead ? "read" : "unread",
+});
+
+// =====================================================
+// DATE FORMATTER
+// =====================================================
+
 const formatDate = (date, options) => {
+  if (!date) return "Date unavailable";
+
   const parsedDate = new Date(date);
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return "Invalid date";
+    return "Date unavailable";
   }
 
   return parsedDate.toLocaleString("en-IN", options);
 };
 
+// =====================================================
+// MAIN COMPONENT
+// =====================================================
+
 function AdminNotifications() {
-  const [notifications, setNotifications] = useState(
-    INITIAL_NOTIFICATIONS
-  );
+  const [notifications, setNotifications] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
   const [selectedNotification, setSelectedNotification] =
     useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Broadcast form states
+  const [showBroadcastForm, setShowBroadcastForm] = useState(false);
+
+  const [broadcastData, setBroadcastData] = useState({
+    title: "",
+    message: "",
+    notificationType: "marketing",
+  });
+
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [broadcastError, setBroadcastError] = useState("");
+  const [broadcastSuccess, setBroadcastSuccess] = useState("");
+
+  // =====================================================
+  // FETCH ADMIN NOTIFICATIONS
+  // =====================================================
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "100",
+      });
+
+      if (typeFilter !== "all") {
+        params.set("type", typeFilter);
+      }
+
+      if (statusFilter !== "all") {
+        params.set("status", statusFilter);
+      }
+
+      const data = await apiRequest(
+        `${API_BASE_URL}/api/notifications/admin?${params.toString()}`
+      );
+
+      const records = (data.notifications || []).map(
+        normalizeNotification
+      );
+
+      setNotifications(records);
+
+      setSelectedNotification((previous) => {
+        if (!previous) return null;
+
+        return (
+          records.find((item) => item.id === previous.id) || null
+        );
+      });
+    } catch (err) {
+      console.error("Fetch admin notifications error:", err);
+      setError(err.message || "Unable to load notifications.");
+    } finally {
+      setLoading(false);
+    }
+  }, [typeFilter, statusFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [fetchNotifications]);
+
+  // =====================================================
+  // SEARCH AND FILTER
+  // =====================================================
 
   const filteredNotifications = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
 
     return notifications.filter((notification) => {
-      const matchesSearch =
+      return (
         !search ||
         notification.title.toLowerCase().includes(search) ||
         notification.message.toLowerCase().includes(search) ||
-        notification.audience.toLowerCase().includes(search);
-
-      const matchesType =
-        typeFilter === "all" ||
-        notification.type === typeFilter;
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        notification.status === statusFilter;
-
-      return matchesSearch && matchesType && matchesStatus;
+        notification.audience.toLowerCase().includes(search)
+      );
     });
-  }, [notifications, searchTerm, typeFilter, statusFilter]);
+  }, [notifications, searchTerm]);
 
-  const stats = useMemo(
-    () => ({
+  // =====================================================
+  // STATISTICS
+  // =====================================================
+
+  const stats = useMemo(() => {
+    const unread = notifications.filter(
+      (item) => item.status === "unread"
+    ).length;
+
+    return {
       total: notifications.length,
-
-      unread: notifications.filter(
-        (notification) => notification.status === "unread"
-      ).length,
-
-      read: notifications.filter(
-        (notification) => notification.status === "read"
-      ).length,
-
+      unread,
+      read: notifications.length - unread,
       orderAlerts: notifications.filter(
-        (notification) => notification.type === "order"
+        (item) => item.type === "order"
       ).length,
-    }),
-    [notifications]
-  );
+    };
+  }, [notifications]);
 
   const getTypeLabel = (type) => TYPE_LABELS[type] || type;
 
-  // Update the notification status and keep the open modal synchronized.
-  const updateNotificationStatus = (id, status) => {
-    setNotifications((previous) =>
-      previous.map((notification) =>
-        notification.id === id
-          ? { ...notification, status }
-          : notification
-      )
-    );
+  // =====================================================
+  // UPDATE NOTIFICATION STATUS
+  // =====================================================
 
-    setSelectedNotification((previous) =>
-      previous?.id === id
-        ? { ...previous, status }
-        : previous
-    );
+  const updateNotificationStatus = async (
+    notification,
+    nextStatus
+  ) => {
+    try {
+      setActionLoading(true);
+      setError("");
+
+      await apiRequest(
+        `${API_BASE_URL}/api/notifications/admin/${notification.id}/read`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            isRead: nextStatus === "read",
+          }),
+        }
+      );
+
+      const updated = {
+        ...notification,
+        status: nextStatus,
+        isRead: nextStatus === "read",
+      };
+
+      setNotifications((previous) =>
+        previous.map((item) =>
+          item.id === notification.id ? updated : item
+        )
+      );
+
+      setSelectedNotification((previous) =>
+        previous?.id === notification.id ? updated : previous
+      );
+    } catch (err) {
+      console.error("Update notification error:", err);
+      setError(err.message || "Unable to update notification.");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const markAsRead = (id) => {
-    updateNotificationStatus(id, "read");
+  const markAsRead = (notification) => {
+    if (notification.status !== "read") {
+      updateNotificationStatus(notification, "read");
+    }
   };
 
-  // Toggle between read and unread.
   const toggleNotificationStatus = (notification) => {
     const nextStatus =
       notification.status === "unread" ? "read" : "unread";
 
-    updateNotificationStatus(notification.id, nextStatus);
+    updateNotificationStatus(notification, nextStatus);
   };
 
-  // Delete a notification after confirmation.
-  const deleteNotification = (id) => {
-    const notification = notifications.find(
-      (item) => item.id === id
-    );
+  // =====================================================
+  // DELETE NOTIFICATION
+  // =====================================================
 
-    if (!notification) return;
-
+  const deleteNotification = async (notification) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete "${notification.title}"? This action cannot be undone.`
     );
 
     if (!confirmed) return;
 
-    setNotifications((previous) =>
-      previous.filter((item) => item.id !== id)
-    );
+    try {
+      setActionLoading(true);
+      setError("");
 
-    setSelectedNotification((previous) =>
-      previous?.id === id ? null : previous
-    );
+      await apiRequest(
+        `${API_BASE_URL}/api/notifications/admin/${notification.id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
-    window.alert("Notification deleted successfully.");
+      setNotifications((previous) =>
+        previous.filter((item) => item.id !== notification.id)
+      );
+
+      setSelectedNotification((previous) =>
+        previous?.id === notification.id ? null : previous
+      );
+    } catch (err) {
+      console.error("Delete notification error:", err);
+      setError(err.message || "Unable to delete notification.");
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  // =====================================================
+  // CLEAR SEARCH
+  // =====================================================
 
   const clearSearch = () => {
     setSearchTerm("");
   };
 
-  // Opening an unread notification automatically marks it as read.
+  // =====================================================
+  // OPEN NOTIFICATION
+  // =====================================================
+
   const openNotification = (notification) => {
-    setSelectedNotification({
-      ...notification,
-      status:
-        notification.status === "unread"
-          ? "read"
-          : notification.status,
-    });
+    setSelectedNotification(notification);
 
     if (notification.status === "unread") {
-      markAsRead(notification.id);
+      markAsRead(notification);
     }
   };
 
-  // Mark all notifications as read after confirmation.
-  const markAllAsRead = () => {
-    if (stats.unread === 0) return;
+  // =====================================================
+  // MARK ALL ADMIN NOTIFICATIONS AS READ
+  // =====================================================
+
+  const markAllAsRead = async () => {
+    if (stats.unread === 0 || actionLoading) return;
 
     const confirmed = window.confirm(
       `Mark all ${stats.unread} unread notifications as read?`
@@ -238,22 +353,117 @@ function AdminNotifications() {
 
     if (!confirmed) return;
 
-    setNotifications((previous) =>
-      previous.map((notification) => ({
-        ...notification,
-        status: "read",
-      }))
-    );
+    try {
+      setActionLoading(true);
+      setError("");
 
-    setSelectedNotification((previous) =>
-      previous ? { ...previous, status: "read" } : null
-    );
+      await apiRequest(
+        `${API_BASE_URL}/api/notifications/admin/read-all`,
+        {
+          method: "PATCH",
+        }
+      );
+
+      setNotifications((previous) =>
+        previous.map((item) => ({
+          ...item,
+          status: "read",
+          isRead: true,
+        }))
+      );
+
+      setSelectedNotification((previous) =>
+        previous
+          ? { ...previous, status: "read", isRead: true }
+          : null
+      );
+    } catch (err) {
+      console.error("Mark all notifications read error:", err);
+      setError(err.message || "Unable to update notifications.");
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  // =====================================================
+  // SEND NOTIFICATION TO ALL ACTIVE CUSTOMERS
+  // =====================================================
+
+  const handleBroadcastSubmit = async (event) => {
+    event.preventDefault();
+
+    if (broadcastLoading) return;
+
+    const title = broadcastData.title.trim();
+    const message = broadcastData.message.trim();
+
+    if (!title || !message) {
+      setBroadcastError("Please enter both title and message.");
+      return;
+    }
+
+    if (title.length > 150) {
+      setBroadcastError("Title cannot exceed 150 characters.");
+      return;
+    }
+
+    if (message.length > 2000) {
+      setBroadcastError("Message cannot exceed 2000 characters.");
+      return;
+    }
+
+    try {
+      setBroadcastLoading(true);
+      setBroadcastError("");
+      setBroadcastSuccess("");
+
+      const response = await apiRequest(
+        `${API_BASE_URL}/api/notifications/admin/broadcast`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            message,
+            notificationType: broadcastData.notificationType,
+          }),
+        }
+      );
+
+      const sentCount = Number(response.sentCount || 0);
+
+      setBroadcastSuccess(
+        response.message ||
+          `Notification successfully sent to ${sentCount} active customers.`
+      );
+
+      setBroadcastData({
+        title: "",
+        message: "",
+        notificationType: "marketing",
+      });
+
+      setShowBroadcastForm(false);
+    } catch (err) {
+      console.error("Customer broadcast error:", err);
+
+      setBroadcastError(
+        err.message || "Unable to send customer notification."
+      );
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <div className="admin-notifications-page">
       <div className="admin-notifications-container">
-        {/* Header */}
+
+        {/* HEADER */}
+
         <div className="admin-notifications-header">
           <div>
             <p className="admin-notifications-eyebrow">
@@ -263,24 +473,215 @@ function AdminNotifications() {
             <h1>Notifications</h1>
 
             <p className="admin-notifications-header-text">
-              View and manage important alerts and system
-              notifications.
+              View and manage important alerts and system notifications.
             </p>
           </div>
 
-          {stats.unread > 0 && (
+          <div className="admin-notifications-header-actions">
             <button
               type="button"
-              className="admin-notifications-mark-all"
-              onClick={markAllAsRead}
+              className="admin-broadcast-open-btn"
+              onClick={() => {
+                setShowBroadcastForm((previous) => !previous);
+                setBroadcastError("");
+                setBroadcastSuccess("");
+              }}
             >
-              <Check size={16} />
-              Mark All as Read
+              <Megaphone size={17} />
+              Send Notification
             </button>
-          )}
+
+            {stats.unread > 0 && (
+              <button
+                type="button"
+                className="admin-notifications-mark-all"
+                onClick={markAllAsRead}
+                disabled={actionLoading}
+              >
+                <Check size={16} />
+                Mark All as Read
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Statistics */}
+        {/* BROADCAST SUCCESS */}
+
+        {broadcastSuccess && (
+          <div className="admin-broadcast-success" role="status">
+            <Check size={18} />
+            <span>{broadcastSuccess}</span>
+
+            <button
+              type="button"
+              onClick={() => setBroadcastSuccess("")}
+              aria-label="Dismiss success message"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* CUSTOMER BROADCAST FORM */}
+
+        {showBroadcastForm && (
+          <div className="admin-broadcast-card">
+            <div className="admin-broadcast-card-header">
+              <div>
+                <h2>
+                  <Megaphone size={20} />
+                  Send Customer Notification
+                </h2>
+
+                <p>
+                  Send an announcement to all active customers.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowBroadcastForm(false)}
+                aria-label="Close broadcast form"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            {broadcastError && (
+              <div className="admin-broadcast-error" role="alert">
+                {broadcastError}
+              </div>
+            )}
+
+            <form onSubmit={handleBroadcastSubmit}>
+              <div className="admin-broadcast-field">
+                <label htmlFor="broadcast-title">
+                  Notification Title *
+                </label>
+
+                <input
+                  id="broadcast-title"
+                  type="text"
+                  placeholder="Enter notification title"
+                  maxLength={150}
+                  value={broadcastData.title}
+                  onChange={(event) =>
+                    setBroadcastData((previous) => ({
+                      ...previous,
+                      title: event.target.value,
+                    }))
+                  }
+                  required
+                />
+
+                <small>
+                  {broadcastData.title.length}/150 characters
+                </small>
+              </div>
+
+              <div className="admin-broadcast-field">
+                <label htmlFor="broadcast-message">
+                  Notification Message *
+                </label>
+
+                <textarea
+                  id="broadcast-message"
+                  placeholder="Write your notification message..."
+                  rows={4}
+                  maxLength={2000}
+                  value={broadcastData.message}
+                  onChange={(event) =>
+                    setBroadcastData((previous) => ({
+                      ...previous,
+                      message: event.target.value,
+                    }))
+                  }
+                  required
+                />
+
+                <small>
+                  {broadcastData.message.length}/2000 characters
+                </small>
+              </div>
+
+              <div className="admin-broadcast-field">
+                <label htmlFor="broadcast-type">
+                  Notification Type *
+                </label>
+
+                <select
+                  id="broadcast-type"
+                  value={broadcastData.notificationType}
+                  onChange={(event) =>
+                    setBroadcastData((previous) => ({
+                      ...previous,
+                      notificationType: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="marketing">Marketing / Offers</option>
+                  <option value="system">System Announcement</option>
+                  <option value="inventory">Inventory Update</option>
+                  <option value="customer">Customer Account</option>
+                  <option value="order">Order Update</option>
+                  <option value="payment">Payment Update</option>
+                  <option value="delivery">Delivery Update</option>
+                  <option value="review">Review Update</option>
+                </select>
+              </div>
+
+              <div className="admin-broadcast-note">
+                <Bell size={16} />
+                This notification will be sent to all active customers.
+              </div>
+
+              <div className="admin-broadcast-actions">
+                <button
+                  type="button"
+                  className="admin-broadcast-cancel"
+                  onClick={() => setShowBroadcastForm(false)}
+                  disabled={broadcastLoading}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="admin-broadcast-submit"
+                  disabled={broadcastLoading}
+                >
+                  {broadcastLoading ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Send to Customers
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* API ERROR */}
+
+        {error && (
+          <div className="admin-notifications-error" role="alert">
+            <span>{error}</span>
+
+            <button
+              type="button"
+              onClick={fetchNotifications}
+              disabled={loading}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* STATISTICS */}
+
         <div className="admin-notifications-stats">
           <div className="admin-notifications-stat-card">
             <div className="admin-notifications-stat-icon">
@@ -327,7 +728,8 @@ function AdminNotifications() {
           </div>
         </div>
 
-        {/* Search and filters */}
+        {/* SEARCH AND FILTERS */}
+
         <div className="admin-notifications-toolbar">
           <div className="admin-notifications-search">
             <Search size={17} />
@@ -336,9 +738,7 @@ function AdminNotifications() {
               type="search"
               placeholder="Search notifications..."
               value={searchTerm}
-              onChange={(event) =>
-                setSearchTerm(event.target.value)
-              }
+              onChange={(event) => setSearchTerm(event.target.value)}
               aria-label="Search notifications"
             />
 
@@ -358,9 +758,7 @@ function AdminNotifications() {
           <div className="admin-notifications-filter">
             <select
               value={typeFilter}
-              onChange={(event) =>
-                setTypeFilter(event.target.value)
-              }
+              onChange={(event) => setTypeFilter(event.target.value)}
               aria-label="Filter by notification type"
             >
               <option value="all">All Types</option>
@@ -370,6 +768,7 @@ function AdminNotifications() {
               <option value="payment">Payment</option>
               <option value="review">Review</option>
               <option value="delivery">Delivery</option>
+              <option value="marketing">Marketing</option>
               <option value="system">System</option>
             </select>
 
@@ -379,9 +778,7 @@ function AdminNotifications() {
           <div className="admin-notifications-filter">
             <select
               value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value)
-              }
+              onChange={(event) => setStatusFilter(event.target.value)}
               aria-label="Filter by notification status"
             >
               <option value="all">All Status</option>
@@ -393,16 +790,19 @@ function AdminNotifications() {
           </div>
         </div>
 
-        {/* Notifications table */}
+        {/* NOTIFICATIONS TABLE */}
+
         <div className="admin-notifications-table-card">
           <div className="admin-notifications-table-header">
             <div>
               <h2>Notification Center</h2>
 
               <p>
-                {filteredNotifications.length} notification
-                {filteredNotifications.length !== 1 ? "s" : ""}{" "}
-                found
+                {loading
+                  ? "Loading notifications..."
+                  : `${filteredNotifications.length} notification${
+                      filteredNotifications.length !== 1 ? "s" : ""
+                    } found`}
               </p>
             </div>
           </div>
@@ -422,136 +822,128 @@ function AdminNotifications() {
               </thead>
 
               <tbody>
-                {filteredNotifications.length > 0 ? (
-                  filteredNotifications.map(
-                    (notification, index) => (
-                      <tr
-                        key={notification.id}
-                        className={
-                          notification.status === "unread"
-                            ? "notification-unread-row"
-                            : ""
-                        }
-                      >
-                        <td className="notification-number">
-                          {index + 1}
-                        </td>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="notifications-empty-state">
+                      <p>Loading notifications...</p>
+                    </td>
+                  </tr>
+                ) : filteredNotifications.length > 0 ? (
+                  filteredNotifications.map((notification, index) => (
+                    <tr
+                      key={notification.id}
+                      className={
+                        notification.status === "unread"
+                          ? "notification-unread-row"
+                          : ""
+                      }
+                    >
+                      <td className="notification-number">
+                        {index + 1}
+                      </td>
 
-                        <td>
-                          <div className="notification-info">
-                            <div className="notification-icon">
-                              <Bell size={16} />
-                            </div>
-
-                            <div>
-                              <strong>
-                                {notification.title}
-                              </strong>
-
-                              <p>{notification.message}</p>
-                            </div>
+                      <td>
+                        <div className="notification-info">
+                          <div className="notification-icon">
+                            <Bell size={16} />
                           </div>
-                        </td>
 
-                        <td>
-                          <span
-                            className={`notification-type-badge ${notification.type}`}
-                          >
-                            {getTypeLabel(notification.type)}
-                          </span>
-                        </td>
+                          <div>
+                            <strong>{notification.title}</strong>
+                            <p>{notification.message}</p>
+                          </div>
+                        </div>
+                      </td>
 
-                        <td>
-                          <span className="notification-audience">
-                            {notification.audience}
-                          </span>
-                        </td>
+                      <td>
+                        <span
+                          className={`notification-type-badge ${notification.type}`}
+                        >
+                          {getTypeLabel(notification.type)}
+                        </span>
+                      </td>
 
-                        <td>
-                          <span className="notification-date">
-                            {formatDate(notification.date, {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </td>
+                      <td>
+                        <span className="notification-audience">
+                          {notification.audience}
+                        </span>
+                      </td>
 
-                        <td>
+                      <td>
+                        <span className="notification-date">
+                          {formatDate(notification.date, {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className={`notification-status-button ${notification.status}`}
+                          onClick={() =>
+                            toggleNotificationStatus(notification)
+                          }
+                          disabled={actionLoading}
+                        >
+                          {notification.status === "unread"
+                            ? "Unread"
+                            : "Read"}
+                        </button>
+                      </td>
+
+                      <td>
+                        <div className="notification-actions">
                           <button
                             type="button"
-                            className={`notification-status-button ${notification.status}`}
+                            className="notification-view-button"
+                            title="View Notification"
+                            aria-label={`View ${notification.title}`}
+                            onClick={() => openNotification(notification)}
+                          >
+                            <Eye size={15} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="notification-toggle-button"
+                            title={
+                              notification.status === "unread"
+                                ? "Mark as Read"
+                                : "Mark as Unread"
+                            }
                             onClick={() =>
                               toggleNotificationStatus(notification)
                             }
-                            aria-label={`Mark ${notification.title} as ${
-                              notification.status === "unread"
-                                ? "read"
-                                : "unread"
-                            }`}
+                            disabled={actionLoading}
                           >
-                            {notification.status === "unread"
-                              ? "Unread"
-                              : "Read"}
+                            {notification.status === "unread" ? (
+                              <Check size={15} />
+                            ) : (
+                              <Bell size={15} />
+                            )}
                           </button>
-                        </td>
 
-                        <td>
-                          <div className="notification-actions">
-                            <button
-                              type="button"
-                              className="notification-view-button"
-                              title="View Notification"
-                              aria-label={`View ${notification.title}`}
-                              onClick={() =>
-                                openNotification(notification)
-                              }
-                            >
-                              <Eye size={15} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className="notification-toggle-button"
-                              title={
-                                notification.status === "unread"
-                                  ? "Mark as Read"
-                                  : "Mark as Unread"
-                              }
-                              aria-label={
-                                notification.status === "unread"
-                                  ? "Mark as read"
-                                  : "Mark as unread"
-                              }
-                              onClick={() =>
-                                toggleNotificationStatus(notification)
-                              }
-                            >
-                              {notification.status === "unread" ? (
-                                <Check size={15} />
-                              ) : (
-                                <Bell size={15} />
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              className="notification-delete-button"
-                              title="Delete"
-                              aria-label={`Delete ${notification.title}`}
-                              onClick={() =>
-                                deleteNotification(notification.id)
-                              }
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  )
+                          <button
+                            type="button"
+                            className="notification-delete-button"
+                            title="Delete"
+                            aria-label={`Delete ${notification.title}`}
+                            onClick={() =>
+                              deleteNotification(notification)
+                            }
+                            disabled={actionLoading}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td
@@ -559,11 +951,12 @@ function AdminNotifications() {
                       className="notifications-empty-state"
                     >
                       <Bell size={36} />
-
                       <h3>No notifications found</h3>
 
                       <p>
-                        Try changing your search or filters.
+                        {error
+                          ? "Notifications could not be loaded."
+                          : "There are no notifications matching your search or filters."}
                       </p>
                     </td>
                   </tr>
@@ -574,7 +967,8 @@ function AdminNotifications() {
         </div>
       </div>
 
-      {/* Notification details modal */}
+      {/* NOTIFICATION DETAILS MODAL */}
+
       {selectedNotification && (
         <div
           className="admin-notifications-modal-overlay"
@@ -629,9 +1023,7 @@ function AdminNotifications() {
 
                 <div>
                   <span>Audience</span>
-                  <strong>
-                    {selectedNotification.audience}
-                  </strong>
+                  <strong>{selectedNotification.audience}</strong>
                 </div>
 
                 <div>
@@ -666,6 +1058,7 @@ function AdminNotifications() {
                   onClick={() =>
                     toggleNotificationStatus(selectedNotification)
                   }
+                  disabled={actionLoading}
                 >
                   {selectedNotification.status === "unread" ? (
                     <>
@@ -684,8 +1077,9 @@ function AdminNotifications() {
                   type="button"
                   className="notification-modal-delete"
                   onClick={() =>
-                    deleteNotification(selectedNotification.id)
+                    deleteNotification(selectedNotification)
                   }
+                  disabled={actionLoading}
                 >
                   <Trash2 size={16} />
                   Delete

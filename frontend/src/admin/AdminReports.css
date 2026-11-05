@@ -1136,3 +1136,90 @@
     animation-iteration-count: 1 !important;
   }
 }
+/* =========================================================
+   STANDARD GREEN THEME
+========================================================= */
+
+/* Export button */
+.reports-export-button {
+  border-color: #198754;
+  background: #198754;
+  color: #ffffff;
+}
+
+.reports-export-button:hover {
+  border-color: #157347;
+  background: #157347;
+}
+
+/* Period filter buttons */
+.reports-period-buttons button:hover {
+  background: #eaf7f0;
+  color: #157347;
+}
+
+.reports-period-buttons button.active {
+  border-color: #b7e4ca;
+  background: #eaf7f0;
+  color: #198754;
+}
+
+/* Focus states */
+.reports-export-button:focus-visible,
+.reports-period-buttons button:focus-visible {
+  outline: 3px solid rgba(25, 135, 84, 0.3);
+  outline-offset: 2px;
+}
+
+.reports-date-field:focus-within {
+  border-color: #198754;
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
+}
+
+/* Green chart highlights */
+.reports-stat-icon.revenue {
+  background: #eaf7f0;
+  color: #198754;
+}
+
+.legend-revenue {
+  background: #198754;
+}
+
+.reports-bar {
+  background: #198754;
+}
+
+.reports-bar-column:hover .reports-bar {
+  background: #157347;
+}
+
+.order-progress-fill,
+.category-progress-fill {
+  background: #198754;
+}
+
+/* Product and payment highlights */
+.reports-product-rank {
+  background: #eaf7f0;
+  color: #198754;
+}
+
+.reports-product-revenue,
+.reports-payment-amount strong {
+  color: #198754;
+}
+
+/* Delivery highlight */
+.delivery-big-number {
+  background: #eaf7f0;
+}
+
+.delivery-big-number strong {
+  color: #198754;
+}
+
+/* Panel heading icons */
+.reports-panel-header > svg {
+  color: #198754;
+}

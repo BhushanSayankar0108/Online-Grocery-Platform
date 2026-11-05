@@ -65,3 +65,90 @@
     padding: 12px;
   }
 }
+
+
+/* ================================
+   ADMIN TOPBAR
+================================ */
+
+.admin-topbar {
+  width: 100%;
+  min-height: 76px;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin-topbar-info h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.admin-topbar-info span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ================================
+   ACCESS DENIED
+================================ */
+
+.admin-access-denied {
+  padding: 40px;
+  text-align: center;
+}
+
+.admin-access-denied h2 {
+  color: #dc2626;
+  margin-bottom: 10px;
+}
+
+.admin-access-denied p {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.admin-access-denied button {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.admin-access-denied button:hover {
+  background: #b91c1c;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 560px) {
+  .admin-topbar {
+    padding: 12px 15px;
+  }
+
+  .admin-topbar-info h2 {
+    font-size: 16px;
+  }
+}

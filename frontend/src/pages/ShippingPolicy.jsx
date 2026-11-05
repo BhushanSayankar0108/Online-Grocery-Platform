@@ -1,3 +1,5 @@
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Truck,
@@ -7,7 +9,85 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+
+function parseShippingContent(content = "") {
+  const sections = [];
+  let currentSection = null;
+
+  content.split("\n").forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) return;
+
+    const headingMatch = trimmedLine.match(/^##\s*(.*?)\s*\|\s*(.+)$/);
+
+    if (headingMatch) {
+      currentSection = {
+        number: headingMatch[1],
+        title: headingMatch[2],
+        paragraphs: [],
+      };
+
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.paragraphs.push(trimmedLine);
+    }
+  });
+
+  return sections;
+}
+
 function ShippingPolicy() {
+  const [policy, setPolicy] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchShippingPolicy = async () => {
+      try {
+        const response = await fetch(CMS_PUBLIC_API, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load Shipping Policy.");
+        }
+
+        const result = await response.json();
+
+        const contentItems = Array.isArray(result.data?.contentItems)
+          ? result.data.contentItems
+          : [];
+
+        const activePolicy = contentItems.find(
+          (item) =>
+            item.title?.trim().toLowerCase() === "shipping policy" &&
+            item.status?.toLowerCase() === "active"
+        );
+
+        setPolicy(activePolicy || null);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Shipping Policy error:", err);
+          setError(err.message || "Something went wrong.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchShippingPolicy();
+
+    return () => controller.abort();
+  }, []);
+
+  const shippingSections = parseShippingContent(policy?.content || "");
+
   return (
     <main className="info-page shipping-policy-page">
       <div className="info-container">
@@ -17,7 +97,7 @@ function ShippingPolicy() {
           </Link>
 
           <p className="info-breadcrumb">
-            Home / Shipping Policy
+            <Link to="/">Home</Link> / Shipping Policy
           </p>
 
           <span className="info-eyebrow">DELIVERY INFORMATION</span>
@@ -25,8 +105,8 @@ function ShippingPolicy() {
           <h1>Shipping & delivery made simple.</h1>
 
           <p className="info-intro">
-            Everything you need to know about delivery availability, delivery
-            slots, charges and receiving your order.
+            {policy?.intro ||
+              "Everything you need to know about delivery availability, delivery slots, charges and receiving your order."}
           </p>
         </div>
 
@@ -92,48 +172,38 @@ function ShippingPolicy() {
             <h2>What happens after you place an order?</h2>
           </div>
 
-          <div className="shipping-steps">
-            <div className="shipping-step">
-              <span>01</span>
-              <div>
-                <h3>Order Confirmed</h3>
-                <p>
-                  Your order is received and confirmed for processing.
-                </p>
-              </div>
-            </div>
+          {loading ? (
+            <p className="policy-message">
+              Loading Shipping Policy...
+            </p>
+          ) : error ? (
+            <p className="policy-message" role="alert">
+              {error}
+            </p>
+          ) : shippingSections.length > 0 ? (
+            <div className="shipping-steps">
+              {shippingSections.map((section, index) => (
+                <div
+                  className="shipping-step"
+                  key={`${section.number}-${index}`}
+                >
+                  <span>{section.number}</span>
 
-            <div className="shipping-step">
-              <span>02</span>
-              <div>
-                <h3>Picking & Packing</h3>
-                <p>
-                  Your selected products are prepared and packed for delivery.
-                </p>
-              </div>
-            </div>
+                  <div>
+                    <h3>{section.title}</h3>
 
-            <div className="shipping-step">
-              <span>03</span>
-              <div>
-                <h3>Out for Delivery</h3>
-                <p>
-                  Your order is handed over for delivery to your selected
-                  address.
-                </p>
-              </div>
+                    {section.paragraphs.map((paragraph, paragraphIndex) => (
+                      <p key={paragraphIndex}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="shipping-step">
-              <span>04</span>
-              <div>
-                <h3>Delivered</h3>
-                <p>
-                  Your order is delivered and the order status is updated.
-                </p>
-              </div>
-            </div>
-          </div>
+          ) : (
+            <p className="policy-message">
+              Shipping Policy content is currently unavailable.
+            </p>
+          )}
         </section>
 
         <section className="shipping-note">

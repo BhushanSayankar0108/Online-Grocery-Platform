@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -7,19 +8,58 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
+
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!email) {
-      alert("Please enter your email address.");
+    setError("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError("Please enter your email address.");
       return;
     }
 
-    setSubmitted(true);
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/customers/forgot-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: normalizedEmail }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to process your request. Please try again."
+        );
+      }
+
+      setEmail(normalizedEmail);
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Forgot password error:", err);
+      setError(err.message || "Unable to send reset link.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,10 +90,7 @@ function ForgotPassword() {
                 </p>
               </div>
 
-              <form
-                onSubmit={handleSubmit}
-                className="auth-form"
-              >
+              <form onSubmit={handleSubmit} className="auth-form">
                 <label>
                   <span>Email Address</span>
 
@@ -64,20 +101,33 @@ function ForgotPassword() {
                       type="email"
                       placeholder="Enter your email"
                       value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
+                      onChange={(event) => setEmail(event.target.value)}
+                      autoComplete="email"
                       required
                     />
                   </div>
                 </label>
 
+                {error && (
+                  <p
+                    role="alert"
+                    style={{
+                      color: "#dc2626",
+                      fontSize: "14px",
+                      margin: "0",
+                    }}
+                  >
+                    {error}
+                  </p>
+                )}
+
                 <button
                   type="submit"
                   className="auth-button"
+                  disabled={loading}
                 >
-                  Send Reset Link
-                  <ArrowRight size={17} />
+                  {loading ? "Sending..." : "Send Reset Link"}
+                  {!loading && <ArrowRight size={17} />}
                 </button>
               </form>
 
@@ -97,22 +147,16 @@ function ForgotPassword() {
           ) : (
             <div className="auth-confirmation">
               <div className="confirmation-icon">
-                <CheckCircle2
-                  size={32}
-                  strokeWidth={1.8}
-                />
+                <CheckCircle2 size={32} strokeWidth={1.8} />
               </div>
 
-              <span className="auth-eyebrow">
-                EMAIL SENT
-              </span>
+              <span className="auth-eyebrow">REQUEST RECEIVED</span>
 
               <h1>Check your email.</h1>
 
               <p>
-                If an account exists for{" "}
-                <strong>{email}</strong>, you'll receive a
-                password reset link shortly.
+                If an account exists for <strong>{email}</strong>,
+                you'll receive a password reset link shortly.
               </p>
 
               <Link

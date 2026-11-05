@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -6,7 +7,84 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+
+function parsePolicyContent(content = "") {
+  const sections = [];
+  let currentSection = null;
+
+  content.split("\n").forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) return;
+
+    const headingMatch = trimmedLine.match(/^##\s*(.*?)\s*\|\s*(.+)$/);
+
+    if (headingMatch) {
+      currentSection = {
+        number: headingMatch[1],
+        title: headingMatch[2],
+        paragraphs: [],
+      };
+
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.paragraphs.push(trimmedLine);
+    }
+  });
+
+  return sections;
+}
+
 function PrivacyPolicy() {
+  const [policy, setPolicy] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchPolicy = async () => {
+      try {
+        const response = await fetch(CMS_PUBLIC_API, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load Privacy Policy.");
+        }
+
+        const result = await response.json();
+        const contentItems = Array.isArray(result.data?.contentItems)
+          ? result.data.contentItems
+          : [];
+
+        const privacyPolicy = contentItems.find(
+          (item) =>
+            item.title?.trim().toLowerCase() === "privacy policy" &&
+            item.status?.toLowerCase() === "active"
+        );
+
+        setPolicy(privacyPolicy || null);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Privacy Policy error:", err);
+          setError(err.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchPolicy();
+
+    return () => controller.abort();
+  }, []);
+
+  const policySections = parsePolicyContent(policy?.content || "");
+
   return (
     <main className="info-page policy-page">
       <div className="info-container">
@@ -15,15 +93,17 @@ function PrivacyPolicy() {
             ← Back to Home
           </Link>
 
-          <p className="info-breadcrumb">Home / Privacy Policy</p>
+          <p className="info-breadcrumb">
+            <Link to="/">Home</Link> / Privacy Policy
+          </p>
 
           <span className="info-eyebrow">YOUR PRIVACY MATTERS</span>
 
           <h1>Privacy Policy</h1>
 
           <p className="info-intro">
-            This policy explains how Online Grocery may collect, use and
-            protect information provided while using the platform.
+            {policy?.intro ||
+              "This policy explains how Online Grocery may collect, use and protect information provided while using the platform."}
           </p>
         </div>
 
@@ -48,97 +128,31 @@ function PrivacyPolicy() {
         </section>
 
         <section className="policy-content">
-          <div className="policy-section">
-            <span className="policy-number">01</span>
-            <div>
-              <h2>Information We Collect</h2>
-              <p>
-                When using the platform, information may be provided such as
-                your name, mobile number, email address, delivery address and
-                order details.
-              </p>
-              <p>
-                Information may also be generated through your interaction
-                with products, cart, wishlist, orders and other platform
-                features.
-              </p>
-            </div>
-          </div>
+          {loading ? (
+            <p className="policy-message">Loading Privacy Policy...</p>
+          ) : error ? (
+            <p className="policy-message" role="alert">
+              {error}
+            </p>
+          ) : policySections.length > 0 ? (
+            policySections.map((section, index) => (
+              <div className="policy-section" key={`${section.number}-${index}`}>
+                <span className="policy-number">{section.number}</span>
 
-          <div className="policy-section">
-            <span className="policy-number">02</span>
-            <div>
-              <h2>How Information Is Used</h2>
-              <p>
-                Information may be used to provide account services, process
-                orders, arrange deliveries, provide customer support and
-                improve the shopping experience.
-              </p>
-            </div>
-          </div>
+                <div>
+                  <h2>{section.title}</h2>
 
-          <div className="policy-section">
-            <span className="policy-number">03</span>
-            <div>
-              <h2>Account Information</h2>
-              <p>
-                Customers are responsible for keeping their account
-                information accurate and protecting access to their account.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">04</span>
-            <div>
-              <h2>Orders & Payments</h2>
-              <p>
-                Order and payment-related information may be required to
-                process purchases, confirm transactions and provide support
-                for orders.
-              </p>
-              <p>
-                Sensitive payment information should be handled through the
-                appropriate payment service provider rather than stored
-                unnecessarily by the platform.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">05</span>
-            <div>
-              <h2>Data Protection</h2>
-              <p>
-                Reasonable technical and organizational measures should be
-                used to protect information from unauthorized access, loss or
-                misuse.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">06</span>
-            <div>
-              <h2>Cookies & Similar Technologies</h2>
-              <p>
-                The platform may use cookies or similar technologies to
-                support functionality, preferences and basic usage analysis.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">07</span>
-            <div>
-              <h2>Policy Updates</h2>
-              <p>
-                This privacy policy may be updated when platform features,
-                services or requirements change. Updated information should
-                be published on this page.
-              </p>
-            </div>
-          </div>
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <p key={paragraphIndex}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="policy-message">
+              Privacy Policy content is currently unavailable.
+            </p>
+          )}
         </section>
 
         <section className="policy-contact">

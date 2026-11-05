@@ -1,9 +1,18 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import {
   ChevronDown,
   Edit,
   ImagePlus,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   X,
@@ -11,64 +20,16 @@ import {
 
 import "./AdminSubCategories.css";
 
-const CATEGORY_OPTIONS = [
-  { id: "cat-1", name: "Fruits & Vegetables" },
-  { id: "cat-2", name: "Dairy & Bakery" },
-  { id: "cat-3", name: "Staples & Grains" },
-  { id: "cat-4", name: "Snacks & Beverages" },
-  { id: "cat-5", name: "Personal Care" },
-];
+/* =========================================================
+   API CONFIGURATION
+========================================================= */
 
-const INITIAL_SUBCATEGORIES = [
-  {
-    id: 1,
-    name: "Fresh Fruits",
-    categoryId: "cat-1",
-    categoryName: "Fruits & Vegetables",
-    description: "Fresh seasonal fruits and everyday favorites.",
-    image: "",
-    images: [],
-    imageSize: "medium",
-    status: "active",
-    createdAt: "02 Oct 2026",
-  },
-  {
-    id: 2,
-    name: "Fresh Vegetables",
-    categoryId: "cat-1",
-    categoryName: "Fruits & Vegetables",
-    description: "Fresh vegetables for everyday cooking.",
-    image: "",
-    images: [],
-    imageSize: "medium",
-    status: "active",
-    createdAt: "02 Oct 2026",
-  },
-  {
-    id: 3,
-    name: "Milk & Dairy",
-    categoryId: "cat-2",
-    categoryName: "Dairy & Bakery",
-    description: "Milk, curd, butter, paneer and other dairy products.",
-    image: "",
-    images: [],
-    imageSize: "medium",
-    status: "active",
-    createdAt: "02 Oct 2026",
-  },
-  {
-    id: 4,
-    name: "Rice & Grains",
-    categoryId: "cat-3",
-    categoryName: "Staples & Grains",
-    description: "Rice, wheat, grains and staple food products.",
-    image: "",
-    images: [],
-    imageSize: "medium",
-    status: "inactive",
-    createdAt: "02 Oct 2026",
-  },
-];
+const API_BASE_URL = "http://localhost:5000";
+const CATEGORIES_API = `${API_BASE_URL}/api/categories`;
+const SUBCATEGORIES_API = `${API_BASE_URL}/api/subcategories`;
+
+const MAX_IMAGES = 10;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const EMPTY_FORM = {
   name: "",
@@ -80,24 +41,71 @@ const EMPTY_FORM = {
   status: "active",
 };
 
-const MAX_IMAGES = 10;
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+/* =========================================================
+   HELPERS
+========================================================= */
 
-const normalizeImages = (item) => {
-  if (Array.isArray(item.images) && item.images.length > 0) {
-    return item.images;
+const getId = (item) => item?._id || item?.id;
+
+const getToken = () => localStorage.getItem("adminToken");
+
+const getImageUrl = (image) => {
+  if (!image) return "";
+
+  if (/^(https?:\/\/|data:|blob:)/i.test(image)) {
+    return image;
   }
 
-  return item.image ? [item.image] : [];
+  return `${API_BASE_URL}${image.startsWith("/") ? "" : "/"}${image}`;
 };
+
+const normalizeImages = (item) => {
+  if (Array.isArray(item?.images) && item.images.length > 0) {
+    return item.images.filter(Boolean);
+  }
+
+  return item?.image ? [item.image] : [];
+};
+
+const getErrorMessage = async (response) => {
+  try {
+    const data = await response.json();
+
+    return (
+      data.message ||
+      data.error ||
+      "The request could not be completed."
+    );
+  } catch {
+    return "The server returned an unexpected response.";
+  }
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () =>
+      reject(new Error(`Unable to read ${file.name}`));
+
+    reader.readAsDataURL(file);
+  });
+
+/* =========================================================
+   ADMIN SUBCATEGORIES
+========================================================= */
 
 const AdminSubCategories = () => {
   const fileInputRef = useRef(null);
   const objectUrlsRef = useRef(new Set());
 
-  const [subCategories, setSubCategories] = useState(
-    INITIAL_SUBCATEGORIES
-  );
+  const [subCategories, setSubCategories] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] =
@@ -105,24 +113,146 @@ const AdminSubCategories = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
   const [formData, setFormData] = useState({
     ...EMPTY_FORM,
     images: [],
   });
-  const [validationError, setValidationError] = useState("");
+
   const [imagePreview, setImagePreview] = useState([]);
+  const [validationError, setValidationError] = useState("");
   const [isDirty, setIsDirty] = useState(false);
 
-  // Capture the Set once inside the effect. This avoids reading the
-  // mutable ref's current value from the cleanup function.
-  useEffect(() => {
-    const urls = objectUrlsRef.current;
+  /* =========================================================
+     LOAD DATA
+  ========================================================= */
 
-    return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
-      urls.clear();
-    };
+  const loadData = useCallback(async () => {
+    try {
+      const [categoriesResponse, subcategoriesResponse] =
+        await Promise.all([
+          fetch(CATEGORIES_API),
+          fetch(SUBCATEGORIES_API),
+        ]);
+
+      if (!categoriesResponse.ok) {
+        throw new Error(
+          await getErrorMessage(categoriesResponse)
+        );
+      }
+
+      if (!subcategoriesResponse.ok) {
+        throw new Error(
+          await getErrorMessage(subcategoriesResponse)
+        );
+      }
+
+      const categoriesData = await categoriesResponse.json();
+      const subcategoriesData = await subcategoriesResponse.json();
+
+      const rawCategories = Array.isArray(categoriesData)
+        ? categoriesData
+        : categoriesData.categories || [];
+
+      const rawSubcategories = Array.isArray(subcategoriesData)
+        ? subcategoriesData
+        : subcategoriesData.subcategories ||
+          subcategoriesData.subCategories ||
+          subcategoriesData.data ||
+          [];
+
+      const mappedCategories = rawCategories.map((category) => ({
+        id: String(getId(category)),
+        name: category.name || "Unnamed category",
+      }));
+
+      const mappedSubcategories = rawSubcategories.map((item) => {
+        const parent =
+          item.category && typeof item.category === "object"
+            ? item.category
+            : null;
+
+        const categoryId = String(
+          parent?._id ||
+            item.category ||
+            item.categoryId ||
+            ""
+        );
+
+        const images = normalizeImages(item);
+
+        const parentCategory = mappedCategories.find(
+          (category) => category.id === categoryId
+        );
+
+        return {
+          ...item,
+          id: String(getId(item)),
+          categoryId,
+          categoryName:
+            parent?.name ||
+            parentCategory?.name ||
+            item.categoryName ||
+            "Unknown category",
+          description: item.description || "",
+          image: item.image || images[0] || "",
+          images,
+          imageSize: item.imageSize || "medium",
+          status: item.status || "active",
+          createdAt: item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-",
+        };
+      });
+
+      setCategoryOptions(mappedCategories);
+      setSubCategories(mappedSubcategories);
+      setLoadError("");
+    } catch (error) {
+      console.error("Failed to load subcategories:", error);
+
+      setLoadError(
+        error.message || "Unable to load subcategories."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  /* =========================================================
+     INITIAL LOAD AND MANUAL REFRESH
+  ========================================================= */
+
+  useEffect(() => {
+  let cancelled = false;
+
+  const initializeData = async () => {
+    await Promise.resolve();
+
+    if (!cancelled) {
+      await loadData();
+    }
+  };
+
+  initializeData();
+
+  return () => {
+    cancelled = true;
+  };
+}, [loadData]);
+
+  const refreshData = async () => {
+    setLoading(true);
+    await loadData();
+  };
+
+  /* =========================================================
+     FILTERS AND COUNTS
+  ========================================================= */
 
   const filteredSubCategories = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -130,13 +260,14 @@ const AdminSubCategories = () => {
     return subCategories.filter((item) => {
       const matchesSearch =
         !search ||
-        item.name.toLowerCase().includes(search) ||
-        item.categoryName.toLowerCase().includes(search) ||
+        (item.name || "").toLowerCase().includes(search) ||
+        (item.categoryName || "").toLowerCase().includes(search) ||
         (item.description || "").toLowerCase().includes(search);
 
       const matchesCategory =
         selectedCategoryFilter === "all" ||
-        item.categoryId === selectedCategoryFilter;
+        String(item.categoryId) ===
+          String(selectedCategoryFilter);
 
       return matchesSearch && matchesCategory;
     });
@@ -149,6 +280,10 @@ const AdminSubCategories = () => {
   const inactiveCount = subCategories.filter(
     (item) => item.status === "inactive"
   ).length;
+
+  /* =========================================================
+     IMAGE PREVIEW CLEANUP
+  ========================================================= */
 
   const releaseImageUrl = (url) => {
     if (url && objectUrlsRef.current.has(url)) {
@@ -165,6 +300,10 @@ const AdminSubCategories = () => {
     });
   };
 
+  /* =========================================================
+     OPEN ADD FORM
+  ========================================================= */
+
   const openAddModal = () => {
     setEditingId(null);
     setFormData({ ...EMPTY_FORM, images: [] });
@@ -174,29 +313,35 @@ const AdminSubCategories = () => {
     setIsModalOpen(true);
   };
 
+  /* =========================================================
+     OPEN EDIT FORM
+  ========================================================= */
+
   const openEditModal = (item) => {
     const existingImages = normalizeImages(item);
 
-    setEditingId(item.id);
+    const formImages = existingImages.map((url) => ({
+      url,
+      name: "Existing image",
+      isNew: false,
+    }));
+
+    setEditingId(String(getId(item)));
+
     setFormData({
-      name: item.name,
-      categoryId: item.categoryId,
+      name: item.name || "",
+      categoryId: String(item.categoryId || ""),
       description: item.description || "",
       image: item.image || existingImages[0] || "",
-      images: existingImages.map((url) => ({
-        url,
-        name: "Existing image",
-        isNew: false,
-      })),
+      images: formImages,
       imageSize: item.imageSize || "medium",
-      status: item.status,
+      status: item.status || "active",
     });
 
     setImagePreview(
-      existingImages.map((url) => ({
-        url,
-        name: "Existing image",
-        isNew: false,
+      formImages.map((image) => ({
+        ...image,
+        url: getImageUrl(image.url),
       }))
     );
 
@@ -204,6 +349,10 @@ const AdminSubCategories = () => {
     setIsDirty(false);
     setIsModalOpen(true);
   };
+
+  /* =========================================================
+     CLOSE FORM
+  ========================================================= */
 
   const closeModal = (force = false) => {
     if (!force && isDirty) {
@@ -228,6 +377,10 @@ const AdminSubCategories = () => {
     }
   };
 
+  /* =========================================================
+     INPUT HANDLER
+  ========================================================= */
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -239,6 +392,10 @@ const AdminSubCategories = () => {
     setIsDirty(true);
     setValidationError("");
   };
+
+  /* =========================================================
+     IMAGE HANDLER
+  ========================================================= */
 
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files || []);
@@ -252,6 +409,7 @@ const AdminSubCategories = () => {
       setValidationError(
         `You can upload a maximum of ${MAX_IMAGES} images.`
       );
+
       event.target.value = "";
       return;
     }
@@ -261,7 +419,7 @@ const AdminSubCategories = () => {
 
     files.slice(0, remainingSlots).forEach((file) => {
       if (!file.type.startsWith("image/")) {
-        errors.push(`${file.name} is not a supported image.`);
+        errors.push(`${file.name} is not a valid image.`);
         return;
       }
 
@@ -276,11 +434,15 @@ const AdminSubCategories = () => {
       acceptedImages.push({
         url,
         name: file.name,
+        file,
         isNew: true,
       });
     });
 
-    const updatedImages = [...currentImages, ...acceptedImages];
+    const updatedImages = [
+      ...currentImages,
+      ...acceptedImages,
+    ];
 
     setFormData((previous) => ({
       ...previous,
@@ -292,16 +454,19 @@ const AdminSubCategories = () => {
     setIsDirty(true);
 
     setValidationError(
-      errors.length > 0
+      errors.length
         ? errors.join(" ")
         : files.length > remainingSlots
           ? `Only ${MAX_IMAGES} images are allowed. Extra images were skipped.`
           : ""
     );
 
-    // Allows the same file to be selected again if needed.
     event.target.value = "";
   };
+
+  /* =========================================================
+     REMOVE IMAGE
+  ========================================================= */
 
   const removeImage = (index) => {
     const imageToRemove = formData.images[index];
@@ -309,13 +474,15 @@ const AdminSubCategories = () => {
     if (!imageToRemove) return;
 
     const confirmed = window.confirm(
-      `Remove "${imageToRemove.name || "this image"}" from the subcategory?`
+      `Remove "${imageToRemove.name || "this image"}" from the form?`
     );
 
     if (!confirmed) return;
 
-    // Do not revoke an image URL here. If the user cancels editing,
-    // the original table entry must continue displaying its image.
+    if (imageToRemove.isNew) {
+      releaseImageUrl(imageToRemove.url);
+    }
+
     const updatedImages = formData.images.filter(
       (_, imageIndex) => imageIndex !== index
     );
@@ -331,7 +498,11 @@ const AdminSubCategories = () => {
     setValidationError("");
   };
 
-  const handleSubmit = (event) => {
+  /* =========================================================
+     CREATE OR UPDATE SUBCATEGORY
+  ========================================================= */
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setValidationError("");
 
@@ -342,11 +513,6 @@ const AdminSubCategories = () => {
       return;
     }
 
-    if (!formData.categoryId) {
-      setValidationError("Please select a parent category.");
-      return;
-    }
-
     if (trimmedName.length > 100) {
       setValidationError(
         "Subcategory name cannot exceed 100 characters."
@@ -354,8 +520,14 @@ const AdminSubCategories = () => {
       return;
     }
 
-    const selectedCategory = CATEGORY_OPTIONS.find(
-      (category) => category.id === formData.categoryId
+    if (!formData.categoryId) {
+      setValidationError("Please select a parent category.");
+      return;
+    }
+
+    const selectedCategory = categoryOptions.find(
+      (category) =>
+        String(category.id) === String(formData.categoryId)
     );
 
     if (!selectedCategory) {
@@ -365,9 +537,10 @@ const AdminSubCategories = () => {
 
     const duplicate = subCategories.some(
       (item) =>
-        item.id !== editingId &&
-        item.categoryId === formData.categoryId &&
-        item.name.trim().toLowerCase() === trimmedName.toLowerCase()
+        String(getId(item)) !== String(editingId) &&
+        String(item.categoryId) === String(formData.categoryId) &&
+        (item.name || "").trim().toLowerCase() ===
+          trimmedName.toLowerCase()
     );
 
     if (duplicate) {
@@ -385,76 +558,80 @@ const AdminSubCategories = () => {
 
     if (!confirmed) return;
 
-    const imageObjects = formData.images || [];
-    const imageUrls = imageObjects.map((image) => image.url);
+    const token = getToken();
 
-    if (editingId) {
-      const existingItem = subCategories.find(
-        (item) => item.id === editingId
+    if (!token) {
+      setValidationError(
+        "Your admin session was not found. Please log in again."
       );
-
-      // Revoke old object URLs only when the update is confirmed.
-      if (existingItem) {
-        const oldUrls = normalizeImages(existingItem);
-
-        oldUrls.forEach((url) => {
-          if (!imageUrls.includes(url)) {
-            releaseImageUrl(url);
-          }
-        });
-      }
-
-      setSubCategories((previous) =>
-        previous.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                name: trimmedName,
-                categoryId: formData.categoryId,
-                categoryName: selectedCategory.name,
-                description: formData.description.trim(),
-                image: imageUrls[0] || "",
-                images: imageUrls,
-                imageSize: formData.imageSize,
-                status: formData.status,
-              }
-            : item
-        )
-      );
-    } else {
-      // Generate the ID outside the state updater to keep the updater pure.
-      const newSubCategoryId = Date.now();
-
-      const newSubCategory = {
-        id: newSubCategoryId,
-        name: trimmedName,
-        categoryId: formData.categoryId,
-        categoryName: selectedCategory.name,
-        description: formData.description.trim(),
-        image: imageUrls[0] || "",
-        images: imageUrls,
-        imageSize: formData.imageSize,
-        status: formData.status,
-        createdAt: new Date().toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-      };
-
-      setSubCategories((previous) => [
-        newSubCategory,
-        ...previous,
-      ]);
+      return;
     }
 
-    setIsDirty(false);
-    closeModal(true);
+    setSaving(true);
+
+    try {
+      let primaryImage = "";
+      const primary = formData.images[0];
+
+      if (primary) {
+        if (primary.file) {
+          primaryImage = await readFileAsDataUrl(primary.file);
+        } else {
+          primaryImage = primary.url || "";
+        }
+      }
+
+      const payload = {
+        name: trimmedName,
+        description: formData.description.trim(),
+        category: formData.categoryId,
+        image: primaryImage,
+        status: formData.status,
+      };
+
+      const url = editingId
+        ? `${SUBCATEGORIES_API}/${encodeURIComponent(editingId)}`
+        : SUBCATEGORIES_API;
+
+      const response = await fetch(url, {
+        method: editingId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+      }
+
+      const successMessage = editingId
+        ? "Subcategory updated successfully."
+        : "Subcategory created successfully.";
+
+      await refreshData();
+
+      closeModal(true);
+      window.alert(successMessage);
+    } catch (error) {
+      console.error("Save subcategory error:", error);
+
+      setValidationError(
+        error.message || "Unable to save the subcategory."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id) => {
+  /* =========================================================
+     DELETE SUBCATEGORY
+  ========================================================= */
+
+  const handleDelete = async (id) => {
     const item = subCategories.find(
-      (subcategory) => subcategory.id === id
+      (subcategory) => String(getId(subcategory)) === String(id)
     );
 
     if (!item) return;
@@ -465,20 +642,53 @@ const AdminSubCategories = () => {
 
     if (!confirmed) return;
 
-    setSubCategories((previous) =>
-      previous.filter((subcategory) => subcategory.id !== id)
-    );
+    const token = getToken();
 
-    normalizeImages(item).forEach((url) => {
-      releaseImageUrl(url);
-    });
+    if (!token) {
+      window.alert("Please log in again to delete subcategories.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${SUBCATEGORIES_API}/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
+      }
+
+      await refreshData();
+      window.alert("Subcategory deleted successfully.");
+    } catch (error) {
+      console.error("Delete subcategory error:", error);
+
+      window.alert(
+        error.message || "Unable to delete the subcategory."
+      );
+    }
   };
+
+  /* =========================================================
+     IMAGE SIZE
+  ========================================================= */
 
   const getImageSizeClass = (size) => {
     if (size === "small") return "sub-category-image-small";
     if (size === "large") return "sub-category-image-large";
+
     return "sub-category-image-medium";
   };
+
+  /* =========================================================
+     UI
+  ========================================================= */
 
   return (
     <div className="admin-subcategories-page">
@@ -523,6 +733,8 @@ const AdminSubCategories = () => {
           </div>
         </div>
 
+        {/* SEARCH, FILTER AND REFRESH */}
+
         <div className="admin-subcategories-toolbar">
           <div className="admin-subcategories-search">
             <Search size={18} />
@@ -557,7 +769,7 @@ const AdminSubCategories = () => {
             >
               <option value="all">All Categories</option>
 
-              {CATEGORY_OPTIONS.map((category) => (
+              {categoryOptions.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -566,12 +778,45 @@ const AdminSubCategories = () => {
 
             <ChevronDown size={17} />
           </div>
+
+          <button
+            type="button"
+            className="admin-subcategories-refresh-button"
+            onClick={refreshData}
+            disabled={loading}
+          >
+            <RefreshCw
+              size={17}
+              className={
+                loading ? "admin-subcategories-refreshing" : ""
+              }
+            />
+
+            <span>{loading ? "Refreshing..." : "Refresh"}</span>
+          </button>
         </div>
+
+        {loadError && (
+          <div
+            className="admin-subcategories-validation-error"
+            role="alert"
+          >
+            {loadError}{" "}
+            <button
+              type="button"
+              onClick={refreshData}
+              disabled={loading}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className="admin-subcategories-table-card">
           <div className="admin-subcategories-table-header">
             <div>
               <h2>Subcategory List</h2>
+
               <p>
                 {filteredSubCategories.length} subcategor
                 {filteredSubCategories.length === 1 ? "y" : "ies"} found
@@ -595,7 +840,13 @@ const AdminSubCategories = () => {
               </thead>
 
               <tbody>
-                {filteredSubCategories.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="sub-category-empty-state">
+                      Loading subcategories...
+                    </td>
+                  </tr>
+                ) : filteredSubCategories.length > 0 ? (
                   filteredSubCategories.map((item, index) => {
                     const images = normalizeImages(item);
 
@@ -612,7 +863,10 @@ const AdminSubCategories = () => {
                             )}`}
                           >
                             {images[0] ? (
-                              <img src={images[0]} alt={item.name} />
+                              <img
+                                src={getImageUrl(images[0])}
+                                alt={item.name}
+                              />
                             ) : (
                               <ImagePlus size={20} />
                             )}
@@ -651,7 +905,9 @@ const AdminSubCategories = () => {
                                 : "inactive"
                             }`}
                           >
-                            {item.status === "active" ? "Active" : "Inactive"}
+                            {item.status === "active"
+                              ? "Active"
+                              : "Inactive"}
                           </span>
                         </td>
 
@@ -722,6 +978,7 @@ const AdminSubCategories = () => {
             <div className="admin-subcategories-modal-header">
               <div>
                 <p>Catalogue Management</p>
+
                 <h2 id="subcategory-modal-title">
                   {editingId ? "Edit Subcategory" : "Add Subcategory"}
                 </h2>
@@ -732,6 +989,7 @@ const AdminSubCategories = () => {
                 className="admin-subcategories-modal-close"
                 aria-label="Close modal"
                 onClick={() => closeModal()}
+                disabled={saving}
               >
                 <X size={20} />
               </button>
@@ -765,7 +1023,7 @@ const AdminSubCategories = () => {
                   >
                     <option value="">Select parent category</option>
 
-                    {CATEGORY_OPTIONS.map((category) => (
+                    {categoryOptions.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
@@ -824,6 +1082,7 @@ const AdminSubCategories = () => {
                       checked={formData.status === "active"}
                       onChange={handleInputChange}
                     />
+
                     <span>Active</span>
                   </label>
 
@@ -839,6 +1098,7 @@ const AdminSubCategories = () => {
                       checked={formData.status === "inactive"}
                       onChange={handleInputChange}
                     />
+
                     <span>Inactive</span>
                   </label>
                 </div>
@@ -868,7 +1128,11 @@ const AdminSubCategories = () => {
 
                     <div>
                       <strong>Upload Images</strong>
-                      <span>Choose multiple images from your device</span>
+
+                      <span>
+                        Choose multiple images from your device
+                      </span>
+
                       <span>
                         Maximum {MAX_IMAGES} images, 5 MB per image
                       </span>
@@ -883,7 +1147,7 @@ const AdminSubCategories = () => {
                           key={`${image.url}-${index}`}
                         >
                           <img
-                            src={image.url}
+                            src={getImageUrl(image.url)}
                             alt={`Subcategory preview ${index + 1}`}
                           />
 
@@ -911,8 +1175,8 @@ const AdminSubCategories = () => {
                   )}
 
                   <p className="sub-category-size-note">
-                    The first image is used as the primary image in the table.
-                    Choose image display size below.
+                    The first image is used as the primary image in the
+                    table.
                   </p>
                 </div>
               </div>
@@ -961,10 +1225,6 @@ const AdminSubCategories = () => {
                     </label>
                   ))}
                 </div>
-
-                <p className="sub-category-size-note">
-                  These options control the image display size in the frontend UI.
-                </p>
               </div>
 
               <div className="admin-subcategories-form-actions">
@@ -972,6 +1232,7 @@ const AdminSubCategories = () => {
                   type="button"
                   className="sub-category-cancel-button"
                   onClick={() => closeModal()}
+                  disabled={saving}
                 >
                   Cancel
                 </button>
@@ -979,8 +1240,13 @@ const AdminSubCategories = () => {
                 <button
                   type="submit"
                   className="sub-category-save-button"
+                  disabled={saving}
                 >
-                  {editingId ? "Update Subcategory" : "Save Subcategory"}
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                      ? "Update Subcategory"
+                      : "Save Subcategory"}
                 </button>
               </div>
             </form>

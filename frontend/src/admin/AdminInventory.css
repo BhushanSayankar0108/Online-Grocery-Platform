@@ -1,3 +1,4 @@
+
 /* =========================================================
    ADMIN INVENTORY PAGE
 ========================================================= */
@@ -68,7 +69,7 @@
     padding: 0 18px;
     border: 0;
     border-radius: 9px;
-    background: #111827;
+    background: #198754;
     color: #ffffff;
     font-size: 14px;
     font-weight: 650;
@@ -78,14 +79,48 @@
         background 0.2s ease,
         transform 0.2s ease;
 }
+/* REFRESH BUTTON */
 
+.admin-inventory-refresh-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid #dce2ea;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #198754;
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.admin-inventory-refresh-button:hover:not(:disabled) {
+    background: #eaf7f0;
+    border-color: #198754;
+    color: #157347;
+}
+
+.admin-inventory-refresh-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.admin-inventory-refresh-button:focus-visible {
+    outline: 3px solid rgba(25, 135, 84, 0.3);
+    outline-offset: 3px;
+}
 .admin-inventory-add-button:hover {
-    background: #273244;
+    background: #157347;
     transform: translateY(-1px);
 }
 
 .admin-inventory-add-button:focus-visible {
-    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline: 3px solid rgba(25, 135, 84, 0.3);
     outline-offset: 3px;
 }
 
@@ -170,8 +205,8 @@
 }
 
 .admin-inventory-search:focus-within {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-inventory-search input {
@@ -213,7 +248,7 @@
 }
 
 .admin-inventory-clear-search:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 
@@ -243,8 +278,8 @@
 }
 
 .admin-inventory-filter select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-inventory-filter svg {
@@ -463,13 +498,15 @@
 }
 
 .inventory-edit-button {
-    background: #ffffff;
-    color: #475569;
+    background: #eaf7f0;
+    border-color: #ccebd9;
+    color: #198754;
 }
 
 .inventory-edit-button:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: #d8f0e2;
+    border-color: #a8dfbf;
+    color: #157347;
 }
 
 .inventory-delete-button {
@@ -482,9 +519,13 @@
     border-color: #fecaca;
 }
 
-.inventory-edit-button:focus-visible,
+.inventory-edit-button:focus-visible {
+    outline: 2px solid rgba(25, 135, 84, 0.3);
+    outline-offset: 2px;
+}
+
 .inventory-delete-button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid rgba(220, 38, 38, 0.3);
     outline-offset: 2px;
 }
 
@@ -605,7 +646,7 @@
 }
 
 .admin-inventory-modal-close:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid #198754;
     outline-offset: 2px;
 }
 
@@ -656,8 +697,8 @@
 
 .admin-inventory-form-group input:focus,
 .admin-inventory-select-wrapper select:focus {
-    border-color: #64748b;
-    box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .admin-inventory-form-group input::placeholder {
@@ -793,17 +834,21 @@
 
 .inventory-save-button {
     border: 0;
-    background: #111827;
+    background: #198754;
     color: #ffffff;
 }
 
 .inventory-save-button:hover {
-    background: #273244;
+    background: #157347;
 }
 
-.inventory-cancel-button:focus-visible,
+.inventory-cancel-button:focus-visible {
+    outline: 2px solid #94a3b8;
+    outline-offset: 2px;
+}
+
 .inventory-save-button:focus-visible {
-    outline: 2px solid #64748b;
+    outline: 2px solid rgba(25, 135, 84, 0.3);
     outline-offset: 2px;
 }
 

@@ -1,3 +1,5 @@
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FileText,
@@ -7,7 +9,85 @@ import {
   ArrowRight,
 } from "lucide-react";
 
+const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+
+function parseTermsContent(content = "") {
+  const sections = [];
+  let currentSection = null;
+
+  content.split("\n").forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (!trimmedLine) return;
+
+    const headingMatch = trimmedLine.match(/^##\s*(.*?)\s*\|\s*(.+)$/);
+
+    if (headingMatch) {
+      currentSection = {
+        number: headingMatch[1],
+        title: headingMatch[2],
+        paragraphs: [],
+      };
+
+      sections.push(currentSection);
+    } else if (currentSection) {
+      currentSection.paragraphs.push(trimmedLine);
+    }
+  });
+
+  return sections;
+}
+
 function Terms() {
+  const [terms, setTerms] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchTerms = async () => {
+      try {
+        const response = await fetch(CMS_PUBLIC_API, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load Terms & Conditions.");
+        }
+
+        const result = await response.json();
+
+        const contentItems = Array.isArray(result.data?.contentItems)
+          ? result.data.contentItems
+          : [];
+
+        const activeTerms = contentItems.find(
+          (item) =>
+            item.title?.trim().toLowerCase() === "terms & conditions" &&
+            item.status?.toLowerCase() === "active"
+        );
+
+        setTerms(activeTerms || null);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Terms & Conditions error:", err);
+          setError(err.message || "Something went wrong.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchTerms();
+
+    return () => controller.abort();
+  }, []);
+
+  const termsSections = parseTermsContent(terms?.content || "");
+
   return (
     <main className="info-page policy-page">
       <div className="info-container">
@@ -17,7 +97,7 @@ function Terms() {
           </Link>
 
           <p className="info-breadcrumb">
-            Home / Terms & Conditions
+            <Link to="/">Home</Link> / Terms & Conditions
           </p>
 
           <span className="info-eyebrow">PLEASE READ</span>
@@ -25,8 +105,8 @@ function Terms() {
           <h1>Terms & Conditions</h1>
 
           <p className="info-intro">
-            These terms describe the general rules for using the Online
-            Grocery platform and placing orders through it.
+            {terms?.intro ||
+              "These terms describe the general rules for using the Online Grocery platform and placing orders through it."}
           </p>
         </div>
 
@@ -51,106 +131,38 @@ function Terms() {
         </section>
 
         <section className="policy-content">
-          <div className="policy-section">
-            <span className="policy-number">01</span>
-            <div>
-              <h2>Using the Platform</h2>
-              <p>
-                Customers should use the platform only for legitimate
-                shopping and related activities. Users should not attempt to
-                disrupt, misuse or gain unauthorized access to the platform.
-              </p>
-            </div>
-          </div>
+          {loading ? (
+            <p className="policy-message">
+              Loading Terms & Conditions...
+            </p>
+          ) : error ? (
+            <p className="policy-message" role="alert">
+              {error}
+            </p>
+          ) : termsSections.length > 0 ? (
+            termsSections.map((section, index) => (
+              <div
+                className="policy-section"
+                key={`${section.number}-${index}`}
+              >
+                <span className="policy-number">
+                  {section.number}
+                </span>
 
-          <div className="policy-section">
-            <span className="policy-number">02</span>
-            <div>
-              <h2>Customer Accounts</h2>
-              <p>
-                Customers are responsible for providing accurate information
-                and maintaining the security of their account credentials.
-              </p>
-            </div>
-          </div>
+                <div>
+                  <h2>{section.title}</h2>
 
-          <div className="policy-section">
-            <span className="policy-number">03</span>
-            <div>
-              <h2>Products & Availability</h2>
-              <p>
-                Product availability, pricing, images, quantities and
-                descriptions may change. Products are subject to availability
-                at the time an order is processed.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">04</span>
-            <div>
-              <h2>Orders</h2>
-              <p>
-                Customers should review products, quantities, delivery
-                address, delivery slot and order total before placing an
-                order.
-              </p>
-              <p>
-                An order may be subject to availability and successful order
-                processing.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">05</span>
-            <div>
-              <h2>Payments</h2>
-              <p>
-                Available payment methods are displayed during checkout.
-                Customers are responsible for providing valid payment
-                information when required.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">06</span>
-            <div>
-              <h2>Delivery</h2>
-              <p>
-                Delivery availability, charges and time slots depend on the
-                selected delivery location and available delivery capacity.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">07</span>
-            <div>
-              <h2>Returns & Refunds</h2>
-              <p>
-                Eligible products may be returned or refunded according to
-                the applicable return and refund process.
-              </p>
-              <p>
-                Customers should provide accurate information when submitting
-                a return or refund request.
-              </p>
-            </div>
-          </div>
-
-          <div className="policy-section">
-            <span className="policy-number">08</span>
-            <div>
-              <h2>Changes to These Terms</h2>
-              <p>
-                These terms may be updated when the platform, services or
-                applicable requirements change. Updated terms should be
-                published on this page.
-              </p>
-            </div>
-          </div>
+                  {section.paragraphs.map((paragraph, paragraphIndex) => (
+                    <p key={paragraphIndex}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="policy-message">
+              Terms & Conditions content is currently unavailable.
+            </p>
+          )}
         </section>
 
         <section className="policy-warning">

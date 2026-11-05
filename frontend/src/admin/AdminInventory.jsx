@@ -1,247 +1,170 @@
-import { useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Boxes,
   ChevronDown,
   Edit,
   Plus,
   Search,
-  Trash2,
   X,
+  History,
+  RefreshCw,
 } from "lucide-react";
-
 import "./AdminInventory.css";
 
-const VARIANT_OPTIONS = [
-  {
-    id: "variant-1",
-    productName: "Fresh Red Apples",
-    variantName: "500 g",
-    sku: "APP-500G",
-  },
-  {
-    id: "variant-2",
-    productName: "Fresh Red Apples",
-    variantName: "1 kg",
-    sku: "APP-1KG",
-  },
-  {
-    id: "variant-3",
-    productName: "Fresh Full Cream Milk",
-    variantName: "1 L",
-    sku: "MILK-1L",
-  },
-  {
-    id: "variant-4",
-    productName: "Basmati Rice",
-    variantName: "5 kg Pack",
-    sku: "RICE-5KG",
-  },
-  {
-    id: "variant-5",
-    productName: "Butter Cookies",
-    variantName: "200 g",
-    sku: "COOKIE-200G",
-  },
-];
-
-const INITIAL_INVENTORY = [
-  {
-    id: 1,
-    variantId: "variant-1",
-    productName: "Fresh Red Apples",
-    variantName: "500 g",
-    sku: "APP-500G",
-    stock: 85,
-    minStock: 20,
-    maxStock: 150,
-    batchNumber: "APP-B001",
-    expiryDate: "20 Oct 2026",
-    status: "in-stock",
-  },
-  {
-    id: 2,
-    variantId: "variant-2",
-    productName: "Fresh Red Apples",
-    variantName: "1 kg",
-    sku: "APP-1KG",
-    stock: 12,
-    minStock: 20,
-    maxStock: 100,
-    batchNumber: "APP-B002",
-    expiryDate: "18 Oct 2026",
-    status: "low-stock",
-  },
-  {
-    id: 3,
-    variantId: "variant-3",
-    productName: "Fresh Full Cream Milk",
-    variantName: "1 L",
-    sku: "MILK-1L",
-    stock: 0,
-    minStock: 15,
-    maxStock: 80,
-    batchNumber: "MILK-B001",
-    expiryDate: "08 Oct 2026",
-    status: "out-of-stock",
-  },
-  {
-    id: 4,
-    variantId: "variant-4",
-    productName: "Basmati Rice",
-    variantName: "5 kg Pack",
-    sku: "RICE-5KG",
-    stock: 42,
-    minStock: 10,
-    maxStock: 70,
-    batchNumber: "RICE-B004",
-    expiryDate: "15 Jan 2027",
-    status: "in-stock",
-  },
-  {
-    id: 5,
-    variantId: "variant-5",
-    productName: "Butter Cookies",
-    variantName: "200 g",
-    sku: "COOKIE-200G",
-    stock: 8,
-    minStock: 15,
-    maxStock: 60,
-    batchNumber: "COOKIE-B003",
-    expiryDate: "25 Dec 2026",
-    status: "low-stock",
-  },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const EMPTY_FORM = {
-  variantId: "",
+  productId: "",
   stock: "",
   minStock: "",
-  maxStock: "",
-  batchNumber: "",
-  expiryDate: "",
+  reason: "",
 };
 
-const getInventoryStatus = (stock, minStock) => {
-  const currentStock = Number(stock);
-  const minimumStock = Number(minStock);
+const getStockStatus = (stock, minStock) => {
+  const current = Number(stock) || 0;
+  const minimum = Number(minStock) || 0;
 
-  if (currentStock <= 0) {
-    return "out-of-stock";
-  }
-
-  if (currentStock <= minimumStock) {
-    return "low-stock";
-  }
-
+  if (current <= 0) return "out-of-stock";
+  if (current <= minimum) return "low-stock";
   return "in-stock";
 };
 
-const convertDateForInput = (dateString) => {
-  if (!dateString) {
-    return "";
-  }
+const getAdminToken = () => localStorage.getItem("adminToken");
 
-  // Already in YYYY-MM-DD format.
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return dateString;
-  }
-
-  const parts = dateString.trim().split(/\s+/);
-
-  if (parts.length !== 3) {
-    return "";
-  }
-
-  const monthMap = {
-    Jan: "01",
-    Feb: "02",
-    Mar: "03",
-    Apr: "04",
-    May: "05",
-    Jun: "06",
-    Jul: "07",
-    Aug: "08",
-    Sep: "09",
-    Oct: "10",
-    Nov: "11",
-    Dec: "12",
-  };
-
-  const day = parts[0].padStart(2, "0");
-  const month = monthMap[parts[1]];
-  const year = parts[2];
-
-  if (!month || !/^\d{4}$/.test(year)) {
-    return "";
-  }
-
-  return `${year}-${month}-${day}`;
-};
-
-const formatDate = (dateString) => {
-  if (!dateString) {
-    return "";
-  }
-
-  const parts = dateString.split("-");
-
-  if (parts.length !== 3) {
-    return dateString;
-  }
-
-  const [year, month, day] = parts.map(Number);
-  const date = new Date(year, month - 1, day);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return dateString;
-  }
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const getTodayDate = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
-const getExpiryTimestamp = (dateString) => {
-  const normalizedDate = convertDateForInput(dateString);
-
-  if (!normalizedDate) {
-    return NaN;
-  }
-
-  const [year, month, day] = normalizedDate.split("-").map(Number);
-
-  return new Date(year, month - 1, day).getTime();
-};
+const getErrorMessage = (payload, fallback) =>
+  payload?.message || payload?.error || fallback;
 
 const AdminInventory = () => {
-  const [inventory, setInventory] = useState(INITIAL_INVENTORY);
-
+  const [inventory, setInventory] = useState([]);
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatusFilter, setSelectedStatusFilter] =
-    useState("all");
-  const [selectedVariantFilter, setSelectedVariantFilter] =
-    useState("all");
-
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
+  const [selectedProductFilter, setSelectedProductFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [originalFormData, setOriginalFormData] =
-    useState(EMPTY_FORM);
+  const [originalFormData, setOriginalFormData] = useState(EMPTY_FORM);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [historyProduct, setHistoryProduct] = useState(null);
+  const [historyRows, setHistoryRows] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const apiRequest = useCallback(async (url, options = {}) => {
+    const token = getAdminToken();
+
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload?.success === false) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          "Admin session is invalid or expired. Please log in again."
+        );
+      }
+
+      throw new Error(
+        getErrorMessage(payload, `Request failed (${response.status}).`)
+      );
+    }
+
+    return payload;
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      if (!getAdminToken()) {
+        throw new Error(
+          "Admin token not found. Please log in to the admin panel again."
+        );
+      }
+
+      const [inventoryPayload, productsPayload] = await Promise.all([
+        apiRequest("/api/inventory?page=1&limit=100"),
+        apiRequest("/api/products/admin/all?page=1&limit=100"),
+      ]);
+
+      const inventoryRows = Array.isArray(inventoryPayload.inventory)
+        ? inventoryPayload.inventory
+        : Array.isArray(inventoryPayload.data)
+          ? inventoryPayload.data
+          : [];
+
+      const productRows = Array.isArray(productsPayload.products)
+        ? productsPayload.products
+        : Array.isArray(productsPayload.data)
+          ? productsPayload.data
+          : Array.isArray(productsPayload)
+            ? productsPayload
+            : [];
+
+      setInventory(
+        inventoryRows.map((row) => {
+          const product =
+            row.product && typeof row.product === "object"
+              ? row.product
+              : {};
+
+          const stock = Number(row.stockQuantity ?? 0);
+          const minStock = Number(
+            row.lowStockThreshold ?? product.lowStockThreshold ?? 0
+          );
+
+          return {
+            id: row._id,
+            productId: product._id || row.product?._id || row.product,
+            productName: product.name || "Unknown product",
+            sku: product.sku || "—",
+            stock,
+            minStock,
+            reservedStock: Number(row.reservedQuantity ?? 0),
+            status: getStockStatus(
+              stock - Number(row.reservedQuantity ?? 0),
+              minStock
+            ),
+            updatedAt: row.updatedAt,
+            raw: row,
+          };
+        })
+      );
+
+      setProducts(
+        productRows.filter(
+          (product) => product?._id && product.status !== "inactive"
+        )
+      );
+
+      setError("");
+    } catch (requestError) {
+      setError(requestError.message || "Could not load inventory data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [apiRequest]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadData]);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError("");
+    await loadData();
+  };
 
   const filteredInventory = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -250,37 +173,32 @@ const AdminInventory = () => {
       const matchesSearch =
         !search ||
         item.productName.toLowerCase().includes(search) ||
-        item.variantName.toLowerCase().includes(search) ||
-        item.sku.toLowerCase().includes(search) ||
-        item.batchNumber.toLowerCase().includes(search);
+        item.sku.toLowerCase().includes(search);
 
       const matchesStatus =
         selectedStatusFilter === "all" ||
         item.status === selectedStatusFilter;
 
-      const matchesVariant =
-        selectedVariantFilter === "all" ||
-        item.variantId === selectedVariantFilter;
+      const matchesProduct =
+        selectedProductFilter === "all" ||
+        item.productId === selectedProductFilter;
 
-      return matchesSearch && matchesStatus && matchesVariant;
+      return matchesSearch && matchesStatus && matchesProduct;
     });
   }, [
     inventory,
     searchTerm,
     selectedStatusFilter,
-    selectedVariantFilter,
+    selectedProductFilter,
   ]);
 
   const totalItems = inventory.length;
-
   const inStockCount = inventory.filter(
     (item) => item.status === "in-stock"
   ).length;
-
   const lowStockCount = inventory.filter(
     (item) => item.status === "low-stock"
   ).length;
-
   const outOfStockCount = inventory.filter(
     (item) => item.status === "out-of-stock"
   ).length;
@@ -289,40 +207,34 @@ const AdminInventory = () => {
     setEditingId(null);
     setFormData({ ...EMPTY_FORM });
     setOriginalFormData({ ...EMPTY_FORM });
+    setError("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (item) => {
-    const editableData = {
-      variantId: item.variantId,
+    const editable = {
+      productId: item.productId,
       stock: String(item.stock),
       minStock: String(item.minStock),
-      maxStock: String(item.maxStock),
-      batchNumber: item.batchNumber,
-      expiryDate: convertDateForInput(item.expiryDate),
+      reason: "Stock adjustment from admin inventory page",
     };
 
-    setEditingId(item.id);
-    setFormData(editableData);
-    setOriginalFormData({ ...editableData });
+    setEditingId(item.productId);
+    setFormData(editable);
+    setOriginalFormData({ ...editable });
+    setError("");
     setIsModalOpen(true);
   };
 
-  const hasUnsavedChanges = () => {
-    return (
-      JSON.stringify(formData) !== JSON.stringify(originalFormData)
-    );
-  };
+  const hasUnsavedChanges = () =>
+    JSON.stringify(formData) !== JSON.stringify(originalFormData);
 
   const closeModal = () => {
-    if (hasUnsavedChanges()) {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to discard them?"
-      );
-
-      if (!confirmed) {
-        return;
-      }
+    if (
+      hasUnsavedChanges() &&
+      !window.confirm("You have unsaved changes. Discard them?")
+    ) {
+      return;
     }
 
     setIsModalOpen(false);
@@ -340,283 +252,228 @@ const AdminInventory = () => {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setError("");
 
-    if (!formData.variantId) {
-      window.alert("Please select a product variant.");
+    if (!formData.productId) {
+      setError("Please select a product.");
       return;
-    }
-
-    const numericFields = [
-      {
-        name: "Current stock",
-        value: formData.stock,
-      },
-      {
-        name: "Minimum stock",
-        value: formData.minStock,
-      },
-      {
-        name: "Maximum stock",
-        value: formData.maxStock,
-      },
-    ];
-
-    for (const field of numericFields) {
-      if (
-        field.value === "" ||
-        !Number.isFinite(Number(field.value)) ||
-        !Number.isInteger(Number(field.value)) ||
-        Number(field.value) < 0
-      ) {
-        window.alert(
-          `${field.name} must be a non-negative whole number.`
-        );
-        return;
-      }
     }
 
     const stock = Number(formData.stock);
     const minStock = Number(formData.minStock);
-    const maxStock = Number(formData.maxStock);
 
-    if (minStock > maxStock) {
-      window.alert(
-        "Minimum stock cannot be greater than maximum stock."
-      );
+    if (!Number.isInteger(stock) || stock < 0) {
+      setError("Current stock must be a non-negative whole number.");
       return;
     }
 
-    if (stock > maxStock) {
-      window.alert(
-        "Current stock cannot be greater than maximum stock."
-      );
+    if (!Number.isInteger(minStock) || minStock < 0) {
+      setError("Minimum stock must be a non-negative whole number.");
       return;
     }
 
-    if (!formData.batchNumber.trim()) {
-      window.alert("Please enter a batch number.");
+    if (!formData.reason.trim()) {
+      setError("Please enter a reason for this inventory change.");
       return;
     }
 
-    if (!formData.expiryDate) {
-      window.alert("Please select an expiry date.");
-      return;
-    }
+    const product = products.find(
+      (item) => item._id === formData.productId
+    );
 
-    const expiryTimestamp = getExpiryTimestamp(formData.expiryDate);
-    const todayTimestamp = getExpiryTimestamp(getTodayDate());
+    const existing = inventory.find(
+      (item) => item.productId === formData.productId
+    );
+
+    const actionLabel = existing
+      ? "update stock for"
+      : "create inventory for";
 
     if (
-      !Number.isFinite(expiryTimestamp) ||
-      expiryTimestamp < todayTimestamp
+      !window.confirm(
+        `Are you sure you want to ${actionLabel} "${
+          product?.name || existing?.productName || "this product"
+        }"?`
+      )
     ) {
-      window.alert("Please select a valid expiry date that is today or in the future.");
       return;
     }
 
-    const variant = VARIANT_OPTIONS.find(
-      (item) => item.id === formData.variantId
-    );
+    setSaving(true);
 
-    if (!variant) {
-      window.alert("The selected product variant is invalid.");
-      return;
-    }
+    try {
+      if (!existing) {
+        await apiRequest("/api/inventory", {
+          method: "POST",
+          body: JSON.stringify({
+            productId: formData.productId,
+            stockQuantity: stock,
+            lowStockThreshold: minStock,
+            reason: formData.reason.trim(),
+          }),
+        });
+      } else {
+        const quantityChange = stock - existing.stock;
 
-    const normalizedBatchNumber = formData.batchNumber
-      .trim()
-      .toUpperCase();
+        if (quantityChange === 0) {
+          setError(
+            "The stock quantity is unchanged. Change the stock value to save an adjustment."
+          );
+          setSaving(false);
+          return;
+        }
 
-    const duplicateBatch = inventory.some(
-      (item) =>
-        item.batchNumber.toLowerCase() ===
-          normalizedBatchNumber.toLowerCase() &&
-        item.id !== editingId
-    );
+        await apiRequest(
+          `/api/inventory/${formData.productId}/adjust`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({
+              quantityChange,
+              reason: formData.reason.trim(),
+              changeType: quantityChange > 0 ? "stock_in" : "stock_out",
+            }),
+          }
+        );
+      }
 
-    if (duplicateBatch) {
+      setIsModalOpen(false);
+      setEditingId(null);
+      setFormData({ ...EMPTY_FORM });
+      setOriginalFormData({ ...EMPTY_FORM });
+
+      await loadData();
+
       window.alert(
-        "This batch number already exists. Please enter a unique batch number."
+        existing
+          ? "Inventory stock updated successfully."
+          : "Inventory created successfully."
       );
-      return;
+    } catch (requestError) {
+      setError(requestError.message || "Could not save inventory.");
+    } finally {
+      setSaving(false);
     }
-
-    const action = editingId ? "update" : "add";
-
-    const confirmed = window.confirm(
-      editingId
-        ? `Are you sure you want to update inventory for "${variant.productName} - ${variant.variantName}"?`
-        : `Are you sure you want to add inventory for "${variant.productName} - ${variant.variantName}"?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const status = getInventoryStatus(stock, minStock);
-
-    const inventoryData = {
-      variantId: variant.id,
-      productName: variant.productName,
-      variantName: variant.variantName,
-      sku: variant.sku,
-      stock,
-      minStock,
-      maxStock,
-      batchNumber: normalizedBatchNumber,
-      expiryDate: formatDate(formData.expiryDate),
-      status,
-    };
-
-    if (action === "update") {
-      setInventory((previous) =>
-        previous.map((item) =>
-          item.id === editingId
-            ? {
-                ...item,
-                ...inventoryData,
-              }
-            : item
-        )
-      );
-    } else {
-      const newInventory = {
-        id: Date.now(),
-        ...inventoryData,
-      };
-
-      setInventory((previous) => [newInventory, ...previous]);
-    }
-
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({ ...EMPTY_FORM });
-    setOriginalFormData({ ...EMPTY_FORM });
-
-    window.alert(
-      editingId
-        ? "Inventory updated successfully."
-        : "Inventory added successfully."
-    );
   };
 
-  const handleDelete = (id) => {
-    const item = inventory.find(
-      (inventoryItem) => inventoryItem.id === id
-    );
+  const openHistory = async (item) => {
+    setHistoryProduct(item);
+    setHistoryRows([]);
+    setHistoryLoading(true);
 
-    if (!item) {
-      return;
+    try {
+      const payload = await apiRequest(
+        `/api/inventory/${item.productId}/history`
+      );
+
+      const rows = Array.isArray(payload.history)
+        ? payload.history
+        : Array.isArray(payload.data)
+          ? payload.data
+          : [];
+
+      setHistoryRows(rows);
+    } catch (requestError) {
+      window.alert(
+        requestError.message || "Could not load inventory history."
+      );
+      setHistoryProduct(null);
+    } finally {
+      setHistoryLoading(false);
     }
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete inventory for "${item.productName} - ${item.variantName}"? This action cannot be undone.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setInventory((previous) =>
-      previous.filter((inventoryItem) => inventoryItem.id !== id)
-    );
-
-    window.alert("Inventory deleted successfully.");
   };
 
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedStatusFilter("all");
-    setSelectedVariantFilter("all");
+    setSelectedProductFilter("all");
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+      ? "—"
+      : date.toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
   };
 
   return (
     <div className="admin-inventory-page">
       <div className="admin-inventory-container">
-        {/* HEADER */}
-
         <div className="admin-inventory-header">
           <div>
-            <p className="admin-inventory-eyebrow">
-              Stock Management
-            </p>
-
+            <p className="admin-inventory-eyebrow">Stock Management</p>
             <h1>Inventory Management</h1>
-
             <p className="admin-inventory-header-text">
-              Manage stock levels, batches, thresholds and expiry dates.
+              Manage product stock levels and low-stock thresholds.
             </p>
           </div>
 
-          <button
-            type="button"
-            className="admin-inventory-add-button"
-            onClick={openAddModal}
-          >
-            <Plus size={18} />
-            <span>Add Inventory</span>
-          </button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="admin-inventory-refresh-button"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw size={17} />
+              <span>Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              className="admin-inventory-add-button"
+              onClick={openAddModal}
+            >
+              <Plus size={18} />
+              <span>Add Inventory</span>
+            </button>
+          </div>
         </div>
 
-        {/* STATISTICS */}
+        {error && !isModalOpen && (
+          <div
+            role="alert"
+            style={{ marginBottom: 16, color: "#b42318" }}
+          >
+            {error}
+          </div>
+        )}
 
         <div className="admin-inventory-stats">
-          <div className="admin-inventory-stat-card">
-            <div className="admin-inventory-stat-icon">
-              <Boxes size={20} />
+          {[
+            { label: "Total Items", value: totalItems },
+            { label: "In Stock", value: inStockCount },
+            { label: "Low Stock", value: lowStockCount },
+            { label: "Out of Stock", value: outOfStockCount },
+          ].map((stat) => (
+            <div className="admin-inventory-stat-card" key={stat.label}>
+              <div className="admin-inventory-stat-icon">
+                <Boxes size={20} />
+              </div>
+              <div>
+                <span>{stat.label}</span>
+                <strong>{stat.value}</strong>
+              </div>
             </div>
-
-            <div>
-              <span>Total Items</span>
-              <strong>{totalItems}</strong>
-            </div>
-          </div>
-
-          <div className="admin-inventory-stat-card">
-            <div className="admin-inventory-stat-icon">
-              <Boxes size={20} />
-            </div>
-
-            <div>
-              <span>In Stock</span>
-              <strong>{inStockCount}</strong>
-            </div>
-          </div>
-
-          <div className="admin-inventory-stat-card">
-            <div className="admin-inventory-stat-icon">
-              <Boxes size={20} />
-            </div>
-
-            <div>
-              <span>Low Stock</span>
-              <strong>{lowStockCount}</strong>
-            </div>
-          </div>
-
-          <div className="admin-inventory-stat-card">
-            <div className="admin-inventory-stat-icon">
-              <Boxes size={20} />
-            </div>
-
-            <div>
-              <span>Out of Stock</span>
-              <strong>{outOfStockCount}</strong>
-            </div>
-          </div>
+          ))}
         </div>
-
-        {/* TOOLBAR */}
 
         <div className="admin-inventory-toolbar">
           <div className="admin-inventory-search">
             <Search size={18} />
-
             <input
               type="text"
-              placeholder="Search product, SKU or batch..."
+              placeholder="Search product or SKU..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
@@ -636,21 +493,19 @@ const AdminInventory = () => {
 
           <div className="admin-inventory-filter">
             <select
-              aria-label="Filter by product variant"
-              value={selectedVariantFilter}
+              aria-label="Filter by product"
+              value={selectedProductFilter}
               onChange={(event) =>
-                setSelectedVariantFilter(event.target.value)
+                setSelectedProductFilter(event.target.value)
               }
             >
-              <option value="all">All Variants</option>
-
-              {VARIANT_OPTIONS.map((variant) => (
-                <option key={variant.id} value={variant.id}>
-                  {variant.productName} - {variant.variantName}
+              <option value="all">All Products</option>
+              {products.map((product) => (
+                <option key={product._id} value={product._id}>
+                  {product.name}
                 </option>
               ))}
             </select>
-
             <ChevronDown size={17} />
           </div>
 
@@ -667,18 +522,14 @@ const AdminInventory = () => {
               <option value="low-stock">Low Stock</option>
               <option value="out-of-stock">Out of Stock</option>
             </select>
-
             <ChevronDown size={17} />
           </div>
         </div>
-
-        {/* TABLE */}
 
         <div className="admin-inventory-table-card">
           <div className="admin-inventory-table-header">
             <div>
               <h2>Inventory List</h2>
-
               <p>
                 {filteredInventory.length} item
                 {filteredInventory.length !== 1 ? "s" : ""} found
@@ -691,19 +542,27 @@ const AdminInventory = () => {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Product / Variant</th>
+                  <th>Product</th>
                   <th>SKU</th>
                   <th>Current Stock</th>
-                  <th>Min / Max</th>
-                  <th>Batch</th>
-                  <th>Expiry</th>
+                  <th>Reserved</th>
+                  <th>Min Stock</th>
                   <th>Status</th>
+                  <th>Last Updated</th>
                   <th>Actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {filteredInventory.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="9" className="inventory-empty-state">
+                      <div>
+                        <p>Loading inventory from server...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredInventory.length ? (
                   filteredInventory.map((item, index) => (
                     <tr key={item.id}>
                       <td className="inventory-number">{index + 1}</td>
@@ -711,14 +570,12 @@ const AdminInventory = () => {
                       <td>
                         <div className="inventory-product-cell">
                           <strong>{item.productName}</strong>
-                          <span>{item.variantName}</span>
+                          <span>Product-level stock</span>
                         </div>
                       </td>
 
                       <td>
-                        <span className="inventory-sku">
-                          {item.sku}
-                        </span>
+                        <span className="inventory-sku">{item.sku}</span>
                       </td>
 
                       <td>
@@ -727,26 +584,16 @@ const AdminInventory = () => {
                         </strong>
                       </td>
 
+                      <td>{item.reservedStock}</td>
+
                       <td>
                         <span className="inventory-threshold">
-                          {item.minStock} / {item.maxStock}
+                          {item.minStock}
                         </span>
                       </td>
 
                       <td>
-                        <span className="inventory-batch">
-                          {item.batchNumber}
-                        </span>
-                      </td>
-
-                      <td className="inventory-expiry">
-                        {item.expiryDate}
-                      </td>
-
-                      <td>
-                        <span
-                          className={`inventory-status ${item.status}`}
-                        >
+                        <span className={`inventory-status ${item.status}`}>
                           {item.status === "in-stock"
                             ? "In Stock"
                             : item.status === "low-stock"
@@ -755,13 +602,17 @@ const AdminInventory = () => {
                         </span>
                       </td>
 
+                      <td className="inventory-expiry">
+                        {formatDate(item.updatedAt)}
+                      </td>
+
                       <td>
                         <div className="inventory-actions">
                           <button
                             type="button"
                             className="inventory-edit-button"
-                            title="Edit inventory"
-                            aria-label={`Edit ${item.productName} ${item.variantName}`}
+                            title="Adjust inventory"
+                            aria-label={`Adjust ${item.productName}`}
                             onClick={() => openEditModal(item)}
                           >
                             <Edit size={16} />
@@ -770,11 +621,11 @@ const AdminInventory = () => {
                           <button
                             type="button"
                             className="inventory-delete-button"
-                            title="Delete inventory"
-                            aria-label={`Delete ${item.productName} ${item.variantName}`}
-                            onClick={() => handleDelete(item.id)}
+                            title="View stock history"
+                            aria-label={`View history for ${item.productName}`}
+                            onClick={() => openHistory(item)}
                           >
-                            <Trash2 size={16} />
+                            <History size={16} />
                           </button>
                         </div>
                       </td>
@@ -785,16 +636,15 @@ const AdminInventory = () => {
                     <td colSpan="9" className="inventory-empty-state">
                       <div>
                         <Boxes size={34} />
-
                         <h3>No inventory found</h3>
-
                         <p>
-                          Try changing your search or filters.
+                          {error ||
+                            "Try changing your search or filters, or add inventory for a product."}
                         </p>
 
                         {(searchTerm ||
                           selectedStatusFilter !== "all" ||
-                          selectedVariantFilter !== "all") && (
+                          selectedProductFilter !== "all") && (
                           <button
                             type="button"
                             className="inventory-cancel-button"
@@ -813,15 +663,11 @@ const AdminInventory = () => {
         </div>
       </div>
 
-      {/* ADD / EDIT MODAL */}
-
       {isModalOpen && (
         <div
           className="admin-inventory-modal-overlay"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeModal();
-            }
+            if (event.target === event.currentTarget) closeModal();
           }}
         >
           <div
@@ -833,9 +679,8 @@ const AdminInventory = () => {
             <div className="admin-inventory-modal-header">
               <div>
                 <p>Stock Management</p>
-
                 <h2 id="inventory-modal-title">
-                  {editingId ? "Edit Inventory" : "Add Inventory"}
+                  {editingId ? "Adjust Inventory" : "Add Inventory"}
                 </h2>
               </div>
 
@@ -853,43 +698,43 @@ const AdminInventory = () => {
               className="admin-inventory-form"
               onSubmit={handleSubmit}
             >
-              {/* VARIANT */}
+              {error && (
+                <p role="alert" style={{ color: "#b42318", margin: 0 }}>
+                  {error}
+                </p>
+              )}
 
               <div className="admin-inventory-form-group">
-                <label htmlFor="inventory-variant">
-                  Product Variant <span>*</span>
+                <label htmlFor="inventory-product">
+                  Product <span>*</span>
                 </label>
 
                 <div className="admin-inventory-select-wrapper">
                   <select
-                    id="inventory-variant"
-                    name="variantId"
-                    value={formData.variantId}
+                    id="inventory-product"
+                    name="productId"
+                    value={formData.productId}
                     onChange={handleInputChange}
                     required
+                    disabled={Boolean(editingId)}
                   >
-                    <option value="">Select product variant</option>
-
-                    {VARIANT_OPTIONS.map((variant) => (
-                      <option key={variant.id} value={variant.id}>
-                        {variant.productName} - {variant.variantName} (
-                        {variant.sku})
+                    <option value="">Select product</option>
+                    {products.map((product) => (
+                      <option key={product._id} value={product._id}>
+                        {product.name}
+                        {product.sku ? ` (${product.sku})` : ""}
                       </option>
                     ))}
                   </select>
-
                   <ChevronDown size={17} />
                 </div>
               </div>
 
-              {/* CURRENT AND MINIMUM STOCK */}
-
               <div className="inventory-form-two-column">
                 <div className="admin-inventory-form-group">
                   <label htmlFor="inventory-stock">
-                    Current Stock <span>*</span>
+                    Target Stock <span>*</span>
                   </label>
-
                   <input
                     id="inventory-stock"
                     name="stock"
@@ -907,7 +752,6 @@ const AdminInventory = () => {
                   <label htmlFor="inventory-min-stock">
                     Minimum Stock <span>*</span>
                   </label>
-
                   <input
                     id="inventory-min-stock"
                     name="minStock"
@@ -918,99 +762,59 @@ const AdminInventory = () => {
                     value={formData.minStock}
                     onChange={handleInputChange}
                     required
+                    disabled={Boolean(editingId)}
                   />
+                  <small>
+                    {editingId
+                      ? "Update this threshold from Product Management; this endpoint adjusts stock only."
+                      : "Used to identify low-stock products."}
+                  </small>
                 </div>
               </div>
-
-              {/* MAXIMUM STOCK AND BATCH */}
-
-              <div className="inventory-form-two-column">
-                <div className="admin-inventory-form-group">
-                  <label htmlFor="inventory-max-stock">
-                    Maximum Stock <span>*</span>
-                  </label>
-
-                  <input
-                    id="inventory-max-stock"
-                    name="maxStock"
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="Example: 100"
-                    value={formData.maxStock}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="admin-inventory-form-group">
-                  <label htmlFor="inventory-batch">
-                    Batch Number <span>*</span>
-                  </label>
-
-                  <input
-                    id="inventory-batch"
-                    name="batchNumber"
-                    type="text"
-                    placeholder="Example: APP-B001"
-                    value={formData.batchNumber}
-                    onChange={handleInputChange}
-                    maxLength={50}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* EXPIRY DATE */}
 
               <div className="admin-inventory-form-group">
-                <label htmlFor="inventory-expiry">
-                  Expiry Date <span>*</span>
+                <label htmlFor="inventory-reason">
+                  Reason for change <span>*</span>
                 </label>
-
-                <input
-                  id="inventory-expiry"
-                  name="expiryDate"
-                  type="date"
-                  min={getTodayDate()}
-                  value={formData.expiryDate}
+                <textarea
+                  id="inventory-reason"
+                  name="reason"
+                  value={formData.reason}
                   onChange={handleInputChange}
+                  placeholder="e.g. New supplier stock received"
+                  maxLength={500}
                   required
+                  rows={3}
                 />
               </div>
 
-              {/* STOCK INFORMATION */}
-
               <div className="inventory-info-box">
                 <strong>Stock Status</strong>
-
                 <p>
-                  Stock status is calculated automatically from the
-                  current stock and minimum stock level.
+                  Stock status is calculated from current stock and the minimum
+                  stock threshold. Stock changes are recorded in inventory
+                  history.
                 </p>
 
                 <div className="inventory-info-statuses">
                   <span className="inventory-info-status in-stock">
                     In Stock
                   </span>
-
                   <span className="inventory-info-status low-stock">
                     Low Stock
                   </span>
-
                   <span className="inventory-info-status out-of-stock">
                     Out of Stock
                   </span>
                 </div>
               </div>
 
-              {/* FORM ACTIONS */}
-
               <div className="admin-inventory-form-actions">
                 <button
                   type="button"
                   className="inventory-cancel-button"
                   onClick={closeModal}
+                  disabled={saving}
                 >
                   Cancel
                 </button>
@@ -1018,11 +822,101 @@ const AdminInventory = () => {
                 <button
                   type="submit"
                   className="inventory-save-button"
+                  disabled={saving}
                 >
-                  {editingId ? "Update Inventory" : "Save Inventory"}
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                      ? "Save Stock Adjustment"
+                      : "Save Inventory"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {historyProduct && (
+        <div
+          className="admin-inventory-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setHistoryProduct(null);
+            }
+          }}
+        >
+          <div
+            className="admin-inventory-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="inventory-history-title"
+          >
+            <div className="admin-inventory-modal-header">
+              <div>
+                <p>Audit Trail</p>
+                <h2 id="inventory-history-title">Stock History</h2>
+                <span>{historyProduct.productName}</span>
+              </div>
+
+              <button
+                type="button"
+                className="admin-inventory-modal-close"
+                aria-label="Close stock history"
+                onClick={() => setHistoryProduct(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="admin-inventory-table-wrapper">
+              <table className="admin-inventory-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Change</th>
+                    <th>Previous</th>
+                    <th>New</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {historyLoading ? (
+                    <tr>
+                      <td colSpan="5">Loading history...</td>
+                    </tr>
+                  ) : historyRows.length ? (
+                    historyRows.map((row) => (
+                      <tr key={row._id}>
+                        <td>{formatDate(row.createdAt)}</td>
+                        <td>
+                          {row.quantityChange > 0
+                            ? `+${row.quantityChange}`
+                            : row.quantityChange}
+                        </td>
+                        <td>{row.previousStock}</td>
+                        <td>{row.newStock}</td>
+                        <td>{row.reason || "—"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5">No history records found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="admin-inventory-form-actions">
+              <button
+                type="button"
+                className="inventory-cancel-button"
+                onClick={() => setHistoryProduct(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

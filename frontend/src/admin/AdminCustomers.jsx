@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   Eye,
@@ -6,99 +7,204 @@ import {
   Trash2,
   Users,
   X,
+  RefreshCw,
 } from "lucide-react";
 
 import "./AdminCustomers.css";
 
-/* =========================================================
-   INITIAL CUSTOMERS
-========================================================= */
+const API_BASE_URL = "http://localhost:5000";
+const CUSTOMERS_API = `${API_BASE_URL}/api/admin/customers`;
 
-const INITIAL_CUSTOMERS = [
-  {
-    id: 1,
-    name: "Rahul Sharma",
-    email: "rahul@example.com",
-    mobile: "+91 98765 43210",
-    registeredDate: "15 Sep 2026",
-    totalOrders: 8,
-    totalSpending: 4250,
-    status: "active",
-    address: "Wardha, Maharashtra",
-  },
-  {
-    id: 2,
-    name: "Priya Patil",
-    email: "priya@example.com",
-    mobile: "+91 98234 56781",
-    registeredDate: "18 Sep 2026",
-    totalOrders: 5,
-    totalSpending: 2890,
-    status: "active",
-    address: "Nagpur, Maharashtra",
-  },
-  {
-    id: 3,
-    name: "Amit Verma",
-    email: "amit@example.com",
-    mobile: "+91 97654 32109",
-    registeredDate: "20 Sep 2026",
-    totalOrders: 3,
-    totalSpending: 1399,
-    status: "active",
-    address: "Pune, Maharashtra",
-  },
-  {
-    id: 4,
-    name: "Sneha Joshi",
-    email: "sneha@example.com",
-    mobile: "+91 98123 45670",
-    registeredDate: "22 Sep 2026",
-    totalOrders: 6,
-    totalSpending: 3180,
-    status: "inactive",
-    address: "Amravati, Maharashtra",
-  },
-  {
-    id: 5,
-    name: "Vikas Gupta",
-    email: "vikas@example.com",
-    mobile: "+91 98987 65432",
-    registeredDate: "25 Sep 2026",
-    totalOrders: 2,
-    totalSpending: 1198,
-    status: "active",
-    address: "Mumbai, Maharashtra",
-  },
-  {
-    id: 6,
-    name: "Neha Deshmukh",
-    email: "neha@example.com",
-    mobile: "+91 97531 86420",
-    registeredDate: "28 Sep 2026",
-    totalOrders: 0,
-    totalSpending: 0,
-    status: "active",
-    address: "Nashik, Maharashtra",
-  },
-];
+const getToken = () => localStorage.getItem("adminToken");
 
-/* =========================================================
-   ADMIN CUSTOMERS
-========================================================= */
+const getCustomerId = (customer) =>
+  customer?._id || customer?.id || "";
+
+const formatDate = (date) => {
+  if (!date) return "—";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "—";
+
+  return parsedDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatCurrency = (amount) =>
+  `₹${Number(amount || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+
+const getAddress = (customer) => {
+  if (
+    typeof customer?.address === "string" &&
+    customer.address.trim()
+  ) {
+    return customer.address;
+  }
+
+  const address =
+    customer?.defaultAddress || customer?.addresses?.[0];
+
+  if (typeof address === "string" && address.trim()) {
+    return address;
+  }
+
+  if (address && typeof address === "object") {
+    const formattedAddress = [
+      address.addressLine1,
+      address.addressLine2,
+      address.city,
+      address.state,
+      address.postalCode,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return formattedAddress || "No address available";
+  }
+
+  return "No address available";
+};
+
+const normalizeCustomer = (customer) => ({
+  ...customer,
+  id: String(getCustomerId(customer)),
+  name: customer?.name || "Unnamed Customer",
+  email: customer?.email || "—",
+  mobile: customer?.mobile || "—",
+  status: String(customer?.status || "inactive").toLowerCase(),
+  registeredDate: formatDate(
+    customer?.registeredDate ||
+      customer?.created_at ||
+      customer?.createdAt
+  ),
+  totalOrders: Number(customer?.totalOrders || 0),
+  totalSpending: Number(customer?.totalSpending || 0),
+  address: getAddress(customer),
+});
+
+const getErrorMessage = (data, fallback) =>
+  data?.message || data?.error || fallback;
 
 const AdminCustomers = () => {
-  const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
-
+  const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] =
     useState("all");
-
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  /* =========================================================
-     FILTER CUSTOMERS
-  ========================================================= */
+  const [loading, setLoading] = useState(true);
+  const [updatingCustomerId, setUpdatingCustomerId] = useState(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [serverStats, setServerStats] = useState({
+    totalCustomers: 0,
+    activeCustomers: 0,
+    inactiveCustomers: 0,
+  });
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  /* FETCH CUSTOMERS */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCustomers = async () => {
+      setLoading(true);
+
+      try {
+        const token = getToken();
+
+        if (!token) {
+          throw new Error(
+            "Admin session not found. Please log in again."
+          );
+        }
+
+        const response = await fetch(
+          `${CUSTOMERS_API}?page=1&limit=100`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || data.success !== true) {
+          throw new Error(
+            data.message ||
+              `Failed to load customers (${response.status})`
+          );
+        }
+
+        const records = Array.isArray(data.customers)
+          ? data.customers
+          : [];
+
+        const normalizedCustomers = records.map(normalizeCustomer);
+
+        if (!cancelled) {
+          setCustomers(normalizedCustomers);
+
+          setServerStats({
+            totalCustomers:
+              Number(data.stats?.totalCustomers) ||
+              (data.stats?.totalCustomers === 0
+                ? 0
+                : Number(data.total ?? normalizedCustomers.length)),
+
+            activeCustomers:
+              Number(data.stats?.activeCustomers) ||
+              (data.stats?.activeCustomers === 0
+                ? 0
+                : normalizedCustomers.filter(
+                    (customer) => customer.status === "active"
+                  ).length),
+
+            inactiveCustomers:
+              Number(data.stats?.inactiveCustomers) ||
+              (data.stats?.inactiveCustomers === 0
+                ? 0
+                : normalizedCustomers.filter(
+                    (customer) => customer.status === "inactive"
+                  ).length),
+          });
+
+          setError("");
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setError(
+            fetchError.message || "Unable to load customers."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCustomers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshKey]);
+
+  /* SEARCH AND FILTER */
 
   const filteredCustomers = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -118,16 +224,40 @@ const AdminCustomers = () => {
     });
   }, [customers, searchTerm, selectedStatusFilter]);
 
-  /* =========================================================
-     CHANGE CUSTOMER STATUS
-  ========================================================= */
+  /* STATISTICS */
 
-  const handleStatusChange = (customerId, newStatus) => {
+  const totalCustomers =
+    serverStats.totalCustomers ?? customers.length;
+
+  const activeCustomers = serverStats.activeCustomers;
+  const inactiveCustomers = serverStats.inactiveCustomers;
+
+  const totalOrders = useMemo(
+    () =>
+      customers.reduce(
+        (total, customer) =>
+          total + Number(customer.totalOrders || 0),
+        0
+      ),
+    [customers]
+  );
+
+  /* UPDATE CUSTOMER STATUS */
+
+  const handleStatusChange = async (customerId, newStatus) => {
     const customer = customers.find(
-      (item) => item.id === customerId
+      (item) => String(item.id) === String(customerId)
     );
 
-    if (!customer || customer.status === newStatus) {
+    if (
+      !customer ||
+      customer.status === newStatus ||
+      updatingCustomerId !== null
+    ) {
+      return;
+    }
+
+    if (!["active", "inactive"].includes(newStatus)) {
       return;
     }
 
@@ -137,75 +267,117 @@ const AdminCustomers = () => {
       } the account of ${customer.name}?`
     );
 
-    if (!confirmed) {
-      return;
+    if (!confirmed) return;
+
+    try {
+      setUpdatingCustomerId(customerId);
+      setError("");
+      setNotice("");
+
+      const token = getToken();
+
+      if (!token) {
+        throw new Error(
+          "Admin session not found. Please log in again."
+        );
+      }
+
+      const response = await fetch(
+        `${CUSTOMERS_API}/${encodeURIComponent(customerId)}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            "Your admin session has expired or is unauthorized. Please log in again."
+          );
+        }
+
+        throw new Error(
+          getErrorMessage(
+            data,
+            "Unable to update customer status."
+          )
+        );
+      }
+
+      setCustomers((previous) =>
+        previous.map((item) =>
+          String(item.id) === String(customerId)
+            ? { ...item, status: newStatus }
+            : item
+        )
+      );
+
+      setSelectedCustomer((previous) =>
+        previous &&
+        String(previous.id) === String(customerId)
+          ? { ...previous, status: newStatus }
+          : previous
+      );
+
+      setServerStats((previous) => {
+        const wasActive = customer.status === "active";
+        const becameActive = newStatus === "active";
+
+        if (wasActive === becameActive) return previous;
+
+        return {
+          ...previous,
+          activeCustomers: Math.max(
+            0,
+            previous.activeCustomers + (becameActive ? 1 : -1)
+          ),
+          inactiveCustomers: Math.max(
+            0,
+            previous.inactiveCustomers + (becameActive ? -1 : 1)
+          ),
+        };
+      });
+
+      setNotice(
+        `${customer.name}'s account has been ${
+          newStatus === "active" ? "activated" : "deactivated"
+        } successfully.`
+      );
+    } catch (updateError) {
+      setError(
+        updateError.message || "Unable to update customer status."
+      );
+    } finally {
+      setUpdatingCustomerId(null);
     }
-
-    setCustomers((previous) =>
-      previous.map((item) =>
-        item.id === customerId
-          ? { ...item, status: newStatus }
-          : item
-      )
-    );
-
-    setSelectedCustomer((previous) =>
-      previous && previous.id === customerId
-        ? { ...previous, status: newStatus }
-        : previous
-    );
-
-    window.alert(
-      `${customer.name}'s account has been ${
-        newStatus === "active" ? "activated" : "deactivated"
-      } successfully.`
-    );
   };
 
-  /* =========================================================
-     DELETE CUSTOMER
-  ========================================================= */
+  /* DELETE PLACEHOLDER */
 
-  const handleDelete = (customer) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to remove "${customer.name}" from the customer list? This action cannot be undone.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setCustomers((previous) =>
-      previous.filter((item) => item.id !== customer.id)
-    );
-
-    if (selectedCustomer?.id === customer.id) {
-      setSelectedCustomer(null);
-    }
-
+  const handleDelete = () => {
     window.alert(
-      `Customer "${customer.name}" has been removed successfully.`
+      "Customer deletion is not available yet. No customer has been deleted."
     );
   };
-
-  /* =========================================================
-     CLOSE CUSTOMER DETAILS
-  ========================================================= */
 
   const closeCustomerDetails = () => {
     setSelectedCustomer(null);
   };
 
-  /* =========================================================
-     FORMAT CURRENCY
-  ========================================================= */
+  /* REFRESH */
 
-  const formatCurrency = (amount) =>
-    `₹${Number(amount || 0).toLocaleString("en-IN")}`;
-
-  /* =========================================================
-     PAGE UI
-  ========================================================= */
+  const handleRefresh = () => {
+    setNotice("");
+    setError("");
+    setRefreshKey((previous) => previous + 1);
+  };
 
   return (
     <div className="admin-customers-page">
@@ -222,76 +394,75 @@ const AdminCustomers = () => {
             <h1>Customers</h1>
 
             <p className="admin-customers-header-text">
-              View and manage registered grocery platform
-              customers.
+              View and manage registered grocery platform customers.
             </p>
           </div>
+
+          <button
+            type="button"
+            className="admin-customers-refresh-button"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw
+              size={17}
+              className={loading ? "refresh-spinning" : ""}
+            />
+            <span>{loading ? "Refreshing..." : "Refresh"}</span>
+          </button>
         </div>
+
+        {/* API FEEDBACK */}
+
+        {error && (
+          <div
+            role="alert"
+            style={{
+              padding: "12px 16px",
+              marginBottom: "16px",
+              borderRadius: "8px",
+              color: "#b42318",
+              background: "#fef3f2",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {notice && (
+          <div
+            role="status"
+            style={{
+              padding: "12px 16px",
+              marginBottom: "16px",
+              borderRadius: "8px",
+              color: "#067647",
+              background: "#ecfdf3",
+            }}
+          >
+            {notice}
+          </div>
+        )}
 
         {/* STATISTICS */}
 
         <div className="admin-customers-stats">
-          <div className="admin-customers-stat-card">
-            <div className="admin-customers-stat-icon">
-              <Users size={20} />
+          {[
+            ["Total Customers", totalCustomers],
+            ["Active Customers", activeCustomers],
+            ["Inactive Customers", inactiveCustomers],
+            ["Total Orders", totalOrders],
+          ].map(([label, value]) => (
+            <div className="admin-customers-stat-card" key={label}>
+              <div className="admin-customers-stat-icon">
+                <Users size={20} />
+              </div>
+              <div>
+                <span>{label}</span>
+                <strong>{loading ? "—" : value}</strong>
+              </div>
             </div>
-
-            <div>
-              <span>Total Customers</span>
-              <strong>{customers.length}</strong>
-            </div>
-          </div>
-
-          <div className="admin-customers-stat-card">
-            <div className="admin-customers-stat-icon">
-              <Users size={20} />
-            </div>
-
-            <div>
-              <span>Active Customers</span>
-              <strong>
-                {
-                  customers.filter(
-                    (customer) => customer.status === "active"
-                  ).length
-                }
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-customers-stat-card">
-            <div className="admin-customers-stat-icon">
-              <Users size={20} />
-            </div>
-
-            <div>
-              <span>Inactive Customers</span>
-              <strong>
-                {
-                  customers.filter(
-                    (customer) => customer.status === "inactive"
-                  ).length
-                }
-              </strong>
-            </div>
-          </div>
-
-          <div className="admin-customers-stat-card">
-            <div className="admin-customers-stat-icon">
-              <Users size={20} />
-            </div>
-
-            <div>
-              <span>Total Orders</span>
-              <strong>
-                {customers.reduce(
-                  (total, customer) =>
-                    total + Number(customer.totalOrders || 0),
-                  0
-                )}
-              </strong>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* SEARCH AND FILTER */}
@@ -346,10 +517,12 @@ const AdminCustomers = () => {
           <div className="admin-customers-table-header">
             <div>
               <h2>Customer List</h2>
-
               <p>
-                {filteredCustomers.length} customer
-                {filteredCustomers.length !== 1 ? "s" : ""} found
+                {loading
+                  ? "Loading customers..."
+                  : `${filteredCustomers.length} customer${
+                      filteredCustomers.length !== 1 ? "s" : ""
+                    } found`}
               </p>
             </div>
           </div>
@@ -370,7 +543,16 @@ const AdminCustomers = () => {
               </thead>
 
               <tbody>
-                {filteredCustomers.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      className="customers-empty-state"
+                    >
+                      Loading customers from the database...
+                    </td>
+                  </tr>
+                ) : filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer, index) => (
                     <tr key={customer.id}>
                       <td className="customer-number">
@@ -380,11 +562,8 @@ const AdminCustomers = () => {
                       <td>
                         <div className="customer-info-cell">
                           <div className="customer-avatar">
-                            {customer.name
-                              .charAt(0)
-                              .toUpperCase()}
+                            {customer.name.charAt(0).toUpperCase()}
                           </div>
-
                           <div>
                             <strong>{customer.name}</strong>
                             <span>{customer.email}</span>
@@ -414,6 +593,7 @@ const AdminCustomers = () => {
                         <div className="customer-status-select-wrapper">
                           <select
                             value={customer.status}
+                            disabled={updatingCustomerId !== null}
                             onChange={(event) =>
                               handleStatusChange(
                                 customer.id,
@@ -425,7 +605,6 @@ const AdminCustomers = () => {
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                           </select>
-
                           <ChevronDown size={14} />
                         </div>
                       </td>
@@ -451,9 +630,9 @@ const AdminCustomers = () => {
                           <button
                             type="button"
                             className="customer-delete-button"
-                            title="Delete Customer"
-                            aria-label={`Delete ${customer.name}`}
-                            onClick={() => handleDelete(customer)}
+                            title="Deletion is not available yet"
+                            aria-label={`Customer deletion unavailable for ${customer.name}`}
+                            onClick={handleDelete}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -469,11 +648,15 @@ const AdminCustomers = () => {
                     >
                       <div>
                         <Users size={34} />
-
-                        <h3>No customers found</h3>
-
+                        <h3>
+                          {error
+                            ? "Customers could not be loaded"
+                            : "No customers found"}
+                        </h3>
                         <p>
-                          Try changing your search or filter.
+                          {error
+                            ? "Check your admin login and backend API."
+                            : "Try changing your search or filter."}
                         </p>
                       </div>
                     </td>
@@ -502,12 +685,9 @@ const AdminCustomers = () => {
             aria-modal="true"
             aria-labelledby="customer-details-title"
           >
-            {/* MODAL HEADER */}
-
             <div className="admin-customers-modal-header">
               <div>
                 <p>Customer Details</p>
-
                 <h2 id="customer-details-title">
                   {selectedCustomer.name}
                 </h2>
@@ -524,22 +704,14 @@ const AdminCustomers = () => {
               </button>
             </div>
 
-            {/* MODAL BODY */}
-
             <div className="admin-customers-modal-body">
-
-              {/* CUSTOMER PROFILE */}
-
               <div className="customer-profile">
                 <div className="customer-profile-avatar">
-                  {selectedCustomer.name
-                    .charAt(0)
-                    .toUpperCase()}
+                  {selectedCustomer.name.charAt(0).toUpperCase()}
                 </div>
 
                 <div>
                   <h3>{selectedCustomer.name}</h3>
-
                   <p>{selectedCustomer.email}</p>
 
                   <span
@@ -551,8 +723,6 @@ const AdminCustomers = () => {
                   </span>
                 </div>
               </div>
-
-              {/* CUSTOMER INFORMATION */}
 
               <div className="customer-detail-section">
                 <h3>Customer Information</h3>
@@ -570,9 +740,7 @@ const AdminCustomers = () => {
 
                   <div>
                     <span>Registered Date</span>
-                    <strong>
-                      {selectedCustomer.registeredDate}
-                    </strong>
+                    <strong>{selectedCustomer.registeredDate}</strong>
                   </div>
 
                   <div>
@@ -582,31 +750,23 @@ const AdminCustomers = () => {
                 </div>
               </div>
 
-              {/* CUSTOMER SUMMARY */}
-
               <div className="customer-detail-section">
                 <h3>Customer Summary</h3>
 
                 <div className="customer-summary-grid">
                   <div>
                     <span>Total Orders</span>
-                    <strong>
-                      {selectedCustomer.totalOrders}
-                    </strong>
+                    <strong>{selectedCustomer.totalOrders}</strong>
                   </div>
 
                   <div>
                     <span>Total Spending</span>
                     <strong>
-                      {formatCurrency(
-                        selectedCustomer.totalSpending
-                      )}
+                      {formatCurrency(selectedCustomer.totalSpending)}
                     </strong>
                   </div>
                 </div>
               </div>
-
-              {/* ACCOUNT STATUS */}
 
               <div className="customer-detail-section">
                 <h3>Account Status</h3>
@@ -615,6 +775,7 @@ const AdminCustomers = () => {
                   <div className="customer-status-select-wrapper">
                     <select
                       value={selectedCustomer.status}
+                      disabled={updatingCustomerId !== null}
                       onChange={(event) =>
                         handleStatusChange(
                           selectedCustomer.id,
@@ -626,7 +787,6 @@ const AdminCustomers = () => {
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
-
                     <ChevronDown size={15} />
                   </div>
 
@@ -641,8 +801,6 @@ const AdminCustomers = () => {
                 </div>
               </div>
             </div>
-
-            {/* MODAL FOOTER */}
 
             <div className="admin-customers-modal-footer">
               <button

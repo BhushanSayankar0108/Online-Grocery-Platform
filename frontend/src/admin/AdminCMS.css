@@ -1,3 +1,4 @@
+
 /* =========================================================
    ADMIN CMS PAGE
 ========================================================= */
@@ -50,8 +51,8 @@
   justify-content: center;
   flex: 0 0 52px;
   border-radius: 14px;
-  background: #dcfce7;
-  color: #16a34a;
+  background: #eaf7f0;
+  color: #198754;
 }
 
 .cms-title-wrapper h1 {
@@ -101,14 +102,19 @@
 }
 
 .admin-cms-page .cms-primary-button {
-  border: 1px solid #16a34a;
-  background: #16a34a;
+  border: 1px solid #198754;
+  background: #198754;
   color: #ffffff;
 }
 
-.admin-cms-page .cms-primary-button:hover {
-  border-color: #15803d;
-  background: #15803d;
+.admin-cms-page .cms-primary-button:hover:not(:disabled) {
+  border-color: #157347;
+  background: #157347;
+}
+
+.admin-cms-page .cms-primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .admin-cms-page .cms-secondary-button {
@@ -117,7 +123,7 @@
   color: #374151;
 }
 
-.admin-cms-page .cms-secondary-button:hover {
+.admin-cms-page .cms-secondary-button:hover:not(:disabled) {
   border-color: #9ca3af;
   background: #f8fafc;
 }
@@ -126,7 +132,7 @@
 .admin-cms-page input:focus-visible,
 .admin-cms-page textarea:focus-visible,
 .admin-cms-page select:focus-visible {
-  outline: 3px solid rgba(22, 163, 74, 0.2);
+  outline: 3px solid rgba(25, 135, 84, 0.3);
   outline-offset: 2px;
 }
 
@@ -162,8 +168,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #f0fdf4;
-  color: #16a34a;
+  background: #eaf7f0;
+  color: #198754;
 }
 
 .cms-stat-card span {
@@ -221,12 +227,12 @@
 }
 
 .admin-cms-page .cms-tabs button:hover {
-  color: #16a34a;
+  color: #198754;
 }
 
 .admin-cms-page .cms-tabs button.active {
-  border-bottom-color: #16a34a;
-  color: #16a34a;
+  border-bottom-color: #198754;
+  color: #198754;
 }
 
 /* =========================================================
@@ -256,8 +262,8 @@
 }
 
 .cms-search:focus-within {
-  border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+  border-color: #198754;
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .cms-search input {
@@ -395,8 +401,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 9px;
-  background: #f0fdf4;
-  color: #16a34a;
+  background: #eaf7f0;
+  color: #198754;
 }
 
 .cms-description,
@@ -439,8 +445,8 @@
   min-height: 30px;
   padding: 0 10px;
   border-radius: 7px;
-  background: #f0fdf4;
-  color: #15803d;
+  background: #eaf7f0;
+  color: #157347;
   font-size: 12px;
   font-weight: 600;
 }
@@ -460,7 +466,7 @@
 }
 
 .cms-status-toggle svg {
-  color: #16a34a;
+  color: #198754;
 }
 
 .cms-status-toggle:has(.cms-status.inactive) svg {
@@ -480,8 +486,8 @@
 }
 
 .cms-status.active {
-  background: #dcfce7;
-  color: #15803d;
+  background: #eaf7f0;
+  color: #198754;
 }
 
 .cms-status.inactive {
@@ -514,12 +520,15 @@
 }
 
 .cms-icon-button.edit {
-  color: #2563eb;
+  border-color: #c5e8d3;
+  background: #eaf7f0;
+  color: #198754;
 }
 
 .cms-icon-button.edit:hover {
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  border-color: #198754;
+  background: #d6f0e1;
+  color: #157347;
 }
 
 .cms-icon-button.view {
@@ -679,8 +688,8 @@
 .cms-form-group input:focus,
 .cms-form-group textarea:focus,
 .cms-form-group select:focus {
-  border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
+  border-color: #198754;
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
 }
 
 .cms-form-group input::placeholder,
@@ -731,10 +740,10 @@
   min-height: 36px;
   margin-top: 6px;
   padding: 0 13px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #b7e4ca;
   border-radius: 8px;
-  background: #f0fdf4;
-  color: #15803d;
+  background: #eaf7f0;
+  color: #198754;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -742,7 +751,8 @@
 }
 
 .cms-upload-button:hover {
-  background: #dcfce7;
+  background: #d6f0e1;
+  border-color: #198754;
 }
 
 .cms-upload-button input[type="file"] {

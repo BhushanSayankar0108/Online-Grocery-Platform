@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Edit,
@@ -13,79 +14,11 @@ import {
   UserCog,
   Users,
   X,
+  RefreshCw,
 } from "lucide-react";
-
 import "./AdminManagement.css";
 
-const initialAdmins = [
-  {
-    id: 1,
-    name: "Super Admin",
-    email: "admin@grocery.com",
-    mobile: "9876543210",
-    role: "Super Admin",
-    status: "Active",
-    permissions: [
-      "Dashboard",
-      "Products",
-      "Orders",
-      "Customers",
-      "Reports",
-      "Settings",
-    ],
-    lastLogin: "2026-10-03 10:30 AM",
-    createdAt: "2026-01-10",
-  },
-  {
-    id: 2,
-    name: "Rahul Sharma",
-    email: "rahul@grocery.com",
-    mobile: "9876543211",
-    role: "Manager",
-    status: "Active",
-    permissions: [
-      "Dashboard",
-      "Products",
-      "Orders",
-      "Inventory",
-      "Customers",
-    ],
-    lastLogin: "2026-10-03 09:15 AM",
-    createdAt: "2026-02-05",
-  },
-  {
-    id: 3,
-    name: "Priya Patil",
-    email: "priya@grocery.com",
-    mobile: "9876543212",
-    role: "Content Manager",
-    status: "Active",
-    permissions: [
-      "Dashboard",
-      "Website CMS",
-      "Reviews",
-      "Notifications",
-    ],
-    lastLogin: "2026-10-02 06:45 PM",
-    createdAt: "2026-03-12",
-  },
-  {
-    id: 4,
-    name: "Amit Joshi",
-    email: "amit@grocery.com",
-    mobile: "9876543213",
-    role: "Order Manager",
-    status: "Inactive",
-    permissions: [
-      "Dashboard",
-      "Orders",
-      "Customers",
-      "Delivery",
-    ],
-    lastLogin: "2026-09-28 04:20 PM",
-    createdAt: "2026-04-18",
-  },
-];
+const API_BASE_URL = "http://localhost:5000/api/admin";
 
 const permissionOptions = [
   "Dashboard",
@@ -93,6 +26,7 @@ const permissionOptions = [
   "Categories",
   "Inventory",
   "Orders",
+  "Support",
   "Customers",
   "Coupons & Offers",
   "Delivery",
@@ -103,19 +37,80 @@ const permissionOptions = [
   "Settings",
 ];
 
+const roles = [
+  "Super Admin",
+  "Admin",
+  "Manager",
+  "Content Manager",
+  "Order Manager",
+];
+
 const emptyForm = {
   name: "",
   email: "",
   mobile: "",
+  password: "",
   role: "Manager",
   status: "Active",
   permissions: ["Dashboard"],
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MOBILE_PATTERN = /^\+?[0-9]{10,15}$/;
+
+const getAdminToken = () =>
+  localStorage.getItem("adminToken") || localStorage.getItem("token");
+
+const getAuthHeaders = () => {
+  const token = getAdminToken();
+
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const normalizeAdmin = (admin) => {
+  const rawRole = String(admin.role || "Manager")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  const roleMap = {
+    SUPER_ADMIN: "Super Admin",
+    ADMIN: "Admin",
+    MANAGER: "Manager",
+    CONTENT_MANAGER: "Content Manager",
+    ORDER_MANAGER: "Order Manager",
+  };
+
+  const rawStatus = String(admin.status || "Active").toLowerCase();
+
+  return {
+    ...admin,
+    id: String(admin.id || admin._id),
+    name: admin.name || "",
+    email: admin.email || "",
+    mobile: admin.mobile || "",
+    role: roleMap[rawRole] || admin.role || "Manager",
+    status: rawStatus === "active" ? "Active" : "Inactive",
+    permissions: Array.isArray(admin.permissions)
+      ? admin.permissions
+      : ["Dashboard"],
+    createdAt: admin.createdAt || admin.created_at
+      ? String(admin.createdAt || admin.created_at).slice(0, 10)
+      : "",
+    lastLogin: admin.lastLogin || "Not tracked",
+  };
+};
 
 const AdminManagement = () => {
-  const [admins, setAdmins] = useState(initialAdmins);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [notice, setNotice] = useState("");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -128,7 +123,112 @@ const AdminManagement = () => {
   const [viewAdmin, setViewAdmin] = useState(null);
   const [resetAdmin, setResetAdmin] = useState(null);
 
-  // Filter administrators.
+  // API helper
+  const apiRequest = async (path = "", options = {}) => {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || `Request failed with status ${response.status}`
+      );
+    }
+
+    return result;
+  };
+
+  // Load administrators from MongoDB through the backend
+  const loadAdmins = useCallback(async () => {
+    setLoading(true);
+    setApiError("");
+
+    try {
+      const result = await apiRequest();
+
+      if (!Array.isArray(result.admins)) {
+        throw new Error("The server response does not contain an admins array.");
+      }
+
+      setAdmins(result.admins.map(normalizeAdmin));
+    } catch (error) {
+      console.error("Load administrators error:", error);
+      setApiError(error.message || "Unable to load administrators.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+// Initial API load - replace the existing useEffect with this
+
+useEffect(() => {
+  let cancelled = false;
+
+  const fetchInitialAdmins = async () => {
+    try {
+      const response = await fetch(API_BASE_URL, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || `Request failed with status ${response.status}`
+        );
+      }
+
+      if (!Array.isArray(result.admins)) {
+        throw new Error("The server response does not contain an admins array.");
+      }
+
+      if (!cancelled) {
+        setAdmins(result.admins.map(normalizeAdmin));
+        setApiError("");
+      }
+    } catch (error) {
+      console.error("Load administrators error:", error);
+
+      if (!cancelled) {
+        setApiError(error.message || "Unable to load administrators.");
+      }
+    } finally {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }
+  };
+
+  fetchInitialAdmins();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
+  // Statistics
+  const totalAdmins = admins.length;
+
+  const activeAdmins = admins.filter(
+    (admin) => admin.status === "Active"
+  ).length;
+
+  const inactiveAdmins = admins.filter(
+    (admin) => admin.status === "Inactive"
+  ).length;
+
+  const superAdmins = admins.filter(
+    (admin) => admin.role === "Super Admin"
+  ).length;
+
+  // Search and filters
   const filteredAdmins = useMemo(() => {
     const search = searchTerm.toLowerCase().trim();
 
@@ -149,33 +249,18 @@ const AdminManagement = () => {
     });
   }, [admins, searchTerm, roleFilter, statusFilter]);
 
-  // Statistics.
-  const totalAdmins = admins.length;
-
-  const activeAdmins = admins.filter(
-    (admin) => admin.status === "Active"
-  ).length;
-
-  const inactiveAdmins = admins.filter(
-    (admin) => admin.status === "Inactive"
-  ).length;
-
-  const superAdmins = admins.filter(
-    (admin) => admin.role === "Super Admin"
-  ).length;
-
-  // Open add modal.
+  // Open create form
   const openAddModal = () => {
     setEditingAdmin(null);
     setFormData({
       ...emptyForm,
-      permissions: [...emptyForm.permissions],
+      permissions: ["Dashboard"],
     });
     setFormDirty(false);
     setShowModal(true);
   };
 
-  // Open edit modal.
+  // Open edit form
   const openEditModal = (admin) => {
     setEditingAdmin(admin);
 
@@ -183,6 +268,7 @@ const AdminManagement = () => {
       name: admin.name,
       email: admin.email,
       mobile: admin.mobile,
+      password: "",
       role: admin.role,
       status: admin.status,
       permissions: [...admin.permissions],
@@ -192,26 +278,20 @@ const AdminManagement = () => {
     setShowModal(true);
   };
 
-  // Close add/edit modal.
   const closeModal = () => {
-    if (formDirty) {
-      const confirmed = window.confirm(
-        "Discard your unsaved changes?"
-      );
-
-      if (!confirmed) return;
+    if (
+      formDirty &&
+      !window.confirm("Discard your unsaved changes?")
+    ) {
+      return;
     }
 
     setShowModal(false);
     setEditingAdmin(null);
-    setFormData({
-      ...emptyForm,
-      permissions: [...emptyForm.permissions],
-    });
+    setFormData({ ...emptyForm, permissions: ["Dashboard"] });
     setFormDirty(false);
   };
 
-  // Handle form changes.
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -223,7 +303,6 @@ const AdminManagement = () => {
     setFormDirty(true);
   };
 
-  // Toggle permissions.
   const togglePermission = (permission) => {
     setFormData((previous) => {
       const exists = previous.permissions.includes(permission);
@@ -231,9 +310,7 @@ const AdminManagement = () => {
       return {
         ...previous,
         permissions: exists
-          ? previous.permissions.filter(
-              (item) => item !== permission
-            )
+          ? previous.permissions.filter((item) => item !== permission)
           : [...previous.permissions, permission],
       };
     });
@@ -241,131 +318,175 @@ const AdminManagement = () => {
     setFormDirty(true);
   };
 
-  // Add or update administrator.
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  // Create or update using backend API
+  
+const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    const name = formData.name.trim();
-    const email = formData.email.trim().toLowerCase();
-    const mobile = formData.mobile.replace(/\s+/g, "");
+  setNotice("");
+  setApiError("");
 
-    if (!name || !email || !mobile) {
-      window.alert("Please fill in all required fields.");
-      return;
-    }
+  const name = formData.name.trim();
+  const email = formData.email.trim().toLowerCase();
+  const mobile = formData.mobile.replace(/\s+/g, "");
 
-    if (!EMAIL_PATTERN.test(email)) {
-      window.alert("Please enter a valid email address.");
-      return;
-    }
+  // Validate required fields
+  if (!name || !email || !mobile) {
+    window.alert("Please fill in all required fields.");
+    return;
+  }
 
-    if (!/^\+?[0-9]{10,15}$/.test(mobile)) {
-      window.alert(
-        "Please enter a valid mobile number containing 10 to 15 digits."
-      );
-      return;
-    }
+  if (!EMAIL_PATTERN.test(email)) {
+    window.alert("Please enter a valid email address.");
+    return;
+  }
 
-    if (formData.permissions.length === 0) {
-      window.alert("Please select at least one permission.");
-      return;
-    }
-
-    const duplicateEmail = admins.some(
-      (admin) =>
-        admin.email.toLowerCase() === email &&
-        admin.id !== editingAdmin?.id
+  if (!MOBILE_PATTERN.test(mobile)) {
+    window.alert(
+      "Enter a valid mobile number containing 10 to 15 digits."
     );
+    return;
+  }
 
-    if (duplicateEmail) {
-      window.alert(
-        "An administrator with this email address already exists."
-      );
-      return;
-    }
+  if (!editingAdmin && formData.password.length < 8) {
+    window.alert("Password must contain at least 8 characters.");
+    return;
+  }
 
-    if (
-      editingAdmin?.role === "Super Admin" &&
-      formData.role !== "Super Admin"
-    ) {
-      const confirmed = window.confirm(
-        "You are changing the Super Admin role. This may affect administrative access. Continue?"
-      );
+  // Normalize selected permissions
+  const selectedPermissions = [
+    ...new Set(
+      formData.permissions
+        .map((permission) => String(permission).trim())
+        .filter(Boolean)
+    ),
+  ];
 
-      if (!confirmed) return;
-    }
+  if (selectedPermissions.length === 0) {
+    window.alert("Please select at least one permission.");
+    return;
+  }
 
-    if (
-      editingAdmin?.role === "Super Admin" &&
-      formData.status !== "Active"
-    ) {
-      window.alert("The Super Admin account cannot be deactivated.");
-      return;
-    }
+  // Check duplicate email
+  const duplicateEmail = admins.some(
+    (admin) =>
+      admin.email.toLowerCase() === email &&
+      admin.id !== editingAdmin?.id
+  );
 
-    const normalizedForm = {
-      ...formData,
-      name,
-      email,
-      mobile,
-      permissions: [...formData.permissions],
-    };
+  if (duplicateEmail) {
+    window.alert("An administrator with this email already exists.");
+    return;
+  }
 
-    if (editingAdmin) {
-      const confirmed = window.confirm(
-        `Save changes to administrator "${name}"?`
-      );
+  // Protect Super Admin
+  if (
+    editingAdmin?.role === "Super Admin" &&
+    (formData.role !== "Super Admin" ||
+      formData.status !== "Active")
+  ) {
+    window.alert(
+      "The Super Admin account cannot be demoted or deactivated."
+    );
+    return;
+  }
 
-      if (!confirmed) return;
+  // Prevent duplicate Super Admin creation
+  if (
+    !editingAdmin &&
+    formData.role === "Super Admin" &&
+    admins.some((admin) => admin.role === "Super Admin")
+  ) {
+    window.alert("A Super Admin account already exists.");
+    return;
+  }
 
-      setAdmins((previous) =>
-        previous.map((admin) =>
-          admin.id === editingAdmin.id
-            ? {
-                ...admin,
-                ...normalizedForm,
-              }
-            : admin
-        )
-      );
+  // Create payload BEFORE using it
+  const payload = {
+    name,
+    email,
+    mobile,
+    role: formData.role,
+    status: formData.status,
+    permissions: selectedPermissions,
+  };
+
+  if (!editingAdmin) {
+    payload.password = formData.password;
+  }
+
+  // Debug logs - payload is now initialized
+  console.log("Permissions being submitted:", selectedPermissions);
+  console.log("Admin update payload:", payload);
+
+  const confirmed = window.confirm(
+    editingAdmin
+      ? `Save changes to administrator "${name}"?`
+      : `Create a new administrator account for "${name}"?`
+  );
+
+  if (!confirmed) return;
+
+  setSaving(true);
+
+  try {
+    const result = editingAdmin
+      ? await apiRequest(`/${encodeURIComponent(editingAdmin.id)}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        })
+      : await apiRequest("", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+    const savedAdmin = result.admin
+      ? normalizeAdmin(result.admin)
+      : null;
+
+    if (savedAdmin) {
+      setAdmins((previous) => {
+        if (editingAdmin) {
+          return previous.map((admin) =>
+            admin.id === editingAdmin.id ? savedAdmin : admin
+          );
+        }
+
+        return [savedAdmin, ...previous];
+      });
 
       setViewAdmin((previous) =>
-        previous?.id === editingAdmin.id
-          ? { ...previous, ...normalizedForm }
-          : previous
+        previous?.id === savedAdmin.id ? savedAdmin : previous
       );
-
-      window.alert("Administrator updated successfully.");
     } else {
-      const confirmed = window.confirm(
-        `Create a new administrator account for "${name}"?`
-      );
-
-      if (!confirmed) return;
-
-      const newAdmin = {
-        id: Date.now(),
-        ...normalizedForm,
-        lastLogin: "Never",
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-
-      setAdmins((previous) => [newAdmin, ...previous]);
-
-      window.alert("Administrator created successfully.");
+      await loadAdmins();
     }
+
+    setNotice(
+      result.message ||
+        (editingAdmin
+          ? "Administrator updated successfully."
+          : "Administrator created successfully.")
+    );
 
     setShowModal(false);
     setEditingAdmin(null);
     setFormData({
       ...emptyForm,
-      permissions: [...emptyForm.permissions],
+      permissions: ["Dashboard"],
     });
     setFormDirty(false);
-  };
+  } catch (error) {
+    console.error("Save administrator error:", error);
+    setApiError(error.message || "Unable to save administrator.");
+  } finally {
+    setSaving(false);
+  }
+};
 
-  // Delete administrator.
-  const handleDelete = (admin) => {
+
+  // Delete through backend API
+  const handleDelete = async (admin) => {
     if (admin.role === "Super Admin") {
       window.alert("The Super Admin account cannot be deleted.");
       return;
@@ -377,23 +498,30 @@ const AdminManagement = () => {
 
     if (!confirmed) return;
 
-    setAdmins((previous) =>
-      previous.filter((item) => item.id !== admin.id)
-    );
+    setApiError("");
+    setNotice("");
 
-    if (viewAdmin?.id === admin.id) {
-      setViewAdmin(null);
+    try {
+      const result = await apiRequest(`/${encodeURIComponent(admin.id)}`, {
+        method: "DELETE",
+      });
+
+      setAdmins((previous) =>
+        previous.filter((item) => item.id !== admin.id)
+      );
+
+      if (viewAdmin?.id === admin.id) setViewAdmin(null);
+      if (resetAdmin?.id === admin.id) setResetAdmin(null);
+
+      setNotice(result.message || "Administrator deleted successfully.");
+    } catch (error) {
+      console.error("Delete administrator error:", error);
+      setApiError(error.message || "Unable to delete administrator.");
     }
-
-    if (resetAdmin?.id === admin.id) {
-      setResetAdmin(null);
-    }
-
-    window.alert("Administrator deleted successfully.");
   };
 
-  // Toggle active/inactive status.
-  const toggleAdminStatus = (admin) => {
+  // Update status through backend API
+  const toggleAdminStatus = async (admin) => {
     if (admin.role === "Super Admin") {
       window.alert("The Super Admin account cannot be deactivated.");
       return;
@@ -402,43 +530,53 @@ const AdminManagement = () => {
     const nextStatus =
       admin.status === "Active" ? "Inactive" : "Active";
 
-    const confirmed = window.confirm(
-      `Change ${admin.name}'s status to "${nextStatus}"?`
-    );
-
-    if (!confirmed) return;
-
-    setAdmins((previous) =>
-      previous.map((item) =>
-        item.id === admin.id
-          ? { ...item, status: nextStatus }
-          : item
+    if (
+      !window.confirm(
+        `Change ${admin.name}'s status to "${nextStatus}"?`
       )
-    );
+    ) {
+      return;
+    }
 
-    setViewAdmin((previous) =>
-      previous?.id === admin.id
-        ? { ...previous, status: nextStatus }
-        : previous
-    );
+    setApiError("");
+    setNotice("");
 
-    window.alert(
-      `${admin.name}'s status changed to ${nextStatus}.`
-    );
+    try {
+      const result = await apiRequest(
+        `/${encodeURIComponent(admin.id)}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      );
+
+      const updatedAdmin = normalizeAdmin(
+        result.admin || { ...admin, status: nextStatus }
+      );
+
+      setAdmins((previous) =>
+        previous.map((item) =>
+          item.id === admin.id ? updatedAdmin : item
+        )
+      );
+
+      setViewAdmin((previous) =>
+        previous?.id === admin.id ? updatedAdmin : previous
+      );
+
+      setNotice(result.message || `Status changed to ${nextStatus}.`);
+    } catch (error) {
+      console.error("Update admin status error:", error);
+      setApiError(error.message || "Unable to update administrator status.");
+    }
   };
 
-  // Simulated password-reset action.
+  // Password reset is still a demonstration; no reset endpoint is configured.
   const handleResetPassword = () => {
     if (!resetAdmin) return;
 
-    const confirmed = window.confirm(
-      `Request a password reset for ${resetAdmin.email}?`
-    );
-
-    if (!confirmed) return;
-
     window.alert(
-      `Password reset is currently a frontend demonstration. A reset link has not actually been sent to ${resetAdmin.email}.`
+      `Password reset is not connected to a backend endpoint yet. No reset link has been sent to ${resetAdmin.email}.`
     );
 
     setResetAdmin(null);
@@ -447,7 +585,6 @@ const AdminManagement = () => {
   return (
     <div className="admin-management-page">
       <div className="admin-management-container">
-        {/* Header */}
         <div className="admin-management-header">
           <div className="admin-management-heading">
             <div className="admin-management-title-row">
@@ -458,8 +595,7 @@ const AdminManagement = () => {
               <div>
                 <h1>Admin Management</h1>
                 <p>
-                  Manage administrator accounts, roles and
-                  permissions.
+                  Manage administrator accounts, roles and permissions.
                 </p>
               </div>
             </div>
@@ -475,7 +611,30 @@ const AdminManagement = () => {
           </button>
         </div>
 
-        {/* Statistics */}
+        {(apiError || notice) && (
+          <div
+            role={apiError ? "alert" : "status"}
+            style={{
+              padding: "12px 16px",
+              marginBottom: "16px",
+              borderRadius: "8px",
+              background: apiError ? "#fff1f0" : "#ecfdf3",
+              color: apiError ? "#b42318" : "#067647",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <span>{apiError || notice}</span>
+            {apiError && (
+              <button type="button" onClick={loadAdmins}>
+                <RefreshCw size={16} /> Retry
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="admin-management-stats">
           <div className="admin-management-stat-card">
             <div className="admin-management-stat-icon">
@@ -518,41 +677,34 @@ const AdminManagement = () => {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="admin-management-toolbar">
           <div className="admin-management-search">
             <Search size={18} />
-
             <input
               type="text"
               placeholder="Search by name, email or mobile..."
               value={searchTerm}
-              onChange={(event) =>
-                setSearchTerm(event.target.value)
-              }
+              onChange={(event) => setSearchTerm(event.target.value)}
               aria-label="Search administrators"
             />
           </div>
 
           <select
             value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value)
-            }
+            onChange={(event) => setRoleFilter(event.target.value)}
             aria-label="Filter by role"
           >
             <option value="All">All Roles</option>
-            <option value="Super Admin">Super Admin</option>
-            <option value="Manager">Manager</option>
-            <option value="Content Manager">Content Manager</option>
-            <option value="Order Manager">Order Manager</option>
+            {roles.map((role) => (
+              <option value={role} key={role}>
+                {role}
+              </option>
+            ))}
           </select>
 
           <select
             value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value)
-            }
+            onChange={(event) => setStatusFilter(event.target.value)}
             aria-label="Filter by status"
           >
             <option value="All">All Status</option>
@@ -561,7 +713,6 @@ const AdminManagement = () => {
           </select>
         </div>
 
-        {/* Table */}
         <div className="admin-management-table-card">
           <div className="admin-management-table-wrapper">
             <table className="admin-management-table">
@@ -578,7 +729,13 @@ const AdminManagement = () => {
               </thead>
 
               <tbody>
-                {filteredAdmins.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="admin-management-empty">
+                      Loading administrators...
+                    </td>
+                  </tr>
+                ) : filteredAdmins.length > 0 ? (
                   filteredAdmins.map((admin) => (
                     <tr key={admin.id}>
                       <td>
@@ -586,12 +743,9 @@ const AdminManagement = () => {
                           <div className="admin-management-avatar">
                             {admin.name.charAt(0).toUpperCase()}
                           </div>
-
                           <div>
                             <strong>{admin.name}</strong>
-                            <span>
-                              Created: {admin.createdAt}
-                            </span>
+                            <span>Created: {admin.createdAt || "—"}</span>
                           </div>
                         </div>
                       </td>
@@ -621,14 +775,9 @@ const AdminManagement = () => {
 
                       <td>
                         <div className="admin-management-permissions">
-                          {admin.permissions
-                            .slice(0, 3)
-                            .map((permission) => (
-                              <span key={permission}>
-                                {permission}
-                              </span>
-                            ))}
-
+                          {admin.permissions.slice(0, 3).map((permission) => (
+                            <span key={permission}>{permission}</span>
+                          ))}
                           {admin.permissions.length > 3 && (
                             <span className="admin-management-more">
                               +{admin.permissions.length - 3}
@@ -646,16 +795,14 @@ const AdminManagement = () => {
                       <td>
                         <button
                           className={`admin-management-status ${
-                            admin.status === "Active"
-                              ? "active"
-                              : "inactive"
+                            admin.status === "Active" ? "active" : "inactive"
                           }`}
-                          onClick={() =>
-                            toggleAdminStatus(admin)
-                          }
+                          onClick={() => toggleAdminStatus(admin)}
                           type="button"
-                          disabled={admin.role === "Super Admin"}
-                          aria-label={`Status: ${admin.status}`}
+                          disabled={
+                            saving ||
+                            admin.role === "Super Admin"
+                          }
                           title={
                             admin.role === "Super Admin"
                               ? "Super Admin cannot be deactivated"
@@ -705,6 +852,7 @@ const AdminManagement = () => {
                             aria-label={`Delete ${admin.name}`}
                             onClick={() => handleDelete(admin)}
                             type="button"
+                            disabled={admin.role === "Super Admin"}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -714,14 +862,13 @@ const AdminManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="admin-management-empty"
-                    >
+                    <td colSpan="7" className="admin-management-empty">
                       <UserCog size={38} />
                       <strong>No administrators found</strong>
                       <span>
-                        Try changing your search or filter.
+                        {apiError
+                          ? "Fix the API error above and retry."
+                          : "Try changing your search or filter."}
                       </span>
                     </td>
                   </tr>
@@ -731,8 +878,7 @@ const AdminManagement = () => {
           </div>
 
           <div className="admin-management-table-footer">
-            Showing{" "}
-            <strong>{filteredAdmins.length}</strong> of{" "}
+            Showing <strong>{filteredAdmins.length}</strong> of{" "}
             <strong>{admins.length}</strong> administrators
           </div>
         </div>
@@ -750,9 +896,7 @@ const AdminManagement = () => {
             <div className="admin-management-modal-header">
               <div>
                 <h2 id="admin-management-form-title">
-                  {editingAdmin
-                    ? "Edit Administrator"
-                    : "Add Administrator"}
+                  {editingAdmin ? "Edit Administrator" : "Add Administrator"}
                 </h2>
                 <p>
                   {editingAdmin
@@ -771,10 +915,7 @@ const AdminManagement = () => {
               </button>
             </div>
 
-            <form
-              className="admin-management-form"
-              onSubmit={handleSubmit}
-            >
+            <form className="admin-management-form" onSubmit={handleSubmit}>
               <div className="admin-management-form-grid">
                 <label>
                   Full Name *
@@ -784,7 +925,6 @@ const AdminManagement = () => {
                     placeholder="Enter full name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    autoComplete="name"
                     required
                     maxLength={100}
                   />
@@ -798,7 +938,6 @@ const AdminManagement = () => {
                     placeholder="Enter email address"
                     value={formData.email}
                     onChange={handleInputChange}
-                    autoComplete="email"
                     required
                     maxLength={150}
                   />
@@ -812,11 +951,26 @@ const AdminManagement = () => {
                     placeholder="Enter mobile number"
                     value={formData.mobile}
                     onChange={handleInputChange}
-                    autoComplete="tel"
                     required
                     maxLength={16}
                   />
                 </label>
+
+                {!editingAdmin && (
+                  <label>
+                    Password *
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Minimum 8 characters"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      minLength={8}
+                      autoComplete="new-password"
+                      required
+                    />
+                  </label>
+                )}
 
                 <label>
                   Role
@@ -824,17 +978,13 @@ const AdminManagement = () => {
                     name="role"
                     value={formData.role}
                     onChange={handleInputChange}
+                    disabled={editingAdmin?.role === "Super Admin"}
                   >
-                    <option value="Super Admin">
-                      Super Admin
-                    </option>
-                    <option value="Manager">Manager</option>
-                    <option value="Content Manager">
-                      Content Manager
-                    </option>
-                    <option value="Order Manager">
-                      Order Manager
-                    </option>
+                    {roles.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
@@ -844,9 +994,7 @@ const AdminManagement = () => {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    disabled={
-                      editingAdmin?.role === "Super Admin"
-                    }
+                    disabled={editingAdmin?.role === "Super Admin"}
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -858,15 +1006,9 @@ const AdminManagement = () => {
                 <div className="admin-management-permission-heading">
                   <div>
                     <h3>Permissions</h3>
-                    <p>
-                      Select the sections this administrator can
-                      access.
-                    </p>
+                    <p>Select the sections this administrator can access.</p>
                   </div>
-
-                  <span>
-                    {formData.permissions.length} selected
-                  </span>
+                  <span>{formData.permissions.length} selected</span>
                 </div>
 
                 <div className="admin-management-permission-grid">
@@ -877,12 +1019,8 @@ const AdminManagement = () => {
                     >
                       <input
                         type="checkbox"
-                        checked={formData.permissions.includes(
-                          permission
-                        )}
-                        onChange={() =>
-                          togglePermission(permission)
-                        }
+                        checked={formData.permissions.includes(permission)}
+                        onChange={() => togglePermission(permission)}
                       />
                       <span>{permission}</span>
                     </label>
@@ -895,6 +1033,7 @@ const AdminManagement = () => {
                   className="admin-management-cancel-button"
                   type="button"
                   onClick={closeModal}
+                  disabled={saving}
                 >
                   Cancel
                 </button>
@@ -902,10 +1041,13 @@ const AdminManagement = () => {
                 <button
                   className="admin-management-save-button"
                   type="submit"
+                  disabled={saving}
                 >
-                  {editingAdmin
-                    ? "Update Admin"
-                    : "Create Admin"}
+                  {saving
+                    ? "Saving..."
+                    : editingAdmin
+                      ? "Update Admin"
+                      : "Create Admin"}
                 </button>
               </div>
             </form>
@@ -927,9 +1069,7 @@ const AdminManagement = () => {
                 <h2 id="admin-management-view-title">
                   Administrator Details
                 </h2>
-                <p>
-                  View account information and permissions.
-                </p>
+                <p>View account information and permissions.</p>
               </div>
 
               <button
@@ -946,9 +1086,7 @@ const AdminManagement = () => {
               <div className="admin-management-profile-avatar">
                 {viewAdmin.name.charAt(0).toUpperCase()}
               </div>
-
               <h3>{viewAdmin.name}</h3>
-
               <span className="admin-management-profile-role">
                 {viewAdmin.role}
               </span>
@@ -959,22 +1097,18 @@ const AdminManagement = () => {
                 <span>Email</span>
                 <strong>{viewAdmin.email}</strong>
               </div>
-
               <div>
                 <span>Mobile</span>
                 <strong>{viewAdmin.mobile}</strong>
               </div>
-
               <div>
                 <span>Status</span>
                 <strong>{viewAdmin.status}</strong>
               </div>
-
               <div>
                 <span>Created</span>
-                <strong>{viewAdmin.createdAt}</strong>
+                <strong>{viewAdmin.createdAt || "—"}</strong>
               </div>
-
               <div>
                 <span>Last Login</span>
                 <strong>{viewAdmin.lastLogin}</strong>
@@ -983,7 +1117,6 @@ const AdminManagement = () => {
 
             <div className="admin-management-view-permissions">
               <h3>Permissions</h3>
-
               <div>
                 {viewAdmin.permissions.map((permission) => (
                   <span key={permission}>{permission}</span>
@@ -1002,7 +1135,7 @@ const AdminManagement = () => {
         </div>
       )}
 
-      {/* Reset Password Modal */}
+      {/* Password Reset Demo Modal */}
       {resetAdmin && (
         <div className="admin-management-modal-overlay">
           <div
@@ -1015,14 +1148,8 @@ const AdminManagement = () => {
               <KeyRound size={28} />
             </div>
 
-            <h2 id="admin-management-reset-title">
-              Reset Password?
-            </h2>
-
-            <p>
-              A password reset request would be prepared for:
-            </p>
-
+            <h2 id="admin-management-reset-title">Reset Password?</h2>
+            <p>A password reset request would be prepared for:</p>
             <strong>{resetAdmin.email}</strong>
 
             <div className="admin-management-reset-actions">

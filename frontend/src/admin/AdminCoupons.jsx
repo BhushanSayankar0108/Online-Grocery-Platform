@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   Edit,
@@ -11,68 +12,9 @@ import {
 
 import "./AdminCoupons.css";
 
-/* =========================================================
-   INITIAL COUPONS
-========================================================= */
-
-const INITIAL_COUPONS = [
-  {
-    id: 1,
-    code: "WELCOME100",
-    description: "Welcome discount for new customers",
-    discountType: "fixed",
-    discountValue: 100,
-    minOrderAmount: 499,
-    maxDiscount: 100,
-    startDate: "2026-10-01",
-    endDate: "2026-10-31",
-    usageLimit: 500,
-    usedCount: 86,
-    status: "active",
-  },
-  {
-    id: 2,
-    code: "SAVE20",
-    description: "20% discount on grocery orders",
-    discountType: "percentage",
-    discountValue: 20,
-    minOrderAmount: 799,
-    maxDiscount: 250,
-    startDate: "2026-10-01",
-    endDate: "2026-10-15",
-    usageLimit: 300,
-    usedCount: 142,
-    status: "active",
-  },
-  {
-    id: 3,
-    code: "FESTIVE150",
-    description: "Festive season special offer",
-    discountType: "fixed",
-    discountValue: 150,
-    minOrderAmount: 999,
-    maxDiscount: 150,
-    startDate: "2026-09-25",
-    endDate: "2026-10-10",
-    usageLimit: 200,
-    usedCount: 200,
-    status: "inactive",
-  },
-  {
-    id: 4,
-    code: "FRESH10",
-    description: "10% off on selected grocery orders",
-    discountType: "percentage",
-    discountValue: 10,
-    minOrderAmount: 599,
-    maxDiscount: 150,
-    startDate: "2026-10-03",
-    endDate: "2026-11-03",
-    usageLimit: 1000,
-    usedCount: 54,
-    status: "active",
-  },
-];
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+).replace(/\/+$/, "");
 
 const EMPTY_FORM = {
   code: "",
@@ -87,27 +29,127 @@ const EMPTY_FORM = {
   status: "active",
 };
 
-/* =========================================================
-   ADMIN COUPONS
-========================================================= */
+const getAdminToken = () => {
+  const keys = ["adminToken", "token", "accessToken", "jwt"];
+
+  for (const key of keys) {
+    const value =
+      localStorage.getItem(key) || sessionStorage.getItem(key);
+
+    if (value) return value;
+  }
+
+  return "";
+};
+
+const toDateInput = (value) => {
+  if (!value) return "";
+
+  const date = String(value);
+  return date.length >= 10 ? date.slice(0, 10) : "";
+};
+
+const normalizeCoupon = (coupon) => ({
+  ...coupon,
+  id: coupon._id || coupon.id,
+  code: String(coupon.code || "").toUpperCase(),
+  description: coupon.description || "",
+  discountType: coupon.discountType || "percentage",
+  discountValue: Number(coupon.discountValue || 0),
+  minOrderAmount: Number(coupon.minOrderAmount || 0),
+  maxDiscount: Number(coupon.maxDiscount || 0),
+  startDate: toDateInput(coupon.startDate),
+  endDate: toDateInput(coupon.endDate),
+  usageLimit: Number(coupon.usageLimit || 0),
+  usedCount: Number(coupon.usedCount || 0),
+  status: coupon.status || "inactive",
+});
+
+const normalizeForm = (data) => ({
+  ...data,
+  code: String(data.code ?? "").trim().toUpperCase(),
+  description: String(data.description ?? "").trim(),
+  discountValue: String(data.discountValue ?? ""),
+  minOrderAmount: String(data.minOrderAmount ?? ""),
+  maxDiscount: String(data.maxDiscount ?? ""),
+  usageLimit: String(data.usageLimit ?? ""),
+});
 
 const AdminCoupons = () => {
-  const [coupons, setCoupons] = useState(INITIAL_COUPONS);
-
+  const [coupons, setCoupons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatusFilter, setSelectedStatusFilter] =
-    useState("all");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
   const [selectedDiscountFilter, setSelectedDiscountFilter] =
     useState("all");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [originalFormData, setOriginalFormData] = useState(null);
 
-  /* =========================================================
-     FILTER COUPONS
-  ========================================================= */
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [actionId, setActionId] = useState(null);
+
+  const apiRequest = useCallback(async (endpoint, options = {}) => {
+    const token = getAdminToken();
+
+    const headers = {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data.success === false) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          data.message ||
+            "Admin authentication failed. Please sign in again."
+        );
+      }
+
+      throw new Error(
+        data.message || `Request failed with status ${response.status}.`
+      );
+    }
+
+    return data;
+  }, []);
+
+  const loadCoupons = useCallback(async () => {
+    setPageError("");
+
+    try {
+      const data = await apiRequest("/api/coupons/admin");
+
+      if (!Array.isArray(data.coupons)) {
+        throw new Error("The server returned an invalid coupon list.");
+      }
+
+      setCoupons(data.coupons.map(normalizeCoupon));
+    } catch (error) {
+      setPageError(error.message || "Unable to load coupons.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiRequest]);
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      loadCoupons();
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [loadCoupons]);
 
   const filteredCoupons = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -135,48 +177,24 @@ const AdminCoupons = () => {
     selectedDiscountFilter,
   ]);
 
-  /* =========================================================
-     FORM HELPERS
-  ========================================================= */
-
-  const getNormalizedForm = (data) => ({
-    ...data,
-    code: data.code.trim().toUpperCase(),
-    description: data.description.trim(),
-    discountType: data.discountType,
-    discountValue: String(data.discountValue),
-    minOrderAmount: String(data.minOrderAmount),
-    maxDiscount: String(data.maxDiscount),
-    startDate: data.startDate,
-    endDate: data.endDate,
-    usageLimit: String(data.usageLimit),
-    status: data.status,
-  });
-
   const hasUnsavedChanges = () => {
-    if (!originalFormData) {
-      return false;
-    }
+    if (!originalFormData) return false;
 
     return (
-      JSON.stringify(getNormalizedForm(formData)) !==
-      JSON.stringify(getNormalizedForm(originalFormData))
+      JSON.stringify(normalizeForm(formData)) !==
+      JSON.stringify(normalizeForm(originalFormData))
     );
   };
 
-  /* =========================================================
-     OPEN ADD MODAL
-  ========================================================= */
-
   const openAddModal = () => {
-    if (isModalOpen && hasUnsavedChanges()) {
-      const confirmed = window.confirm(
+    if (
+      isModalOpen &&
+      hasUnsavedChanges() &&
+      !window.confirm(
         "You have unsaved changes. Discard them and open a new coupon form?"
-      );
-
-      if (!confirmed) {
-        return;
-      }
+      )
+    ) {
+      return;
     }
 
     const freshForm = { ...EMPTY_FORM };
@@ -184,22 +202,19 @@ const AdminCoupons = () => {
     setEditingId(null);
     setFormData(freshForm);
     setOriginalFormData({ ...freshForm });
+    setFormError("");
     setIsModalOpen(true);
   };
 
-  /* =========================================================
-     OPEN EDIT MODAL
-  ========================================================= */
-
   const openEditModal = (coupon) => {
-    if (isModalOpen && hasUnsavedChanges()) {
-      const confirmed = window.confirm(
+    if (
+      isModalOpen &&
+      hasUnsavedChanges() &&
+      !window.confirm(
         "You have unsaved changes. Discard them and edit another coupon?"
-      );
-
-      if (!confirmed) {
-        return;
-      }
+      )
+    ) {
+      return;
     }
 
     const editForm = {
@@ -218,33 +233,34 @@ const AdminCoupons = () => {
     setEditingId(coupon.id);
     setFormData(editForm);
     setOriginalFormData({ ...editForm });
+    setFormError("");
     setIsModalOpen(true);
   };
 
-  /* =========================================================
-     CLOSE MODAL
-  ========================================================= */
-
   const closeModal = () => {
-    if (hasUnsavedChanges()) {
-      const confirmed = window.confirm(
+    if (
+      hasUnsavedChanges() &&
+      !window.confirm(
         "You have unsaved changes. Are you sure you want to discard them?"
-      );
-
-      if (!confirmed) {
-        return;
-      }
+      )
+    ) {
+      return;
     }
 
     setIsModalOpen(false);
     setEditingId(null);
     setFormData({ ...EMPTY_FORM });
     setOriginalFormData(null);
+    setFormError("");
   };
 
-  /* =========================================================
-     HANDLE INPUT CHANGE
-  ========================================================= */
+  const resetForm = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({ ...EMPTY_FORM });
+    setOriginalFormData(null);
+    setFormError("");
+  };
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -255,21 +271,17 @@ const AdminCoupons = () => {
     }));
   };
 
-  /* =========================================================
-     VALIDATE FORM
-  ========================================================= */
-
   const validateForm = () => {
     const code = formData.code.trim().toUpperCase();
 
     if (!code) {
-      window.alert("Please enter a coupon code.");
+      setFormError("Please enter a coupon code.");
       return false;
     }
 
-    if (!/^[A-Z0-9_-]+$/.test(code)) {
-      window.alert(
-        "Coupon code can contain only letters, numbers, hyphens, and underscores."
+    if (!/^[A-Z0-9_-]+$/.test(code) || code.length > 40) {
+      setFormError(
+        "Coupon code can contain up to 40 letters, numbers, hyphens or underscores."
       );
       return false;
     }
@@ -277,25 +289,27 @@ const AdminCoupons = () => {
     const duplicateCode = coupons.some(
       (coupon) =>
         coupon.code.toUpperCase() === code &&
-        coupon.id !== editingId
+        String(coupon.id) !== String(editingId)
     );
 
     if (duplicateCode) {
-      window.alert(
-        "A coupon with this code already exists. Please use a different code."
+      setFormError(
+        "A coupon with this code already exists. Use a different code."
       );
       return false;
     }
 
-    if (!formData.discountValue.trim()) {
-      window.alert("Please enter a discount value.");
-      return false;
-    }
-
     const discountValue = Number(formData.discountValue);
+    const minOrderAmount = Number(formData.minOrderAmount);
+    const maxDiscount = Number(formData.maxDiscount);
+    const usageLimit = Number(formData.usageLimit);
 
-    if (!Number.isFinite(discountValue) || discountValue <= 0) {
-      window.alert("Discount value must be greater than zero.");
+    if (
+      !formData.discountValue.trim() ||
+      !Number.isFinite(discountValue) ||
+      discountValue <= 0
+    ) {
+      setFormError("Discount value must be greater than zero.");
       return false;
     }
 
@@ -303,101 +317,53 @@ const AdminCoupons = () => {
       formData.discountType === "percentage" &&
       discountValue > 100
     ) {
-      window.alert(
-        "Percentage discount cannot be greater than 100."
-      );
+      setFormError("Percentage discount cannot exceed 100%.");
       return false;
     }
-
-    if (!formData.minOrderAmount.trim()) {
-      window.alert("Please enter the minimum order amount.");
-      return false;
-    }
-
-    const minOrderAmount = Number(formData.minOrderAmount);
 
     if (
+      !formData.minOrderAmount.trim() ||
       !Number.isFinite(minOrderAmount) ||
       minOrderAmount < 0
     ) {
-      window.alert(
-        "Minimum order amount cannot be negative."
-      );
+      setFormError("Minimum order amount must be zero or greater.");
       return false;
     }
-
-    if (!formData.maxDiscount.trim()) {
-      window.alert("Please enter the maximum discount.");
-      return false;
-    }
-
-    const maxDiscount = Number(formData.maxDiscount);
-
-    if (!Number.isFinite(maxDiscount) || maxDiscount <= 0) {
-      window.alert(
-        "Maximum discount must be greater than zero."
-      );
-      return false;
-    }
-
-    if (!formData.startDate) {
-      window.alert("Please select the start date.");
-      return false;
-    }
-
-    if (!formData.endDate) {
-      window.alert("Please select the end date.");
-      return false;
-    }
-
-    const startDate = new Date(
-      `${formData.startDate}T00:00:00`
-    );
-    const endDate = new Date(
-      `${formData.endDate}T00:00:00`
-    );
 
     if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime())
+      !formData.maxDiscount.trim() ||
+      !Number.isFinite(maxDiscount) ||
+      maxDiscount <= 0
     ) {
-      window.alert("Please select valid coupon dates.");
+      setFormError("Maximum discount must be greater than zero.");
       return false;
     }
 
-    if (endDate < startDate) {
-      window.alert(
-        "End date cannot be before the start date."
-      );
+    if (!formData.startDate || !formData.endDate) {
+      setFormError("Please select both coupon dates.");
       return false;
     }
 
-    if (!formData.usageLimit.trim()) {
-      window.alert("Please enter the usage limit.");
+    if (formData.endDate < formData.startDate) {
+      setFormError("End date cannot be before the start date.");
       return false;
     }
-
-    const usageLimit = Number(formData.usageLimit);
 
     if (
+      !formData.usageLimit.trim() ||
       !Number.isInteger(usageLimit) ||
       usageLimit < 1
     ) {
-      window.alert(
-        "Usage limit must be a whole number greater than zero."
-      );
+      setFormError("Usage limit must be a positive whole number.");
       return false;
     }
 
     const existingCoupon = coupons.find(
-      (coupon) => coupon.id === editingId
+      (coupon) => String(coupon.id) === String(editingId)
     );
 
-    if (
-      existingCoupon &&
-      usageLimit < existingCoupon.usedCount
-    ) {
-      window.alert(
+    if (existingCoupon && usageLimit < existingCoupon.usedCount) {
+      setFormError(
         `Usage limit cannot be less than the ${existingCoupon.usedCount} times this coupon has already been used.`
       );
       return false;
@@ -406,16 +372,11 @@ const AdminCoupons = () => {
     return true;
   };
 
-  /* =========================================================
-     SAVE / UPDATE COUPON
-  ========================================================= */
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setFormError("");
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const couponData = {
       code: formData.code.trim().toUpperCase(),
@@ -438,126 +399,142 @@ const AdminCoupons = () => {
         : `Are you sure you want to create coupon "${couponData.code}"?`
     );
 
-    if (!confirmed) {
+    if (!confirmed) return;
+
+    setIsSaving(true);
+
+    try {
+      const endpoint = isEditing
+        ? `/api/coupons/admin/${encodeURIComponent(editingId)}`
+        : "/api/coupons/admin";
+
+      const data = await apiRequest(endpoint, {
+        method: isEditing ? "PUT" : "POST",
+        body: JSON.stringify(couponData),
+      });
+
+      if (data.coupon) {
+        const savedCoupon = normalizeCoupon(data.coupon);
+
+        setCoupons((previous) =>
+          isEditing
+            ? previous.map((coupon) =>
+                String(coupon.id) === String(editingId)
+                  ? savedCoupon
+                  : coupon
+              )
+            : [savedCoupon, ...previous]
+        );
+      } else {
+        await loadCoupons();
+      }
+
+      window.alert(
+        isEditing
+          ? "Coupon updated successfully."
+          : "Coupon created successfully."
+      );
+
+      resetForm();
+    } catch (error) {
+      setFormError(error.message || "Unable to save coupon.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (coupon) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently delete coupon "${coupon.code}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
-    if (isEditing) {
+    setActionId(coupon.id);
+    setPageError("");
+
+    try {
+      await apiRequest(
+        `/api/coupons/admin/${encodeURIComponent(coupon.id)}`,
+        { method: "DELETE" }
+      );
+
       setCoupons((previous) =>
-        previous.map((coupon) =>
-          coupon.id === editingId
-            ? {
-                ...coupon,
-                ...couponData,
-              }
-            : coupon
+        previous.filter(
+          (item) => String(item.id) !== String(coupon.id)
         )
       );
 
-      window.alert("Coupon updated successfully.");
-    } else {
-      const newCoupon = {
-        id: Date.now(),
-        ...couponData,
-        usedCount: 0,
-      };
-
-      setCoupons((previous) => [
-        newCoupon,
-        ...previous,
-      ]);
-
-      window.alert("Coupon created successfully.");
+      window.alert(`Coupon "${coupon.code}" deleted successfully.`);
+    } catch (error) {
+      setPageError(error.message || "Unable to delete coupon.");
+    } finally {
+      setActionId(null);
     }
-
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({ ...EMPTY_FORM });
-    setOriginalFormData(null);
   };
 
-  /* =========================================================
-     DELETE COUPON
-  ========================================================= */
-
-  const handleDelete = (coupon) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete coupon "${coupon.code}"? This action cannot be undone.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setCoupons((previous) =>
-      previous.filter((item) => item.id !== coupon.id)
-    );
-
-    window.alert(`Coupon "${coupon.code}" deleted successfully.`);
-  };
-
-  /* =========================================================
-     TOGGLE COUPON STATUS
-  ========================================================= */
-
-  const handleStatusToggle = (coupon) => {
+  const handleStatusToggle = async (coupon) => {
     const newStatus =
       coupon.status === "active" ? "inactive" : "active";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${
-        newStatus === "active" ? "activate" : "deactivate"
-      } coupon "${coupon.code}"?`
-    );
-
-    if (!confirmed) {
+    if (
+      !window.confirm(
+        `Are you sure you want to ${
+          newStatus === "active" ? "activate" : "deactivate"
+        } coupon "${coupon.code}"?`
+      )
+    ) {
       return;
     }
 
-    setCoupons((previous) =>
-      previous.map((item) =>
-        item.id === coupon.id
-          ? {
-              ...item,
-              status: newStatus,
-            }
-          : item
-      )
-    );
+    setActionId(coupon.id);
+    setPageError("");
 
-    window.alert(
-      `Coupon "${coupon.code}" is now ${newStatus}.`
-    );
-  };
+    try {
+      const data = await apiRequest(
+        `/api/coupons/admin/${encodeURIComponent(coupon.id)}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
-  /* =========================================================
-     FORMAT HELPERS
-  ========================================================= */
+      const updatedCoupon = data.coupon
+        ? normalizeCoupon(data.coupon)
+        : { ...coupon, status: newStatus };
 
-  const formatDiscount = (coupon) => {
-    if (coupon.discountType === "percentage") {
-      return `${coupon.discountValue}%`;
+      setCoupons((previous) =>
+        previous.map((item) =>
+          String(item.id) === String(coupon.id)
+            ? updatedCoupon
+            : item
+        )
+      );
+
+      window.alert(`Coupon "${coupon.code}" is now ${newStatus}.`);
+    } catch (error) {
+      setPageError(error.message || "Unable to update coupon status.");
+    } finally {
+      setActionId(null);
     }
-
-    return `₹${Number(coupon.discountValue).toLocaleString(
-      "en-IN"
-    )}`;
   };
 
-  const formatCurrency = (amount) => {
-    return `₹${Number(amount).toLocaleString("en-IN")}`;
-  };
+  const formatDiscount = (coupon) =>
+    coupon.discountType === "percentage"
+      ? `${coupon.discountValue}%`
+      : `₹${Number(coupon.discountValue).toLocaleString("en-IN")}`;
+
+  const formatCurrency = (amount) =>
+    `₹${Number(amount).toLocaleString("en-IN")}`;
 
   const formatDate = (dateString) => {
-    if (!dateString) {
-      return "-";
-    }
+    if (!dateString) return "-";
 
     const date = new Date(`${dateString}T00:00:00`);
 
-    if (Number.isNaN(date.getTime())) {
-      return dateString;
-    }
+    if (Number.isNaN(date.getTime())) return dateString;
 
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
@@ -567,40 +544,25 @@ const AdminCoupons = () => {
   };
 
   const getUsagePercentage = (coupon) => {
-    if (!coupon.usageLimit || coupon.usageLimit <= 0) {
-      return 0;
-    }
+    if (!coupon.usageLimit || coupon.usageLimit <= 0) return 0;
 
     return Math.min(
       100,
-      Math.max(
-        0,
-        (coupon.usedCount / coupon.usageLimit) * 100
-      )
+      Math.max(0, (coupon.usedCount / coupon.usageLimit) * 100)
     );
   };
-
-  /* =========================================================
-     PAGE UI
-  ========================================================= */
 
   return (
     <div className="admin-coupons-page">
       <div className="admin-coupons-container">
-
-        {/* HEADER */}
-
         <div className="admin-coupons-header">
           <div>
             <p className="admin-coupons-eyebrow">
               Marketing Management
             </p>
-
             <h1>Coupons &amp; Offers</h1>
-
             <p className="admin-coupons-header-text">
-              Create and manage discount coupons and
-              promotional offers.
+              Create and manage discount coupons and promotional offers.
             </p>
           </div>
 
@@ -614,14 +576,20 @@ const AdminCoupons = () => {
           </button>
         </div>
 
-        {/* STATISTICS */}
+        {pageError && (
+          <div className="coupons-empty-state" role="alert">
+            <p>{pageError}</p>
+            <button type="button" onClick={loadCoupons}>
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className="admin-coupons-stats">
           <div className="admin-coupons-stat-card">
             <div className="admin-coupons-stat-icon">
               <TicketPercent size={20} />
             </div>
-
             <div>
               <span>Total Coupons</span>
               <strong>{coupons.length}</strong>
@@ -632,15 +600,10 @@ const AdminCoupons = () => {
             <div className="admin-coupons-stat-icon">
               <TicketPercent size={20} />
             </div>
-
             <div>
               <span>Active</span>
               <strong>
-                {
-                  coupons.filter(
-                    (coupon) => coupon.status === "active"
-                  ).length
-                }
+                {coupons.filter((coupon) => coupon.status === "active").length}
               </strong>
             </div>
           </div>
@@ -649,14 +612,12 @@ const AdminCoupons = () => {
             <div className="admin-coupons-stat-icon">
               <TicketPercent size={20} />
             </div>
-
             <div>
               <span>Percentage Offers</span>
               <strong>
                 {
                   coupons.filter(
-                    (coupon) =>
-                      coupon.discountType === "percentage"
+                    (coupon) => coupon.discountType === "percentage"
                   ).length
                 }
               </strong>
@@ -667,33 +628,23 @@ const AdminCoupons = () => {
             <div className="admin-coupons-stat-icon">
               <TicketPercent size={20} />
             </div>
-
             <div>
               <span>Fixed Offers</span>
               <strong>
-                {
-                  coupons.filter(
-                    (coupon) => coupon.discountType === "fixed"
-                  ).length
-                }
+                {coupons.filter((coupon) => coupon.discountType === "fixed").length}
               </strong>
             </div>
           </div>
         </div>
 
-        {/* SEARCH AND FILTERS */}
-
         <div className="admin-coupons-toolbar">
           <div className="admin-coupons-search">
             <Search size={18} />
-
             <input
               type="text"
               placeholder="Search coupon code or description..."
               value={searchTerm}
-              onChange={(event) =>
-                setSearchTerm(event.target.value)
-              }
+              onChange={(event) => setSearchTerm(event.target.value)}
               aria-label="Search coupons"
             />
 
@@ -722,7 +673,6 @@ const AdminCoupons = () => {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
-
             <ChevronDown size={17} />
           </div>
 
@@ -738,21 +688,20 @@ const AdminCoupons = () => {
               <option value="percentage">Percentage</option>
               <option value="fixed">Fixed Amount</option>
             </select>
-
             <ChevronDown size={17} />
           </div>
         </div>
-
-        {/* COUPON TABLE */}
 
         <div className="admin-coupons-table-card">
           <div className="admin-coupons-table-header">
             <div>
               <h2>Coupon List</h2>
-
               <p>
-                {filteredCoupons.length} coupon
-                {filteredCoupons.length !== 1 ? "s" : ""} found
+                {isLoading
+                  ? "Loading coupons..."
+                  : `${filteredCoupons.length} coupon${
+                      filteredCoupons.length !== 1 ? "s" : ""
+                    } found`}
               </p>
             </div>
           </div>
@@ -773,31 +722,27 @@ const AdminCoupons = () => {
               </thead>
 
               <tbody>
-                {filteredCoupons.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="coupons-empty-state">
+                      Loading coupons...
+                    </td>
+                  </tr>
+                ) : filteredCoupons.length > 0 ? (
                   filteredCoupons.map((coupon, index) => (
                     <tr key={coupon.id}>
-                      <td className="coupon-number">
-                        {index + 1}
-                      </td>
+                      <td className="coupon-number">{index + 1}</td>
 
                       <td>
                         <div className="coupon-info-cell">
-                          <div className="coupon-code">
-                            {coupon.code}
-                          </div>
-
-                          <span>
-                            {coupon.description || "No description"}
-                          </span>
+                          <div className="coupon-code">{coupon.code}</div>
+                          <span>{coupon.description || "No description"}</span>
                         </div>
                       </td>
 
                       <td>
                         <div className="coupon-discount-cell">
-                          <strong>
-                            {formatDiscount(coupon)}
-                          </strong>
-
+                          <strong>{formatDiscount(coupon)}</strong>
                           <span>
                             {coupon.discountType === "percentage"
                               ? "Percentage"
@@ -814,15 +759,9 @@ const AdminCoupons = () => {
 
                       <td>
                         <div className="coupon-validity-cell">
-                          <span>
-                            {formatDate(coupon.startDate)}
-                          </span>
-
+                          <span>{formatDate(coupon.startDate)}</span>
                           <span>to</span>
-
-                          <span>
-                            {formatDate(coupon.endDate)}
-                          </span>
+                          <span>{formatDate(coupon.endDate)}</span>
                         </div>
                       </td>
 
@@ -831,18 +770,19 @@ const AdminCoupons = () => {
                           <strong>
                             {coupon.usedCount}/{coupon.usageLimit}
                           </strong>
-
                           <div
                             className="coupon-usage-bar"
-                            aria-label={`${Math.round(
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(
                               getUsagePercentage(coupon)
-                            )}% used`}
+                            )}
+                            aria-label={`Usage for ${coupon.code}`}
                           >
                             <span
                               style={{
-                                width: `${getUsagePercentage(
-                                  coupon
-                                )}%`,
+                                width: `${getUsagePercentage(coupon)}%`,
                               }}
                             />
                           </div>
@@ -854,6 +794,7 @@ const AdminCoupons = () => {
                           type="button"
                           className={`coupon-status-button ${coupon.status}`}
                           onClick={() => handleStatusToggle(coupon)}
+                          disabled={actionId !== null}
                           title={`Click to ${
                             coupon.status === "active"
                               ? "deactivate"
@@ -861,9 +802,11 @@ const AdminCoupons = () => {
                           } coupon`}
                           aria-label={`Coupon ${coupon.code} is ${coupon.status}. Change status`}
                         >
-                          {coupon.status === "active"
-                            ? "Active"
-                            : "Inactive"}
+                          {actionId === coupon.id
+                            ? "Saving..."
+                            : coupon.status === "active"
+                              ? "Active"
+                              : "Inactive"}
                         </button>
                       </td>
 
@@ -874,6 +817,7 @@ const AdminCoupons = () => {
                             className="coupon-edit-button"
                             title="Edit coupon"
                             aria-label={`Edit coupon ${coupon.code}`}
+                            disabled={actionId !== null}
                             onClick={() => openEditModal(coupon)}
                           >
                             <Edit size={16} />
@@ -884,6 +828,7 @@ const AdminCoupons = () => {
                             className="coupon-delete-button"
                             title="Delete coupon"
                             aria-label={`Delete coupon ${coupon.code}`}
+                            disabled={actionId !== null}
                             onClick={() => handleDelete(coupon)}
                           >
                             <Trash2 size={16} />
@@ -894,17 +839,14 @@ const AdminCoupons = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="coupons-empty-state"
-                    >
+                    <td colSpan={8} className="coupons-empty-state">
                       <div>
                         <TicketPercent size={34} />
-
                         <h3>No coupons found</h3>
-
                         <p>
-                          Try changing your search or filters.
+                          {coupons.length === 0
+                            ? "Create your first coupon using Add Coupon."
+                            : "Try changing your search or filters."}
                         </p>
                       </div>
                     </td>
@@ -915,8 +857,6 @@ const AdminCoupons = () => {
           </div>
         </div>
       </div>
-
-      {/* ADD / EDIT MODAL */}
 
       {isModalOpen && (
         <div
@@ -936,11 +876,8 @@ const AdminCoupons = () => {
             <div className="admin-coupons-modal-header">
               <div>
                 <p>Marketing Management</p>
-
                 <h2 id="coupon-modal-title">
-                  {editingId !== null
-                    ? "Edit Coupon"
-                    : "Add Coupon"}
+                  {editingId !== null ? "Edit Coupon" : "Add Coupon"}
                 </h2>
               </div>
 
@@ -950,22 +887,24 @@ const AdminCoupons = () => {
                 onClick={closeModal}
                 aria-label="Close coupon form"
                 title="Close"
+                disabled={isSaving}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form
-              className="admin-coupons-form"
-              onSubmit={handleSubmit}
-            >
-              {/* COUPON CODE */}
+            {formError && (
+              <div className="coupon-info-box" role="alert">
+                <strong>Unable to save coupon</strong>
+                <p>{formError}</p>
+              </div>
+            )}
 
+            <form className="admin-coupons-form" onSubmit={handleSubmit}>
               <div className="admin-coupons-form-group">
                 <label htmlFor="coupon-code">
                   Coupon Code <span>*</span>
                 </label>
-
                 <input
                   id="coupon-code"
                   name="code"
@@ -979,17 +918,12 @@ const AdminCoupons = () => {
                 />
               </div>
 
-              {/* DESCRIPTION */}
-
               <div className="admin-coupons-form-group">
-                <label htmlFor="coupon-description">
-                  Description
-                </label>
-
+                <label htmlFor="coupon-description">Description</label>
                 <textarea
                   id="coupon-description"
                   name="description"
-                  rows="3"
+                  rows={3}
                   placeholder="Describe the offer..."
                   value={formData.description}
                   onChange={handleInputChange}
@@ -997,14 +931,11 @@ const AdminCoupons = () => {
                 />
               </div>
 
-              {/* DISCOUNT TYPE AND VALUE */}
-
               <div className="coupon-form-two-column">
                 <div className="admin-coupons-form-group">
                   <label htmlFor="coupon-discount-type">
                     Discount Type <span>*</span>
                   </label>
-
                   <div className="admin-coupons-select-wrapper">
                     <select
                       id="coupon-discount-type"
@@ -1013,15 +944,9 @@ const AdminCoupons = () => {
                       onChange={handleInputChange}
                       required
                     >
-                      <option value="percentage">
-                        Percentage
-                      </option>
-
-                      <option value="fixed">
-                        Fixed Amount
-                      </option>
+                      <option value="percentage">Percentage</option>
+                      <option value="fixed">Fixed Amount</option>
                     </select>
-
                     <ChevronDown size={17} />
                   </div>
                 </div>
@@ -1030,14 +955,10 @@ const AdminCoupons = () => {
                   <label htmlFor="coupon-discount-value">
                     Discount Value <span>*</span>
                   </label>
-
                   <div className="coupon-value-input">
                     <span>
-                      {formData.discountType === "percentage"
-                        ? "%"
-                        : "₹"}
+                      {formData.discountType === "percentage" ? "%" : "₹"}
                     </span>
-
                     <input
                       id="coupon-discount-value"
                       name="discountValue"
@@ -1045,7 +966,7 @@ const AdminCoupons = () => {
                       min="0.01"
                       max={
                         formData.discountType === "percentage"
-                          ? "100"
+                          ? 100
                           : undefined
                       }
                       step="0.01"
@@ -1058,17 +979,13 @@ const AdminCoupons = () => {
                 </div>
               </div>
 
-              {/* MINIMUM ORDER AND MAXIMUM DISCOUNT */}
-
               <div className="coupon-form-two-column">
                 <div className="admin-coupons-form-group">
                   <label htmlFor="coupon-min-order">
                     Minimum Order Amount <span>*</span>
                   </label>
-
                   <div className="coupon-value-input">
                     <span>₹</span>
-
                     <input
                       id="coupon-min-order"
                       name="minOrderAmount"
@@ -1087,10 +1004,8 @@ const AdminCoupons = () => {
                   <label htmlFor="coupon-max-discount">
                     Maximum Discount <span>*</span>
                   </label>
-
                   <div className="coupon-value-input">
                     <span>₹</span>
-
                     <input
                       id="coupon-max-discount"
                       name="maxDiscount"
@@ -1106,14 +1021,11 @@ const AdminCoupons = () => {
                 </div>
               </div>
 
-              {/* START DATE AND END DATE */}
-
               <div className="coupon-form-two-column">
                 <div className="admin-coupons-form-group">
                   <label htmlFor="coupon-start-date">
                     Start Date <span>*</span>
                   </label>
-
                   <input
                     id="coupon-start-date"
                     name="startDate"
@@ -1129,7 +1041,6 @@ const AdminCoupons = () => {
                   <label htmlFor="coupon-end-date">
                     End Date <span>*</span>
                   </label>
-
                   <input
                     id="coupon-end-date"
                     name="endDate"
@@ -1142,20 +1053,17 @@ const AdminCoupons = () => {
                 </div>
               </div>
 
-              {/* USAGE LIMIT AND STATUS */}
-
               <div className="coupon-form-two-column">
                 <div className="admin-coupons-form-group">
                   <label htmlFor="coupon-usage-limit">
                     Usage Limit <span>*</span>
                   </label>
-
                   <input
                     id="coupon-usage-limit"
                     name="usageLimit"
                     type="number"
-                    min="1"
-                    step="1"
+                    min={1}
+                    step={1}
                     placeholder="500"
                     value={formData.usageLimit}
                     onChange={handleInputChange}
@@ -1165,7 +1073,6 @@ const AdminCoupons = () => {
 
                 <div className="admin-coupons-form-group">
                   <label htmlFor="coupon-status">Status</label>
-
                   <div className="admin-coupons-select-wrapper">
                     <select
                       id="coupon-status"
@@ -1176,31 +1083,25 @@ const AdminCoupons = () => {
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
-
                     <ChevronDown size={17} />
                   </div>
                 </div>
               </div>
 
-              {/* COUPON RULES */}
-
               <div className="coupon-info-box">
                 <strong>Coupon Rules</strong>
-
                 <p>
-                  Percentage discounts cannot exceed 100%.
-                  The end date must be on or after the start
-                  date. Coupon codes must be unique.
+                  Percentage discounts cannot exceed 100%. The end date must
+                  be on or after the start date. Coupon codes must be unique.
                 </p>
               </div>
-
-              {/* FORM ACTIONS */}
 
               <div className="admin-coupons-form-actions">
                 <button
                   type="button"
                   className="coupon-cancel-button"
                   onClick={closeModal}
+                  disabled={isSaving}
                 >
                   Cancel
                 </button>
@@ -1208,10 +1109,13 @@ const AdminCoupons = () => {
                 <button
                   type="submit"
                   className="coupon-save-button"
+                  disabled={isSaving}
                 >
-                  {editingId !== null
-                    ? "Update Coupon"
-                    : "Save Coupon"}
+                  {isSaving
+                    ? "Saving..."
+                    : editingId !== null
+                      ? "Update Coupon"
+                      : "Save Coupon"}
                 </button>
               </div>
             </form>
