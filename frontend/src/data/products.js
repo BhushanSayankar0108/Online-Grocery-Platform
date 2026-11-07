@@ -1,5 +1,5 @@
 
-const API_BASE_URL = "http://localhost:5000/api/products";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com/api/products";
 
 /**
  * Converts a backend product into the structure used by frontend components.

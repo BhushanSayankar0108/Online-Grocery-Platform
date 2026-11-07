@@ -9,7 +9,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+const CMS_PUBLIC_API = "https://online-grocery-platform.onrender.com/api/cms/public";
 
 function parseShippingContent(content = "") {
   const sections = [];

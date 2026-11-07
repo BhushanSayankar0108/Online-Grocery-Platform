@@ -17,7 +17,7 @@ import {
 
 import "./AdminCMS.css";
 
-const CMS_API_BASE = "http://localhost:5000/api/cms";
+const CMS_API_BASE = "https://online-grocery-platform.onrender.com/api/cms";
 
 const getAdminToken = () => localStorage.getItem("adminToken");
 

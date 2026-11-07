@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ArrowRight } from "lucide-react";
 
-const CMS_PUBLIC_API = "http://localhost:5000/api/cms/public";
+const CMS_PUBLIC_API = "https://online-grocery-platform.onrender.com/api/cms/public";
 
 function FAQ() {
   const [faqs, setFaqs] = useState([]);

@@ -9,7 +9,7 @@ import productsData from "../data/products";
 // --------------------------------------------------
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+  import.meta.env.VITE_API_BASE_URL || "https://online-grocery-platform.onrender.com"
 ).replace(/\/+$/, "");
 
 const FEATURED_PRODUCT_LIMIT = 4;

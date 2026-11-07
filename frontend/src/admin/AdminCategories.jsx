@@ -16,7 +16,7 @@ import "./AdminCategories.css";
 
 
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com";
 
 const CATEGORIES_API = `${API_BASE_URL}/api/categories`;
 

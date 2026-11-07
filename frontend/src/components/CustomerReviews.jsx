@@ -7,7 +7,7 @@ import { Star, Quote } from "lucide-react";
 // --------------------------------------------------
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"
+  import.meta.env.VITE_API_BASE_URL || "https://online-grocery-platform.onrender.com"
 ).replace(/\/+$/, "");
 
 const REVIEWS_API = `${API_BASE_URL}/api/reviews/public`;

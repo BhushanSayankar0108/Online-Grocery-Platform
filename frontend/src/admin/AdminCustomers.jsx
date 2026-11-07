@@ -12,7 +12,7 @@ import {
 
 import "./AdminCustomers.css";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com";
 const CUSTOMERS_API = `${API_BASE_URL}/api/admin/customers`;
 
 const getToken = () => localStorage.getItem("adminToken");

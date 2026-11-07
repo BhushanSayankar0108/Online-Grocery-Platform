@@ -44,7 +44,7 @@ import "./AdminProducts.css";
 
 
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com";
 
 const PRODUCTS_API = `${API_BASE_URL}/api/products`;
 

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import "./AdminManagement.css";
 
-const API_BASE_URL = "http://localhost:5000/api/admin";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com/api/admin";
 
 const permissionOptions = [
   "Dashboard",

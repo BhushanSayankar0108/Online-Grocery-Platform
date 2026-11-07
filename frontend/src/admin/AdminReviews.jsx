@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import "./AdminReviews.css";
 
-const API_BASE_URL = "http://localhost:5000/api/reviews";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com/api/reviews";
 
 const STATUS_LABELS = {
   pending: "Pending",

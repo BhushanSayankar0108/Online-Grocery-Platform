@@ -20,7 +20,7 @@ import {
 
 import "./AdminOrders.css";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://online-grocery-platform.onrender.com").replace(/\/+$/, "");
 
 const API_ROOT = /\/api$/i.test(API_BASE_URL) ? API_BASE_URL : `${API_BASE_URL}/api`;
 const ORDERS_API = `${API_ROOT}/orders`;

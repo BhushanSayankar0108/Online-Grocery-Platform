@@ -24,7 +24,7 @@ import "./AdminSubCategories.css";
    API CONFIGURATION
 ========================================================= */
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://online-grocery-platform.onrender.com";
 const CATEGORIES_API = `${API_BASE_URL}/api/categories`;
 const SUBCATEGORIES_API = `${API_BASE_URL}/api/subcategories`;
 

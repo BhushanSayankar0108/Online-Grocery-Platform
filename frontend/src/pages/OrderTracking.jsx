@@ -142,7 +142,7 @@ const ORDER_TRACKING_STYLES = `/* Order tracking page */
 }
 `;
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "https://online-grocery-platform.onrender.com").replace(/\/+$/, "");
 
 const trackingSteps = [
   { label: "Order Placed", description: "We've received your order.", icon: ShoppingBag },
